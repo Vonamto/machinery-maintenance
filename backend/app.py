@@ -1,6 +1,8 @@
 from flask import Flask, jsonify
+from flask_cors import CORS  # <-- add this line
 
 app = Flask(__name__)
+CORS(app)  # <-- add this line
 
 @app.route("/")
 def home():
