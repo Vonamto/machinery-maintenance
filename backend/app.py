@@ -9,17 +9,17 @@ CORS(app)
 def home():
     return jsonify({"message": "Backend working!"})
 
-# ✅ Get all data from a sheet/tab
+# ✅ Read data
 @app.route("/api/<sheet_name>", methods=["GET"])
 def read_sheet(sheet_name):
     return get_sheet_data(sheet_name)
 
-# ✅ Add a new record to a sheet/tab
-@app.route("/api/<sheet_name>", methods=["POST"])
-def add_record(sheet_name):
+# ✅ Add new row
+@app.route("/api/add/<sheet_name>", methods=["POST"])
+def add_row(sheet_name):
     try:
-        new_row = request.get_json()
-        result = append_row(sheet_name, new_row)
+        data = request.get_json()
+        result = append_row(sheet_name, data)
         return jsonify(result)
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
