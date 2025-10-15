@@ -8,8 +8,10 @@ from google.oauth2.service_account import Credentials
 app = Flask(__name__)
 CORS(app)
 
-# Load credentials from Render environment variable
+# Load credentials and fix key format
 service_account_info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
+service_account_info["private_key"] = service_account_info["private_key"].replace("\\n", "\n")
+
 creds = Credentials.from_service_account_info(
     service_account_info,
     scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
