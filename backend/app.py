@@ -57,6 +57,13 @@ def filter_sheet(sheet_name):
             filtered.append(row)
     return jsonify(filtered)
 
+@app.route("/add-row/<sheet_name>", methods=["POST"])
+def add_row(sheet_name):
+    from sheets_service import append_row
+    new_row = request.get_json()
+    result = append_row(sheet_name, new_row)
+    return jsonify(result)
+
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
