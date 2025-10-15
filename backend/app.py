@@ -1,40 +1,27 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-import os
-import json
-import gspread
-from google.oauth2.service_account import Credentials
+import sheets_service  # <-- import our new helper
 
 app = Flask(__name__)
 CORS(app)
 
-# Load credentials and fix key format
-service_account_info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
-service_account_info["private_key"] = service_account_info["private_key"].replace("\\n", "\n")
-
-creds = Credentials.from_service_account_info(
-    service_account_info,
-    scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-)
-
-gc = gspread.authorize(creds)
-
-# Your Google Sheet link
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1j5PbpbLeQFVxofnO69BlluIw851-LZtOCV5HM4NhNOM/edit?usp=sharing"
+# Set your Google Sheet file name (the one visible in Drive)
+SHEET_NAME = "Machinery_Maintenance_Data"
 
 @app.route("/")
 def home():
     return jsonify({"message": "Backend working!"})
 
-@app.route("/test-sheet")
-def test_sheet():
+@app.route("/equipment")
+def get_equipment():
     try:
-        sheet = gc.open_by_url(SHEET_URL).worksheet("Equipment_List")
-        data = sheet.get_all_records()
+        data = sheets_service.read_tab(SHEET_NAME, "Equipment_List")
         return jsonify(data)
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
+    import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
