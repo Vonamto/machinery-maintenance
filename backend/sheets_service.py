@@ -28,3 +28,24 @@ def get_sheet_data(sheet_name):
         return jsonify(rows)
     except Exception as e:
         return jsonify({"error": str(e)})
+
+def append_row(sheet_name, new_row):
+    """
+    Adds a new row to the given sheet.
+    'new_row' should be a dict matching the column headers.
+    """
+    try:
+        # Open the spreadsheet
+        sheet = client.open_by_key(SPREADSHEET_ID).worksheet(sheet_name)
+
+        # Get headers
+        headers = sheet.row_values(1)
+
+        # Prepare the new row data in the same order as headers
+        row_to_add = [new_row.get(h, "") for h in headers]
+
+        # Append the row
+        sheet.append_row(row_to_add)
+        return {"status": "success", "added": new_row}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
