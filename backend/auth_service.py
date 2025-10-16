@@ -36,12 +36,12 @@ def authenticate_user(username, password):
         username = str(username).strip()
         password = str(password).strip()
 
-        print(f"🧠 Trying to log in with: username='{username}', password='{password}'")
+        print(f"🧠 Trying to log in with: username='{username}', password='{password}'", flush=True)
 
         for user in users:
             sheet_username = str(user["Username"]).strip()
             sheet_password = str(user["Password"]).strip()
-            print(f"➡️ Sheet entry: username='{sheet_username}', password='{sheet_password}'")
+            print(f"➡️ Sheet entry: username='{sheet_username}', password='{sheet_password}'", flush=True)
 
             if sheet_username.lower() == username.lower() and sheet_password == password:
                 payload = {
