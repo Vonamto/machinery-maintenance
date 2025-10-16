@@ -4,3 +4,4 @@ flask-cors==4.0.0
 gspread==6.2.1
 google-auth==2.23.0
 pytz==2024.1
+PyJWT==2.9.0
