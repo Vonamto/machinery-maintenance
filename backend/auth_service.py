@@ -24,10 +24,10 @@ SPREADSHEET_ID = "1j5PbpbLeQFVxofnO69BlluIw851-LZtOCV5HM4NhNOM"
 SECRET_KEY = os.environ.get("JWT_SECRET", "supersecretkey")  # ⚠️ change later
 
 
-# ✅ LOGIN FUNCTION
+# ✅ Debug version of LOGIN FUNCTION
 def authenticate_user(username, password):
     """
-    Check credentials from Users sheet (case-insensitive and trimmed).
+    Debug mode: prints usernames and passwords from sheet to check matching.
     """
     try:
         sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Users")
@@ -36,9 +36,12 @@ def authenticate_user(username, password):
         username = str(username).strip()
         password = str(password).strip()
 
+        print(f"🧠 Trying to log in with: username='{username}', password='{password}'")
+
         for user in users:
             sheet_username = str(user["Username"]).strip()
             sheet_password = str(user["Password"]).strip()
+            print(f"➡️ Sheet entry: username='{sheet_username}', password='{sheet_password}'")
 
             if sheet_username.lower() == username.lower() and sheet_password == password:
                 payload = {
