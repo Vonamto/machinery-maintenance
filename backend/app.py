@@ -71,7 +71,7 @@ def check_permission(sheet_name, action):
     Verifies if the logged-in user has the right to perform this action.
     Returns None if allowed, or an error response if denied.
     """
-    role = request.user.get("role")
+    role = request.user.get("Role")
     allowed_roles = ROLE_PERMISSIONS.get(sheet_name, {}).get(action, [])
     if role not in allowed_roles:
         return jsonify({
