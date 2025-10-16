@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app)
 
 # =====================================================
-# ✅ Role-Based Access Rules
+# ✅ Role-Based Access Rules (match your Google Sheet tab names)
 # =====================================================
 ROLE_PERMISSIONS = {
     "Maintenance_Log": {
@@ -86,7 +86,7 @@ def check_permission(sheet_name, action):
 # =====================================================
 @app.route("/api/login", methods=["POST"])
 def login():
-    data = request.get_json()
+    data = request.get_json() or {}
     username = data.get("username") or data.get("Username")
     password = data.get("password") or data.get("Password")
     return authenticate_user(username, password)
@@ -103,6 +103,7 @@ def protected():
 
 # =====================================================
 # ✅ VIEW (GET) Endpoint – Requires permission
+# Example: GET /api/Maintenance_Log
 # =====================================================
 @app.route("/api/<sheet_name>", methods=["GET"])
 @require_token
@@ -115,6 +116,7 @@ def get_data(sheet_name):
 
 # =====================================================
 # ✅ ADD (POST) Endpoint – Requires permission
+# Example: POST /api/add/Requests_Parts  (body = JSON matching headers)
 # =====================================================
 @app.route("/api/add/<sheet_name>", methods=["POST"])
 @require_token
@@ -123,31 +125,25 @@ def add_row_api(sheet_name):
     if check:
         return check  # Access denied
 
-    new_row = request.get_json()
+    new_row = request.get_json() or {}
     result = append_row(sheet_name, new_row)
     return jsonify(result)
 
 
 # =====================================================
 # ✅ EDIT (PUT) Endpoint – Requires permission
+# Example: PUT /api/edit/Requests_Parts/6 (body = {"Status":"Completed"})
+# Note: row_index is the actual sheet row number (1-based, header = 1)
 # =====================================================
 @app.route("/api/edit/<sheet_name>/<int:row_index>", methods=["PUT"])
 @require_token
 def edit_row(sheet_name, row_index):
-    """
-    Example:
-    PUT /api/edit/Requests_Parts/5
-    {
-      "Status": "Completed",
-      "Handled By": "John Doe"
-    }
-    """
     check = check_permission(sheet_name, "edit")
     if check:
         return check  # Access denied
 
     try:
-        updated_data = request.get_json()
+        updated_data = request.get_json() or {}
         result = update_row(sheet_name, row_index, updated_data)
         return jsonify(result)
     except Exception as e:
