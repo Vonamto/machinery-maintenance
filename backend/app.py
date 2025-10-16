@@ -10,8 +10,11 @@ CORS(app)
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json()
-    username = data.get("username")
-    password = data.get("password")
+
+    # Accept both capitalized and lowercase keys
+    username = data.get("username") or data.get("Username")
+    password = data.get("password") or data.get("Password")
+
     return authenticate_user(username, password)
 
 # ✅ Protected test route
