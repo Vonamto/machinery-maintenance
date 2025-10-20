@@ -27,11 +27,11 @@ creds = Credentials.from_service_account_info(
 client = gspread.authorize(creds)
 drive_service = build("drive", "v3", credentials=creds)
 
+# ✅ Your Google Sheet ID
 SPREADSHEET_ID = "1j5PbpbLeQFVxofnO69BlluIw851-LZtOCV5HM4NhNOM"
 
-# ✅ Folder IDs
+# ✅ Folder A ID (Main photo storage folder)
 FOLDER_A_ID = "1LXuX4GDaIPsnc0F5yizlL5znfMl22RnD"
-FOLDER_B_ID = "1gYBTgjuVC-7JxnOzkHJCtNM4HmcMm4dF"
 
 
 # =====================================================
@@ -43,52 +43,30 @@ def get_current_time():
 
 
 # =====================================================
-# ✅ Utility: Check Drive folder size (simple approximation)
-# =====================================================
-def get_folder_size(folder_id):
-    query = f"'{folder_id}' in parents and trashed=false"
-    results = drive_service.files().list(q=query, fields="files(size)").execute()
-    total = 0
-    for f in results.get("files", []):
-        total += int(f.get("size", 0))
-    return total
-
-
-# =====================================================
-# ✅ Utility: Upload Base64 image to Drive
+# ✅ Utility: Upload Base64 image to Google Drive (Folder A only)
 # =====================================================
 def save_image_to_drive(base64_string, filename, subfolder_name):
     try:
-        # Decide target folder (A or B)
-        folder_id = FOLDER_A_ID
-        size_a = get_folder_size(FOLDER_A_ID)
-        if size_a > 13 * 1024 * 1024 * 1024:  # 13GB threshold
-            folder_id = FOLDER_B_ID
-
-        # Ensure subfolder exists
-        query = f"'{folder_id}' in parents and name='{subfolder_name}' and mimeType='application/vnd.google-apps.folder'"
+        # Ensure subfolder exists inside Folder A
+        query = f"'{FOLDER_A_ID}' in parents and name='{subfolder_name}' and mimeType='application/vnd.google-apps.folder'"
         results = drive_service.files().list(q=query, fields="files(id)").execute()
         if results["files"]:
             subfolder_id = results["files"][0]["id"]
         else:
-            # Create subfolder
             metadata = {
                 "name": subfolder_name,
                 "mimeType": "application/vnd.google-apps.folder",
-                "parents": [folder_id]
+                "parents": [FOLDER_A_ID]
             }
             subfolder = drive_service.files().create(body=metadata, fields="id").execute()
             subfolder_id = subfolder["id"]
 
-        # Decode Base64 string
+        # Decode Base64 image data
         img_data = base64.b64decode(base64_string.split(",")[-1])
         file_stream = io.BytesIO(img_data)
 
-        file_metadata = {
-            "name": filename,
-            "parents": [subfolder_id]
-        }
-
+        # Upload to Google Drive
+        file_metadata = {"name": filename, "parents": [subfolder_id]}
         media = MediaIoBaseUpload(file_stream, mimetype="image/jpeg", resumable=True)
         uploaded_file = drive_service.files().create(
             body=file_metadata,
@@ -110,7 +88,7 @@ def save_image_to_drive(base64_string, filename, subfolder_name):
 
 
 # =====================================================
-# ✅ Copy to Maintenance_Log (same as before)
+# ✅ Copy to Maintenance_Log
 # =====================================================
 def copy_to_maintenance_log(source_sheet, data):
     try:
@@ -177,13 +155,13 @@ def append_row(sheet_name, new_row):
         headers = sheet.row_values(1)
         current_time = get_current_time()
 
-        # Upload any Base64 photos to Drive
+        # Upload Base64 photos to Drive
         for key in list(new_row.keys()):
             if "Photo" in key and isinstance(new_row[key], str) and new_row[key].startswith("data:image"):
                 filename = f"{sheet_name}_{key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                 new_row[key] = save_image_to_drive(new_row[key], filename, sheet_name)
 
-        # Auto timestamps
+        # Fill timestamps automatically
         row_to_add = []
         for h in headers:
             value = new_row.get(h, "")
@@ -209,21 +187,20 @@ def update_row(sheet_name, row_index, updated_data):
     try:
         sheet = client.open_by_key(SPREADSHEET_ID).worksheet(sheet_name)
         headers = sheet.row_values(1)
-
         existing = sheet.row_values(row_index)
         current_row = dict(zip(headers, existing))
 
-        # Upload Base64 photos to Drive if included
+        # Upload Base64 photos if included
         for key, value in updated_data.items():
             if "Photo" in key and isinstance(value, str) and value.startswith("data:image"):
                 filename = f"{sheet_name}_{key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                 updated_data[key] = save_image_to_drive(value, filename, sheet_name)
 
-        # Merge updates
+        # Merge updated fields
         for key, value in updated_data.items():
             current_row[key] = value
 
-        # Handle completion date logic
+        # Handle "Completed" logic for Grease/Oil requests
         if "Status" in headers and updated_data.get("Status", "").lower() == "completed":
             completion_date = get_current_time()
             if "Completion Date" in headers:
