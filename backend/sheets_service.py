@@ -2,21 +2,44 @@ import os
 import json
 import base64
 import io
+import pickle
 import gspread
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2.service_account import Credentials
+from google.auth.transport.requests import Request
 from flask import jsonify
 from datetime import datetime
 import pytz
 
 # =====================================================
-# ✅ Google Service Account Authorization
+# ✅ Load Google OAuth Token (from environment variable)
+# =====================================================
+TOKEN_B64 = os.environ.get("GOOGLE_OAUTH_TOKEN_B64")
+if TOKEN_B64:
+    with open("token.pickle", "wb") as f:
+        f.write(base64.b64decode(TOKEN_B64))
+
+# =====================================================
+# ✅ Authorize Google Drive using OAuth token.pickle
+# =====================================================
+creds = None
+if os.path.exists("token.pickle"):
+    with open("token.pickle", "rb") as token:
+        creds = pickle.load(token)
+if creds and creds.expired and creds.refresh_token:
+    creds.refresh(Request())
+
+# Build Drive service (OAuth)
+drive_service = build("drive", "v3", credentials=creds)
+
+# =====================================================
+# ✅ Google Sheets access (still uses service account)
 # =====================================================
 service_account_info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
 service_account_info["private_key"] = service_account_info["private_key"].replace("\\n", "\n")
 
-creds = Credentials.from_service_account_info(
+sheet_creds = Credentials.from_service_account_info(
     service_account_info,
     scopes=[
         "https://www.googleapis.com/auth/spreadsheets",
@@ -24,18 +47,17 @@ creds = Credentials.from_service_account_info(
     ]
 )
 
-client = gspread.authorize(creds)
-drive_service = build("drive", "v3", credentials=creds)
+client = gspread.authorize(sheet_creds)
 
-# ✅ Your Google Sheet ID
+# =====================================================
+# ✅ Your Google Sheet ID and Drive Folder
+# =====================================================
 SPREADSHEET_ID = "1j5PbpbLeQFVxofnO69BlluIw851-LZtOCV5HM4NhNOM"
-
-# ✅ Folder A ID (Main photo storage folder)
-FOLDER_A_ID = "1LXuX4GDaIPsnc0F5yizlL5znfMl22RnD"
+FOLDER_A_ID = "1LXuX4GDaIPsnc0F5yizlL5znfMl22RnD"  # Main photo folder
 
 
 # =====================================================
-# ✅ Utility: Time in Algeria
+# ✅ Utility: Current Algeria Time
 # =====================================================
 def get_current_time():
     algeria_tz = pytz.timezone("Africa/Algiers")
@@ -43,11 +65,11 @@ def get_current_time():
 
 
 # =====================================================
-# ✅ Utility: Upload Base64 image to Google Drive (Folder A only)
+# ✅ Utility: Upload Base64 image to Google Drive
 # =====================================================
 def save_image_to_drive(base64_string, filename, subfolder_name):
     try:
-        # Ensure subfolder exists inside Folder A
+        # Ensure subfolder exists
         query = f"'{FOLDER_A_ID}' in parents and name='{subfolder_name}' and mimeType='application/vnd.google-apps.folder'"
         results = drive_service.files().list(q=query, fields="files(id)").execute()
         if results["files"]:
@@ -61,27 +83,26 @@ def save_image_to_drive(base64_string, filename, subfolder_name):
             subfolder = drive_service.files().create(body=metadata, fields="id").execute()
             subfolder_id = subfolder["id"]
 
-        # Decode Base64 image data
+        # Decode image and upload
         img_data = base64.b64decode(base64_string.split(",")[-1])
         file_stream = io.BytesIO(img_data)
 
-        # Upload to Google Drive
         file_metadata = {"name": filename, "parents": [subfolder_id]}
         media = MediaIoBaseUpload(file_stream, mimetype="image/jpeg", resumable=True)
+
         uploaded_file = drive_service.files().create(
             body=file_metadata,
             media_body=media,
             fields="id"
         ).execute()
 
-        # Make public link
+        # Make public
         drive_service.permissions().create(
             fileId=uploaded_file["id"],
             body={"type": "anyone", "role": "reader"}
         ).execute()
 
-        file_url = f"https://drive.google.com/uc?id={uploaded_file['id']}"
-        return file_url
+        return f"https://drive.google.com/uc?id={uploaded_file['id']}"
 
     except Exception as e:
         return f"ERROR_UPLOAD: {str(e)}"
@@ -155,13 +176,13 @@ def append_row(sheet_name, new_row):
         headers = sheet.row_values(1)
         current_time = get_current_time()
 
-        # Upload Base64 photos to Drive
+        # Upload any Base64 photos
         for key in list(new_row.keys()):
             if "Photo" in key and isinstance(new_row[key], str) and new_row[key].startswith("data:image"):
                 filename = f"{sheet_name}_{key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                 new_row[key] = save_image_to_drive(new_row[key], filename, sheet_name)
 
-        # Fill timestamps automatically
+        # Fill timestamps
         row_to_add = []
         for h in headers:
             value = new_row.get(h, "")
@@ -171,6 +192,7 @@ def append_row(sheet_name, new_row):
 
         sheet.append_row(row_to_add)
 
+        # Auto-copy Cleaning_Log to Maintenance_Log
         if sheet_name == "Cleaning_Log":
             copy_to_maintenance_log("Cleaning_Log", new_row)
 
@@ -200,7 +222,7 @@ def update_row(sheet_name, row_index, updated_data):
         for key, value in updated_data.items():
             current_row[key] = value
 
-        # Handle "Completed" logic for Grease/Oil requests
+        # Handle "Completed" logic
         if "Status" in headers and updated_data.get("Status", "").lower() == "completed":
             completion_date = get_current_time()
             if "Completion Date" in headers:
