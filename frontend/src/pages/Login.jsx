@@ -17,7 +17,9 @@ export default function Login() {
       if (result && result.status === "success") {
         localStorage.setItem("token", result.token);
         localStorage.setItem("user", JSON.stringify(result.user || {}));
-        setStatus(`✅ Logged in as ${result.user.username} (${result.user.role})`);
+
+        const fullName = result.user?.full_name || result.user?.username || "User";
+        setStatus(`✅ Logged in as ${fullName}`);
       } else {
         setStatus(result.message || "❌ Invalid username or password");
       }
