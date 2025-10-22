@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
 import CONFIG from "./config";
 
 function Home() {
@@ -38,10 +39,16 @@ function Home() {
           {backendMessage}
         </p>
 
-        <div className="mt-8">
+        <div className="mt-8 flex justify-center gap-4">
           <Link to="/login">
             <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
               Go to Login
+            </button>
+          </Link>
+
+          <Link to="/dashboard">
+            <button className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+              Go to Dashboard
             </button>
           </Link>
         </div>
@@ -60,6 +67,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </BrowserRouter>
   );
