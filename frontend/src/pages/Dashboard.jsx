@@ -5,7 +5,7 @@ import {
   Wrench,
   ClipboardList,
   Droplets,
-  Broom,
+  Brush,      // ✅ replaced Broom with Brush
   Truck,
   LogOut,
 } from "lucide-react";
@@ -48,7 +48,7 @@ export default function Dashboard() {
     {
       title: "Cleaning Log",
       color: "bg-teal-100 text-teal-800",
-      icon: <Broom size={28} />,
+      icon: <Brush size={28} />,   // ✅ updated
     },
     {
       title: "Equipment List",
