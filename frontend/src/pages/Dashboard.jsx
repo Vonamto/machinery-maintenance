@@ -67,7 +67,6 @@ export default function Dashboard() {
           <h1 className="text-2xl font-semibold text-gray-800">
             Welcome, {user.full_name || user.username}
           </h1>
-          <p className="text-gray-500 text-sm">Role: {user.role}</p>
         </div>
         <button
           onClick={handleLogout}
