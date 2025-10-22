@@ -40,14 +40,15 @@ function Home() {
           {backendMessage}
         </p>
 
+        {/* ✅ Only one button now */}
         <div className="mt-8">
-  <Link to="/login">
-    <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-      Go to Login
-    </button>
-  </Link>
-</div>
-
+          <Link to="/login">
+            <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+              Go to Login
+            </button>
+          </Link>
+        </div>
+      </div>
 
       <footer className="mt-8 text-sm text-gray-400">
         Powered by Vite + Tailwind + Flask (Render)
@@ -62,6 +63,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+
+        {/* ✅ Protected route for dashboard */}
         <Route
           path="/dashboard"
           element={
