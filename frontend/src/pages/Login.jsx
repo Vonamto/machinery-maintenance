@@ -20,6 +20,7 @@ export default function Login() {
 
         const fullName = result.user?.full_name || result.user?.username || "User";
         setStatus(`✅ Logged in as ${fullName}`);
+        setTimeout(() => window.location.href = "/dashboard", 1200);
       } else {
         setStatus(result.message || "❌ Invalid username or password");
       }
