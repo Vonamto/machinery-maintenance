@@ -6,65 +6,90 @@ export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus("Logging in...");
+    setStatus("");
+    setLoading(true);
     try {
       const result = await login(username, password);
       if (result && result.status === "success") {
-        // Save token and user
         localStorage.setItem("token", result.token);
         localStorage.setItem("user", JSON.stringify(result.user || {}));
-        setStatus(`Logged in as ${result.user.username} (${result.user.role})`);
+        setStatus(`✅ Logged in as ${result.user.username} (${result.user.role})`);
       } else {
-        setStatus(result.message || JSON.stringify(result));
+        setStatus(result.message || "❌ Invalid username or password");
       }
     } catch (err) {
-      setStatus("Network error: " + String(err));
+      setStatus("⚠️ Connection error: " + String(err));
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ fontFamily: "Arial", maxWidth: 420, margin: "40px auto", padding: 20 }}>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: 10 }}>
-          <label style={{ display: "block", marginBottom: 4 }}>Username</label>
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            style={{ width: "100%", padding: 8 }}
-            placeholder="Username (as in Users sheet)"
-          />
-        </div>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md">
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
+          Machinery Maintenance Login
+        </h2>
 
-        <div style={{ marginBottom: 10 }}>
-          <label style={{ display: "block", marginBottom: 4 }}>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ width: "100%", padding: 8 }}
-            placeholder="Password"
-          />
-        </div>
+        {status && (
+          <div
+            className={`p-2 mb-4 rounded text-center text-sm ${
+              status.includes("✅")
+                ? "bg-green-100 text-green-700"
+                : status.includes("⚠️")
+                ? "bg-yellow-100 text-yellow-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
+            {status}
+          </div>
+        )}
 
-        <div style={{ marginTop: 12 }}>
-          <button type="submit" style={{ padding: "8px 16px" }}>
-            Log in
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-gray-600 font-medium mb-1">
+              Username
+            </label>
+            <input
+              type="text"
+              className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter username"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-600 font-medium mb-1">
+              Password
+            </label>
+            <input
+              type="password"
+              className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter password"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-60"
+          >
+            {loading ? "Logging in..." : "Login"}
           </button>
-        </div>
-      </form>
+        </form>
 
-      <div style={{ marginTop: 16 }}>
-        <strong>Status:</strong> <span>{status}</span>
-      </div>
-
-      <div style={{ marginTop: 10, fontSize: 13, color: "#555" }}>
-        Tip: use a user from your Users sheet (Username / Password). After login the token is stored in localStorage as <code>token</code>.
+        <p className="text-center text-gray-500 text-sm mt-4">
+          English / العربية (coming soon)
+        </p>
       </div>
     </div>
   );
