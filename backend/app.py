@@ -4,7 +4,19 @@ from sheets_service import get_sheet_data, append_row, update_row
 from auth_service import authenticate_user, verify_token
 
 app = Flask(__name__)
-CORS(app)
+
+# =====================================================
+# ✅ Allow CORS only from your frontend (Vercel)
+# =====================================================
+CORS(app, origins=["https://machinery-maintenance.vercel.app"])
+
+# =====================================================
+# ✅ Root route (for test)
+# =====================================================
+@app.route("/")
+def home():
+    return jsonify({"message": "Backend connected successfully"}), 200
+
 
 # =====================================================
 # ✅ Role-Based Access Rules (match your Google Sheet tab names)
@@ -67,10 +79,6 @@ def require_token(func):
 # ✅ Helper: Role Permission Checker
 # =====================================================
 def check_permission(sheet_name, action):
-    """
-    Verifies if the logged-in user has the right to perform this action.
-    Returns None if allowed, or an error response if denied.
-    """
     role = request.user.get("role")
     allowed_roles = ROLE_PERMISSIONS.get(sheet_name, {}).get(action, [])
     if role not in allowed_roles:
@@ -102,28 +110,26 @@ def protected():
 
 
 # =====================================================
-# ✅ VIEW (GET) Endpoint – Requires permission
-# Example: GET /api/Maintenance_Log
+# ✅ VIEW (GET)
 # =====================================================
 @app.route("/api/<sheet_name>", methods=["GET"])
 @require_token
 def get_data(sheet_name):
     check = check_permission(sheet_name, "view")
     if check:
-        return check  # Access denied
+        return check
     return get_sheet_data(sheet_name)
 
 
 # =====================================================
-# ✅ ADD (POST) Endpoint – Requires permission
-# Example: POST /api/add/Requests_Parts  (body = JSON matching headers)
+# ✅ ADD (POST)
 # =====================================================
 @app.route("/api/add/<sheet_name>", methods=["POST"])
 @require_token
 def add_row_api(sheet_name):
     check = check_permission(sheet_name, "add")
     if check:
-        return check  # Access denied
+        return check
 
     new_row = request.get_json() or {}
     result = append_row(sheet_name, new_row)
@@ -131,16 +137,14 @@ def add_row_api(sheet_name):
 
 
 # =====================================================
-# ✅ EDIT (PUT) Endpoint – Requires permission
-# Example: PUT /api/edit/Requests_Parts/6 (body = {"Status":"Completed"})
-# Note: row_index is the actual sheet row number (1-based, header = 1)
+# ✅ EDIT (PUT)
 # =====================================================
 @app.route("/api/edit/<sheet_name>/<int:row_index>", methods=["PUT"])
 @require_token
 def edit_row(sheet_name, row_index):
     check = check_permission(sheet_name, "edit")
     if check:
-        return check  # Access denied
+        return check
 
     try:
         updated_data = request.get_json() or {}
