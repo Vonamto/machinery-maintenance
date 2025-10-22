@@ -1,26 +1,20 @@
 // frontend/src/App.jsx
 import React, { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
 import CONFIG from "./config";
 
 function Home() {
   const [backendMessage, setBackendMessage] = useState("Checking connection...");
-  const navigate = useNavigate();
 
   useEffect(() => {
-    // ✅ If user already logged in, go straight to Dashboard
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      navigate("/dashboard");
-    }
-
     fetch(`${CONFIG.BACKEND_URL}/`)
       .then((res) => res.json())
       .then((data) => setBackendMessage(data.message))
       .catch(() => setBackendMessage("⚠️ Failed to connect to backend"));
-  }, [navigate]);
+  }, []);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-gray-800">
@@ -46,10 +40,16 @@ function Home() {
           {backendMessage}
         </p>
 
-        <div className="mt-8">
+        <div className="mt-8 flex flex-col gap-3">
           <Link to="/login">
-            <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            <button className="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
               Go to Login
+            </button>
+          </Link>
+
+          <Link to="/dashboard">
+            <button className="w-full px-6 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition">
+              Go to Dashboard
             </button>
           </Link>
         </div>
@@ -68,7 +68,14 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
