@@ -1,19 +1,26 @@
 // frontend/src/App.jsx
 import React, { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import CONFIG from "./config";
 
 function Home() {
   const [backendMessage, setBackendMessage] = useState("Checking connection...");
+  const navigate = useNavigate();
 
   useEffect(() => {
+    // ✅ If user already logged in, go straight to Dashboard
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      navigate("/dashboard");
+    }
+
     fetch(`${CONFIG.BACKEND_URL}/`)
       .then((res) => res.json())
       .then((data) => setBackendMessage(data.message))
       .catch(() => setBackendMessage("⚠️ Failed to connect to backend"));
-  }, []);
+  }, [navigate]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-gray-800">
@@ -39,16 +46,10 @@ function Home() {
           {backendMessage}
         </p>
 
-        <div className="mt-8 flex justify-center gap-4">
+        <div className="mt-8">
           <Link to="/login">
             <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
               Go to Login
-            </button>
-          </Link>
-
-          <Link to="/dashboard">
-            <button className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
-              Go to Dashboard
             </button>
           </Link>
         </div>
