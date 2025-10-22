@@ -6,6 +6,13 @@ import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CONFIG from "./config";
 
+// new pages
+import MaintenanceLog from "./pages/MaintenanceLog";
+import RequestsParts from "./pages/RequestsParts";
+import GreaseOil from "./pages/GreaseOil";
+import CleaningLog from "./pages/CleaningLog";
+import EquipmentList from "./pages/EquipmentList";
+
 function Home() {
   const [backendMessage, setBackendMessage] = useState("Checking connection...");
 
@@ -40,7 +47,6 @@ function Home() {
           {backendMessage}
         </p>
 
-        {/* ✅ Only one button now */}
         <div className="mt-8">
           <Link to="/login">
             <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
@@ -64,12 +70,52 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
 
-        {/* ✅ Protected route for dashboard */}
+        {/* ✅ Protected routes */}
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/maintenance"
+          element={
+            <ProtectedRoute>
+              <MaintenanceLog />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/requests-parts"
+          element={
+            <ProtectedRoute>
+              <RequestsParts />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/grease-oil"
+          element={
+            <ProtectedRoute>
+              <GreaseOil />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cleaning"
+          element={
+            <ProtectedRoute>
+              <CleaningLog />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/equipment"
+          element={
+            <ProtectedRoute>
+              <EquipmentList />
             </ProtectedRoute>
           }
         />
