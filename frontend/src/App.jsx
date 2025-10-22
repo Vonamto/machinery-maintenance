@@ -40,20 +40,14 @@ function Home() {
           {backendMessage}
         </p>
 
-        <div className="mt-8 flex flex-col gap-3">
-          <Link to="/login">
-            <button className="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-              Go to Login
-            </button>
-          </Link>
+        <div className="mt-8">
+  <Link to="/login">
+    <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+      Go to Login
+    </button>
+  </Link>
+</div>
 
-          <Link to="/dashboard">
-            <button className="w-full px-6 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition">
-              Go to Dashboard
-            </button>
-          </Link>
-        </div>
-      </div>
 
       <footer className="mt-8 text-sm text-gray-400">
         Powered by Vite + Tailwind + Flask (Render)
