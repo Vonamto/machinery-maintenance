@@ -1,7 +1,10 @@
+// frontend/src/App.js
 import React, { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import Login from "./pages/Login";
 import CONFIG from "./config";
 
-export default function App() {
+function Home() {
   const [backendMessage, setBackendMessage] = useState("Loading...");
 
   useEffect(() => {
@@ -12,22 +15,29 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-xl w-full bg-white rounded-2xl shadow-md p-6">
-        <h1 className="text-2xl font-semibold text-center">Machinery Maintenance App</h1>
-        <p className="text-center mt-2 text-sm text-gray-500">English / العربية (toggle coming later)</p>
+    <div style={{ fontFamily: "Arial", textAlign: "center", marginTop: 40 }}>
+      <h1>Machinery Maintenance App</h1>
+      <p>English / العربية (toggle coming later)</p>
+      <hr style={{ width: 300 }} />
+      <h3>Backend Test:</h3>
+      <p>{backendMessage}</p>
 
-        <div className="mt-6 space-y-4">
-          <div className="text-sm text-gray-600">Backend Test:</div>
-          <div className="p-4 bg-slate-100 rounded">
-            <pre className="text-xs">{backendMessage}</pre>
-          </div>
-        </div>
-
-        <div className="mt-6 text-center text-sm text-gray-500">
-          This is the Vite + Tailwind starter. Next step: add login & API wiring.
-        </div>
+      <div style={{ marginTop: 20 }}>
+        <Link to="/login">
+          <button style={{ padding: "8px 12px" }}>Go to Login</button>
+        </Link>
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
