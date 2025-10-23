@@ -12,6 +12,7 @@ import RequestsParts from "./pages/RequestsParts";
 import GreaseOil from "./pages/GreaseOil";
 import CleaningLog from "./pages/CleaningLog";
 import EquipmentList from "./pages/EquipmentList";
+import Users from "./pages/Users"; // ✅ added
 
 function Home() {
   const [backendMessage, setBackendMessage] = useState("Checking connection...");
@@ -116,6 +117,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <EquipmentList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <ProtectedRoute>
+              <Users />
             </ProtectedRoute>
           }
         />
