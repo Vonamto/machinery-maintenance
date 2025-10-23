@@ -1,87 +1,74 @@
 // frontend/src/pages/Dashboard.jsx
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Wrench,
-  ClipboardList,
-  Droplets,
-  Sparkles,
-  Truck,
-  Users,
-} from "lucide-react";
-import Navbar from "../components/Navbar";
+import React from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { Card, CardContent } from "@/components/ui/card";
+import { Wrench, ClipboardList, Droplets, Truck, Users } from "lucide-react";
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (stored) setUser(JSON.parse(stored));
-    else navigate("/login");
-  }, [navigate]);
+  const { user } = useAuth();
+  const role = user?.role || "Guest";
 
   const cards = [
     {
       title: "Maintenance Log",
-      color: "bg-blue-100 text-blue-800",
-      icon: <Wrench size={28} />,
+      description: "Fill or view maintenance operations",
+      icon: <Wrench className="w-8 h-8 text-blue-500" />,
       link: "/maintenance",
+      allowed: ["Supervisor", "Mechanic", "Driver"],
     },
     {
-      title: "Requests Parts",
-      color: "bg-yellow-100 text-yellow-800",
-      icon: <ClipboardList size={28} />,
-      link: "/requests-parts",
-    },
-    {
-      title: "Grease / Oil Requests",
-      color: "bg-green-100 text-green-800",
-      icon: <Droplets size={28} />,
-      link: "/grease-oil",
+      title: "Maintenance Requests",
+      description: "Manage Spare Parts and Oil/Grease requests",
+      icon: <ClipboardList className="w-8 h-8 text-green-500" />,
+      link: "/requests",
+      allowed: ["Supervisor", "Mechanic", "Driver"],
     },
     {
       title: "Cleaning Log",
-      color: "bg-teal-100 text-teal-800",
-      icon: <Sparkles size={28} />,
+      description: "Record and view cleaning activities",
+      icon: <Droplets className="w-8 h-8 text-sky-500" />,
       link: "/cleaning",
+      allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
     },
     {
       title: "Equipment List",
-      color: "bg-purple-100 text-purple-800",
-      icon: <Truck size={28} />,
+      description: "View and manage all vehicles/equipment",
+      icon: <Truck className="w-8 h-8 text-orange-500" />,
       link: "/equipment",
+      allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
     },
     {
       title: "Users",
-      color: "bg-pink-100 text-pink-800",
-      icon: <Users size={28} />,
+      description: "Manage user accounts and roles",
+      icon: <Users className="w-8 h-8 text-purple-500" />,
       link: "/users",
+      allowed: ["Supervisor"],
     },
   ];
 
-  if (!user) return null;
+  const visibleCards = cards.filter((card) => card.allowed.includes(role));
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Navbar user={user} />
-
-      <main className="flex-1 p-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {cards.map((card) => (
-          <div
-            key={card.title}
-            className={`${card.color} rounded-2xl shadow hover:shadow-lg transition cursor-pointer p-6 flex flex-col items-center justify-center text-center`}
-            onClick={() => navigate(card.link)}
-          >
-            <div className="mb-3">{card.icon}</div>
-            <h2 className="text-lg font-semibold">{card.title}</h2>
-          </div>
+    <div className="p-6 min-h-screen bg-gray-50">
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">
+        Dashboard
+      </h1>
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {visibleCards.map((card) => (
+          <Link to={card.link} key={card.title}>
+            <Card className="hover:shadow-lg transition-all duration-200">
+              <CardContent className="flex flex-col items-center justify-center p-6 text-center space-y-3">
+                {card.icon}
+                <h2 className="text-xl font-semibold text-gray-700">
+                  {card.title}
+                </h2>
+                <p className="text-gray-500 text-sm">{card.description}</p>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
-      </main>
-
-      <footer className="text-center text-gray-400 text-sm p-4">
-        Machinery Maintenance System © {new Date().getFullYear()}
-      </footer>
+      </div>
     </div>
   );
 }
