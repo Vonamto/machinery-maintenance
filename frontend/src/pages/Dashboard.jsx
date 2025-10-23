@@ -1,7 +1,14 @@
 // frontend/src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Wrench, ClipboardList, Droplets, Sparkles, Truck } from "lucide-react";
+import {
+  Wrench,
+  ClipboardList,
+  Droplets,
+  Sparkles,
+  Truck,
+  Users,
+} from "lucide-react";
 import Navbar from "../components/Navbar";
 
 export default function Dashboard() {
@@ -19,31 +26,37 @@ export default function Dashboard() {
       title: "Maintenance Log",
       color: "bg-blue-100 text-blue-800",
       icon: <Wrench size={28} />,
-      to: "/maintenance",
+      link: "/maintenance",
     },
     {
       title: "Requests Parts",
       color: "bg-yellow-100 text-yellow-800",
       icon: <ClipboardList size={28} />,
-      to: "/requests-parts",
+      link: "/requests-parts",
     },
     {
       title: "Grease / Oil Requests",
       color: "bg-green-100 text-green-800",
       icon: <Droplets size={28} />,
-      to: "/grease-oil",
+      link: "/grease-oil",
     },
     {
       title: "Cleaning Log",
       color: "bg-teal-100 text-teal-800",
       icon: <Sparkles size={28} />,
-      to: "/cleaning",
+      link: "/cleaning",
     },
     {
       title: "Equipment List",
       color: "bg-purple-100 text-purple-800",
       icon: <Truck size={28} />,
-      to: "/equipment",
+      link: "/equipment",
+    },
+    {
+      title: "Users",
+      color: "bg-pink-100 text-pink-800",
+      icon: <Users size={28} />,
+      link: "/users",
     },
   ];
 
@@ -57,11 +70,8 @@ export default function Dashboard() {
         {cards.map((card) => (
           <div
             key={card.title}
-            role="button"
-            tabIndex={0}
-            onClick={() => navigate(card.to)}
-            onKeyDown={(e) => (e.key === "Enter" ? navigate(card.to) : null)}
             className={`${card.color} rounded-2xl shadow hover:shadow-lg transition cursor-pointer p-6 flex flex-col items-center justify-center text-center`}
+            onClick={() => navigate(card.link)}
           >
             <div className="mb-3">{card.icon}</div>
             <h2 className="text-lg font-semibold">{card.title}</h2>
