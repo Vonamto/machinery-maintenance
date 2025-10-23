@@ -14,42 +14,47 @@ export default function Dashboard() {
     {
       title: "Maintenance Log",
       description: "Fill or view maintenance operations",
-      icon: <Wrench className="w-8 h-8 text-blue-400" />,
+      icon: <Wrench className="w-8 h-8 text-white drop-shadow-md" />,
       link: "/maintenance",
       allowed: ["Supervisor", "Mechanic", "Driver"],
-      gradient: "from-blue-500/80 to-cyan-400/60",
+      glow: "shadow-[0_0_15px_2px_rgba(59,130,246,0.6)]", // blue glow
+      gradient: "from-blue-600 to-cyan-500",
     },
     {
       title: "Maintenance Requests",
       description: "Manage Spare Parts and Oil/Grease requests",
-      icon: <ClipboardList className="w-8 h-8 text-green-400" />,
+      icon: <ClipboardList className="w-8 h-8 text-white drop-shadow-md" />,
       link: "/requests",
       allowed: ["Supervisor", "Mechanic", "Driver"],
-      gradient: "from-green-500/80 to-emerald-400/60",
+      glow: "shadow-[0_0_15px_2px_rgba(34,197,94,0.6)]", // green glow
+      gradient: "from-emerald-600 to-green-500",
     },
     {
       title: "Cleaning Log",
       description: "Record and view cleaning activities",
-      icon: <Droplets className="w-8 h-8 text-sky-400" />,
+      icon: <Droplets className="w-8 h-8 text-white drop-shadow-md" />,
       link: "/cleaning",
       allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
-      gradient: "from-sky-500/80 to-indigo-400/60",
+      glow: "shadow-[0_0_15px_2px_rgba(56,189,248,0.6)]", // sky glow
+      gradient: "from-sky-600 to-indigo-500",
     },
     {
       title: "Equipment List",
       description: "View and manage all vehicles/equipment",
-      icon: <Truck className="w-8 h-8 text-orange-400" />,
+      icon: <Truck className="w-8 h-8 text-white drop-shadow-md" />,
       link: "/equipment",
       allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
-      gradient: "from-orange-500/80 to-yellow-400/60",
+      glow: "shadow-[0_0_15px_2px_rgba(251,146,60,0.6)]", // orange glow
+      gradient: "from-orange-600 to-yellow-500",
     },
     {
       title: "Users",
       description: "Manage user accounts and roles",
-      icon: <Users className="w-8 h-8 text-purple-400" />,
+      icon: <Users className="w-8 h-8 text-white drop-shadow-md" />,
       link: "/users",
       allowed: ["Supervisor"],
-      gradient: "from-purple-500/80 to-pink-400/60",
+      glow: "shadow-[0_0_15px_2px_rgba(168,85,247,0.6)]", // purple glow
+      gradient: "from-purple-600 to-pink-500",
     },
   ];
 
@@ -69,15 +74,17 @@ export default function Dashboard() {
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {visibleCards.map((card) => (
             <Link to={card.link} key={card.title}>
-              <Card className={`bg-gradient-to-br ${card.gradient} rounded-2xl shadow-lg hover:scale-[1.03] transition-all duration-300`}>
-                <CardContent className="flex flex-col items-center justify-center p-6 text-center space-y-3 backdrop-blur-md bg-white/10">
-                  <div className="p-3 rounded-full bg-white/20">
+              <Card
+                className={`rounded-2xl bg-gradient-to-br ${card.gradient} ${card.glow} hover:scale-[1.04] hover:brightness-110 transition-all duration-300 border border-white/10`}
+              >
+                <CardContent className="flex flex-col items-center justify-center p-8 text-center space-y-3">
+                  <div className="p-3 rounded-full bg-white/10 backdrop-blur-sm">
                     {card.icon}
                   </div>
-                  <h2 className="text-xl font-semibold text-white drop-shadow">
+                  <h2 className="text-xl font-semibold text-white drop-shadow-md">
                     {card.title}
                   </h2>
-                  <p className="text-gray-200 text-sm">{card.description}</p>
+                  <p className="text-gray-100/90 text-sm">{card.description}</p>
                 </CardContent>
               </Card>
             </Link>
