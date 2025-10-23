@@ -48,7 +48,8 @@ ROLE_PERMISSIONS = {
         "edit": ["Supervisor"]
     },
     "Users": {
-        "view": ["Supervisor"],
+        # ✅ Allow all roles to view (needed for dropdowns)
+        "view": ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
         "add": ["Supervisor"],
         "edit": ["Supervisor"]
     }
@@ -115,10 +116,16 @@ def protected():
 @app.route("/api/<sheet_name>", methods=["GET"])
 @require_token
 def get_data(sheet_name):
-    check = check_permission(sheet_name, "view")
+    # Map short names to actual Google Sheet tab names
+    aliases = {
+        "equipment": "Equipment_List",
+        "users": "Users"
+    }
+    sheet_key = aliases.get(sheet_name.lower(), sheet_name)
+    check = check_permission(sheet_key, "view")
     if check:
         return check
-    return get_sheet_data(sheet_name)
+    return get_sheet_data(sheet_key)
 
 
 # =====================================================
