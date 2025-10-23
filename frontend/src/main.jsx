@@ -4,13 +4,15 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-// NEW: AuthProvider
 import { AuthProvider } from "./context/AuthContext";
+import { CacheProvider } from "./context/CacheContext";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <AuthProvider>
-      <App />
+      <CacheProvider>
+        <App />
+      </CacheProvider>
     </AuthProvider>
   </React.StrictMode>
 );
