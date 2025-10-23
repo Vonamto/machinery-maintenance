@@ -48,7 +48,7 @@ ROLE_PERMISSIONS = {
         "edit": ["Supervisor"]
     },
     "Users": {
-        # ✅ Full Users list: Supervisor only
+        # Full Users list: Supervisor only
         "view": ["Supervisor"],
         "add": ["Supervisor"],
         "edit": ["Supervisor"]
