@@ -3,7 +3,7 @@ import CONFIG from "../config";
 
 /**
  * Simple API helper using fetch (no extra dependencies).
- * Exports: login(), fetchWithAuth(), fetchEquipmentList(), fetchUsers()
+ * Exports: login(), fetchWithAuth(), fetchEquipmentList(), fetchUsers(), fetchUsernames()
  */
 
 // Login API
@@ -38,7 +38,7 @@ export async function fetchWithAuth(path, opts = {}) {
 }
 
 /**
- * Fetch Equipment List from backend (Google Sheets synced)
+ * Fetch Equipment List (for dropdowns)
  */
 export async function fetchEquipmentList(token) {
   const res = await fetch(`${CONFIG.BACKEND_URL}/api/equipment`, {
@@ -51,7 +51,7 @@ export async function fetchEquipmentList(token) {
 }
 
 /**
- * Fetch Users from backend (Google Sheets synced)
+ * Fetch all Users (Supervisor only)
  */
 export async function fetchUsers(token) {
   const res = await fetch(`${CONFIG.BACKEND_URL}/api/users`, {
@@ -60,5 +60,18 @@ export async function fetchUsers(token) {
     },
   });
   if (!res.ok) throw new Error("Failed to fetch Users list");
+  return await res.json();
+}
+
+/**
+ * Fetch safe usernames (no passwords) for dropdowns
+ */
+export async function fetchUsernames(token) {
+  const res = await fetch(`${CONFIG.BACKEND_URL}/api/usernames`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) throw new Error("Failed to fetch usernames list");
   return await res.json();
 }
