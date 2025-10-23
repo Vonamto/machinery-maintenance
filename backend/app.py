@@ -48,8 +48,8 @@ ROLE_PERMISSIONS = {
         "edit": ["Supervisor"]
     },
     "Users": {
-        # ✅ Allow all roles to view (needed for dropdowns)
-        "view": ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
+        # ✅ Full Users list: Supervisor only
+        "view": ["Supervisor"],
         "add": ["Supervisor"],
         "edit": ["Supervisor"]
     }
@@ -108,6 +108,29 @@ def login():
 @require_token
 def protected():
     return jsonify({"status": "success", "user": request.user})
+
+
+# =====================================================
+# ✅ Public-safe endpoint for dropdowns (no passwords)
+# =====================================================
+@app.route("/api/usernames", methods=["GET"])
+@require_token
+def get_usernames():
+    from sheets_service import client, SPREADSHEET_ID
+    try:
+        sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Users")
+        records = sheet.get_all_records()
+        safe_list = [
+            {
+                "Name": r.get("Full Name") or r.get("Name"),
+                "Role": r.get("Role")
+            }
+            for r in records
+            if r.get("Full Name") or r.get("Name")
+        ]
+        return jsonify(safe_list)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # =====================================================
