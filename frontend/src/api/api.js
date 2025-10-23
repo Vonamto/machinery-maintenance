@@ -39,6 +39,7 @@ export async function fetchWithAuth(path, opts = {}) {
 
 /**
  * Fetch Equipment List (for dropdowns)
+ * Return shape: array of objects matching sheet rows
  */
 export async function fetchEquipmentList(token) {
   const res = await fetch(`${CONFIG.BACKEND_URL}/api/equipment`, {
@@ -51,7 +52,7 @@ export async function fetchEquipmentList(token) {
 }
 
 /**
- * Fetch all Users (Supervisor only)
+ * Fetch all Users (Supervisor only, contains passwords so only supervisor should call)
  */
 export async function fetchUsers(token) {
   const res = await fetch(`${CONFIG.BACKEND_URL}/api/users`, {
