@@ -1,7 +1,7 @@
 // frontend/src/context/CacheContext.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
-import { fetchEquipmentList, fetchUsers } from "../api/api";
+import { fetchEquipmentList, fetchUsernames } from "../api/api";
 
 /**
  * CacheContext keeps Google Sheets data in memory
@@ -14,7 +14,7 @@ const CacheContext = createContext(null);
 export function CacheProvider({ children }) {
   const { token } = useAuth();
   const [equipmentList, setEquipmentList] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState([]); // safe list: { Name, Role }
   const [lastFetch, setLastFetch] = useState(0);
   const TTL = 10 * 60 * 1000; // 10 minutes
 
@@ -23,7 +23,7 @@ export function CacheProvider({ children }) {
     try {
       const [eq, us] = await Promise.all([
         fetchEquipmentList(token),
-        fetchUsers(token),
+        fetchUsernames(token),
       ]);
       setEquipmentList(eq || []);
       setUsers(us || []);
@@ -35,13 +35,21 @@ export function CacheProvider({ children }) {
 
   useEffect(() => {
     if (!token) return;
+    // initial fetch
     if (Date.now() - lastFetch > TTL) refreshData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const value = {
     equipmentList,
     users,
     refreshData,
+    // helpers for dropdown components
+    getModels() {
+      // unique models
+      const set = new Set(equipmentList.map((e) => e["Model / Type"]).filter(Boolean));
+      return Array.from(set);
+    },
     getEquipmentByModel(model) {
       return equipmentList.filter((e) => e["Model / Type"] === model);
     },
@@ -52,6 +60,13 @@ export function CacheProvider({ children }) {
       const eq = equipmentList.find((e) => e["Plate Number"] === plate);
       return eq ? [eq["Driver 1"], eq["Driver 2"]].filter(Boolean) : [];
     },
+    // users safe list: [{Name, Role}]
+    getMechanicsAndSupervisors() {
+      return users.filter((u) => ["Mechanic", "Supervisor"].includes(u.Role));
+    },
+    getAllUsers() {
+      return users;
+    }
   };
 
   return <CacheContext.Provider value={value}>{children}</CacheContext.Provider>;
