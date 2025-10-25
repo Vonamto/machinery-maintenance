@@ -15,6 +15,8 @@ import RequestsMenu from "./pages/Requests/index";
 import PartsRequestsMenu from "./pages/Requests/Parts/index";
 import PartsRequestForm from "./pages/Requests/Parts/Form";
 import PartsCurrentRequests from "./pages/Requests/Parts/Current";
+// --- NEW IMPORT ---
+import PartsRequestsHistory from "./pages/Requests/Parts/RequestsHistory";
 
 export default function App() {
   return (
@@ -99,7 +101,18 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        
+
+        {/* --- NEW ROUTE --- */}
+        {/* Parts Requests History */}
+        <Route
+          path="/requests/parts/history"
+          element={
+            <ProtectedRoute>
+              <PartsRequestsHistory />
+            </ProtectedRoute>
+          }
+        />
+
         {/* fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
