@@ -12,6 +12,7 @@ import MaintenanceHistory from "./pages/Maintenance/History";
 
 // Requests pages
 import RequestsMenu from "./pages/Requests/index";
+import PartsRequestsMenu from "./pages/Requests/Parts/index";
 
 export default function App() {
   return (
@@ -63,6 +64,16 @@ export default function App() {
           element={
             <ProtectedRoute>
               <RequestsMenu />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Parts Requests submenu */}
+        <Route
+          path="/requests/parts"
+          element={
+            <ProtectedRoute>
+              <PartsRequestsMenu />
             </ProtectedRoute>
           }
         />
