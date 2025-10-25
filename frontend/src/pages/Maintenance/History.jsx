@@ -1,14 +1,8 @@
 // frontend/src/pages/Maintenance/History.jsx
 import React, { useEffect, useState } from "react";
-import Navbar from "../../components/Navbar";
-import { useAuth } from "../../context/AuthContext";
-import CONFIG from "../../config";
-
-/**
- * Maintenance history viewer
- * - GET /api/Maintenance_Log (protected)
- * - Displays rows in a simple table, newest first
- */
+import Navbar from "@/components/Navbar";
+import { useAuth } from "@/context/AuthContext";
+import CONFIG from "@/config";
 
 export default function MaintenanceHistory() {
   const { user } = useAuth();
@@ -24,13 +18,7 @@ export default function MaintenanceHistory() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-        // backend returns JSON array
-        if (Array.isArray(data)) {
-          // show newest first
-          setRows(data.reverse());
-        } else {
-          setRows([]);
-        }
+        if (Array.isArray(data)) setRows(data.reverse());
       } catch (err) {
         console.error(err);
       } finally {
@@ -43,35 +31,77 @@ export default function MaintenanceHistory() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
-      <div className="max-w-6xl mx-auto p-6">
-        <h3 className="text-2xl font-bold mb-4">Maintenance History</h3>
+
+      <div className="max-w-7xl mx-auto p-6">
+        <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-500">
+          Maintenance History
+        </h3>
 
         {loading ? (
-          <p>Loading…</p>
+          <p>Loading...</p>
         ) : (
-          <div className="overflow-auto rounded-lg border border-white/10">
-            <table className="w-full text-sm">
-              <thead className="bg-white/5 text-left">
+          <div className="overflow-x-auto border border-white/10 rounded-lg">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-white/10">
                 <tr>
+                  <th className="p-2">#</th>
                   <th className="p-2">Date</th>
-                  <th className="p-2">Model</th>
-                  <th className="p-2">Plate</th>
+                  <th className="p-2">Model / Type</th>
+                  <th className="p-2">Plate Number</th>
                   <th className="p-2">Driver</th>
                   <th className="p-2">Performed By</th>
-                  <th className="p-2">Description</th>
+                  <th className="p-2">Description of Work</th>
+                  <th className="p-2">Comments</th>
+                  <th className="p-2">Photo Before</th>
+                  <th className="p-2">Photo After</th>
+                  <th className="p-2">Photo Repair/Problem</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, i) => (
-                  <tr key={i} className={i % 2 === 0 ? "bg-white/2" : ""}>
-                    <td className="p-2 align-top">{r["Date"]}</td>
-                    <td className="p-2 align-top">{r["Model / Type"]}</td>
-                    <td className="p-2 align-top">{r["Plate Number"]}</td>
-                    <td className="p-2 align-top">{r["Driver"]}</td>
-                    <td className="p-2 align-top">{r["Performed By"]}</td>
-                    <td className="p-2 align-top">{r["Description of Work"]}</td>
+                {rows.length === 0 ? (
+                  <tr>
+                    <td colSpan="11" className="text-center p-4 text-gray-400">
+                      No maintenance records yet.
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  rows.map((r, i) => (
+                    <tr
+                      key={i}
+                      className={i % 2 === 0 ? "bg-white/5" : "bg-transparent"}
+                    >
+                      <td className="p-2">{i + 1}</td>
+                      <td className="p-2">{r["Date"]}</td>
+                      <td className="p-2">{r["Model / Type"]}</td>
+                      <td className="p-2">{r["Plate Number"]}</td>
+                      <td className="p-2">{r["Driver"]}</td>
+                      <td className="p-2">{r["Performed By"]}</td>
+                      <td className="p-2">{r["Description of Work"]}</td>
+                      <td className="p-2">{r["Comments"]}</td>
+                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
+                        (f) => (
+                          <td key={f} className="p-2">
+                            {r[f] ? (
+                              <a
+                                href={r[f]}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <img
+                                  src={r[f]}
+                                  alt={f}
+                                  className="h-16 w-16 object-cover rounded border border-white/10"
+                                />
+                              </a>
+                            ) : (
+                              <span className="text-gray-500">—</span>
+                            )}
+                          </td>
+                        )
+                      )}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
