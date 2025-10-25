@@ -31,6 +31,23 @@ export default function MaintenanceHistory() {
     load();
   }, []);
 
+  // Helper: get valid image src (handles base64 or URL)
+  const getImageSrc = (val) => {
+    if (!val) return null;
+
+    // base64 (data:image/...)
+    if (val.startsWith("data:image")) return val;
+
+    // stored full URL
+    if (val.startsWith("http")) return val;
+
+    // backend relative upload path (e.g. /uploads/photo.jpg)
+    if (val.startsWith("/")) return `${CONFIG.BACKEND_URL}${val}`;
+
+    // fallback (if only base64 part)
+    return `data:image/jpeg;base64,${val}`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
@@ -89,17 +106,18 @@ export default function MaintenanceHistory() {
                       <td className="p-2">{r["Performed By"]}</td>
                       <td className="p-2">{r["Description of Work"]}</td>
                       <td className="p-2">{r["Comments"]}</td>
-                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
-                        (f) => (
+                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map((f) => {
+                        const imgSrc = getImageSrc(r[f]);
+                        return (
                           <td key={f} className="p-2">
-                            {r[f] ? (
+                            {imgSrc ? (
                               <a
-                                href={r[f]}
+                                href={imgSrc}
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
                                 <img
-                                  src={r[f]}
+                                  src={imgSrc}
                                   alt={f}
                                   className="h-16 w-16 object-cover rounded border border-white/20 hover:scale-110 transition-transform duration-150"
                                 />
@@ -108,8 +126,8 @@ export default function MaintenanceHistory() {
                               <span className="text-gray-500">—</span>
                             )}
                           </td>
-                        )
-                      )}
+                        );
+                      })}
                     </tr>
                   ))
                 )}
