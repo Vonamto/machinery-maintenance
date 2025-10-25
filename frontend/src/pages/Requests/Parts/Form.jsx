@@ -1,15 +1,13 @@
 // frontend/src/pages/Requests/Parts/Form.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Upload } from "lucide-react";
+import { ArrowLeft, Camera, Upload, Package } from "lucide-react";
 import Navbar from "@/components/Navbar";
-// Import the custom hook instead of the context object
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
 
 export default function PartsRequestForm() {
-  // Use the custom hook
   const { user } = useAuth();
   const navigate = useNavigate();
   const cache = useCache();
@@ -106,15 +104,11 @@ export default function PartsRequestForm() {
     }
     setSubmitting(true);
     try {
-      // Prepare the payload: include the form data and set Status to "Pending"
-      const payload = {
-        ...form,
-        Status: "Pending" // Add the default status here before sending
-      };
+      const payload = { ...form, Status: "Pending" };
       const res = await fetchWithAuth("/api/add/Requests_Parts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload), // Send the updated payload
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.status === "success") {
@@ -132,97 +126,149 @@ export default function PartsRequestForm() {
   };
 
   return (
-    // Apply main theme background and text color
-    <div className="min-h-screen bg-theme-background-primary text-theme-text-primary">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
-      <div className="max-w-3xl mx-auto p-6">
-        {/* Back button - Apply theme color */}
-        <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-theme-primary-500 hover:text-theme-primary-400 mb-4 transition">
-          <ArrowLeft size={18} /> Back
+      <div className="max-w-4xl mx-auto p-6">
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
+        >
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back
         </button>
-        {/* Title - Keep the gradient for visual appeal */}
-        <h1 className="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-          Request Spare Parts
-        </h1>
-        <form onSubmit={handleSubmit} 
-              // Apply a darker theme background for the form container, keeping distinct field styles
-              className="space-y-5 bg-theme-background-secondary p-6 rounded-2xl border border-theme-border-light shadow-lg">
-          {/* Request Date Field Container */}
-          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
-            <label className="block text-sm text-theme-text-secondary mb-1">Request Date</label>
-            {/* Keep original bg-gray-800 for this specific field */}
-            <input type="date" value={form["Request Date"]} onChange={(e) => handleChange("Request Date", e.target.value)} className="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white" />
+
+        <div className="mb-8 flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 shadow-lg shadow-blue-500/50">
+            <Package className="w-8 h-8 text-white" />
           </div>
-          {/* Model / Type Field Container */}
-          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
-            <label className="block text-sm text-theme-text-secondary mb-1">Model / Type</label>
-            {/* Keep original bg-gray-800 for this specific field */}
-            <select value={form["Model / Type"]} onChange={(e) => handleChange("Model / Type", e.target.value)} className="w-full p-2 rounded bg-gray-800 text-white">
-              <option value="">--- Choose Model ---</option>
-              {modelOptions.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
+          <div>
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+              Request Spare Parts
+            </h1>
+            <p className="text-gray-400 text-sm mt-1">Fill in the details below to submit your parts request</p>
           </div>
-          {/* Plate Number Field Container */}
-          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
-            <label className="block text-sm text-theme-text-secondary mb-1">Plate Number</label>
-            {/* Keep original bg-gray-800 for this specific field */}
-            <select value={form["Plate Number"]} onChange={(e) => handleChange("Plate Number", e.target.value)} className="w-full p-2 rounded bg-gray-800 text-white">
-              <option value="">--- Choose Plate ---</option>
-              {plateOptions.length ? plateOptions.map((p) => (<option key={p} value={p}>{p}</option>)) : cache.getEquipment ? (cache.getEquipment() || []).map((e) => (<option key={e["Plate Number"]} value={e["Plate Number"]}>{e["Plate Number"]}</option>)) : null}
-            </select>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="group">
+              <label className="block text-sm font-medium text-gray-300 mb-2">Request Date</label>
+              <input
+                type="date"
+                value={form["Request Date"]}
+                onChange={(e) => handleChange("Request Date", e.target.value)}
+                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+              />
+            </div>
+
+            <div className="group">
+              <label className="block text-sm font-medium text-gray-300 mb-2">Model / Type</label>
+              <select
+                value={form["Model / Type"]}
+                onChange={(e) => handleChange("Model / Type", e.target.value)}
+                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+              >
+                <option value="">--- Choose Model ---</option>
+                {modelOptions.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="group">
+              <label className="block text-sm font-medium text-gray-300 mb-2">Plate Number</label>
+              <select
+                value={form["Plate Number"]}
+                onChange={(e) => handleChange("Plate Number", e.target.value)}
+                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+              >
+                <option value="">--- Choose Plate ---</option>
+                {plateOptions.length
+                  ? plateOptions.map((p) => (<option key={p} value={p}>{p}</option>))
+                  : cache.getEquipment
+                  ? (cache.getEquipment() || []).map((e) => (<option key={e["Plate Number"]} value={e["Plate Number"]}>{e["Plate Number"]}</option>))
+                  : null}
+              </select>
+            </div>
+
+            <div className="group">
+              <label className="block text-sm font-medium text-gray-300 mb-2">Driver</label>
+              <select
+                value={form.Driver}
+                onChange={(e) => handleChange("Driver", e.target.value)}
+                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+              >
+                <option value="">--- Choose Driver ---</option>
+                {driverOptions.length
+                  ? driverOptions.map((d) => (<option key={d} value={d}>{d}</option>))
+                  : Array.from(new Set((cache.getEquipment ? cache.getEquipment() : cache.equipment || []).flatMap((eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]]).filter(Boolean))).map((d) => (<option key={d} value={d}>{d}</option>))}
+              </select>
+            </div>
           </div>
-          {/* Driver Field Container */}
-          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
-            <label className="block text-sm text-theme-text-secondary mb-1">Driver</label>
-            {/* Keep original bg-gray-800 for this specific field */}
-            <select value={form.Driver} onChange={(e) => handleChange("Driver", e.target.value)} className="w-full p-2 rounded bg-gray-800 text-white">
-              <option value="">--- Choose Driver ---</option>
-              {driverOptions.length ? driverOptions.map((d) => (<option key={d} value={d}>{d}</option>)) : Array.from(new Set((cache.getEquipment ? cache.getEquipment() : cache.equipment || []).flatMap((eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]]).filter(Boolean))).map((d) => (<option key={d} value={d}>{d}</option>))}
-            </select>
+
+          <div className="group">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Requested Parts</label>
+            <textarea
+              rows={4}
+              value={form["Requested Parts"]}
+              onChange={(e) => handleChange("Requested Parts", e.target.value)}
+              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all resize-none"
+              placeholder="List the parts needed..."
+            />
           </div>
-          {/* Requested Parts Field Container */}
-          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
-            <label className="block text-sm text-theme-text-secondary mb-1">Requested Parts</label>
-            {/* Keep original bg-gray-800 for this specific field */}
-            <textarea rows={3} value={form["Requested Parts"]} onChange={(e) => handleChange("Requested Parts", e.target.value)} className="w-full p-2 rounded bg-gray-800 text-white" placeholder="List the parts needed..." />
+
+          <div className="group">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Comments (Optional)</label>
+            <textarea
+              rows={3}
+              value={form.Comments}
+              onChange={(e) => handleChange("Comments", e.target.value)}
+              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all resize-none"
+              placeholder="Additional notes..."
+            />
           </div>
-          {/* Comments Field Container */}
-          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
-            <label className="block text-sm text-theme-text-secondary mb-1">Comments</label>
-            {/* Keep original bg-gray-800 for this specific field */}
-            <textarea rows={2} value={form.Comments} onChange={(e) => handleChange("Comments", e.target.value)} className="w-full p-2 rounded bg-gray-800 text-white" />
-          </div>
-          {/* Attachment Photo Field Container */}
-          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
-            <label className="block text-sm text-theme-text-secondary mb-2">Attachment Photo</label>
+
+          <div className="group">
+            <label className="block text-sm font-medium text-gray-300 mb-3">Attachment Photo</label>
             <div className="flex gap-3">
-              {/* Keep original bg-blue-600 for Upload button */}
-              <label className="flex items-center gap-2 cursor-pointer bg-theme-primary-600 hover:bg-theme-primary-700 text-theme-text-primary px-3 py-2 rounded">
-                <Upload size={16} />Upload<input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Attachment Photo")} />
+              <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-3 rounded-xl transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50">
+                <Upload size={18} />
+                <span className="font-medium">Upload</span>
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Attachment Photo")} />
               </label>
-              {/* Keep original bg-cyan-600 for Camera button */}
-              <label className="flex items-center gap-2 cursor-pointer bg-theme-secondary-600 hover:bg-theme-secondary-700 text-theme-text-primary px-3 py-2 rounded">
-                <Camera size={16} />Camera<input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Attachment Photo")} />
+              <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white px-4 py-3 rounded-xl transition-all shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50">
+                <Camera size={18} />
+                <span className="font-medium">Camera</span>
+                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Attachment Photo")} />
               </label>
             </div>
             {form["Attachment Photo"] && (
-              <img
-                src={form["Attachment Photo"]}
-                alt="Attachment"
-                // Apply theme border color to photo
-                className="mt-3 max-h-44 rounded border border-theme-border-light object-contain"
-              />
+              <div className="mt-4 p-2 bg-gray-800/30 rounded-xl border border-gray-700">
+                <img
+                  src={form["Attachment Photo"]}
+                  alt="Attachment Preview"
+                  className="max-h-64 mx-auto rounded-lg object-contain"
+                />
+              </div>
             )}
           </div>
-          {/* Submit Button Container */}
-          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
-            {/* Keep original gradient for Submit button */}
-            <button type="submit" disabled={submitting} className="w-full py-3 rounded-lg bg-gradient-to-r from-theme-primary-600 to-theme-secondary-500 hover:brightness-110 text-theme-text-primary font-semibold">
-              {submitting ? "Submitting..." : "Submit Request"}
-            </button>
-          </div>
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-semibold text-lg shadow-lg shadow-blue-500/50 hover:shadow-blue-500/70 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Submitting...
+              </span>
+            ) : (
+              "Submit Request"
+            )}
+          </button>
         </form>
       </div>
     </div>
