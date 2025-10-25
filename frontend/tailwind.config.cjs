@@ -7,32 +7,34 @@ module.exports = {
     extend: {
       // Define custom colors for different aspects of the theme
       colors: {
-        // Primary theme colors (dark theme as requested)
+        // --- LIGHT THEME COLORS ---
+        // Primary theme colors (Modern Light Theme)
         'theme-background': {
-          DEFAULT: '#0f172a', // slate-900 - main bg gradient start
-          'primary': '#0f172a', // slate-900
-          'secondary': '#1e293b', // slate-800 - for surfaces like table headers, maybe inputs
-          'surface': '#1e293b', // slate-800 - for surfaces like table rows bg-white/5
-          'card': '#1e293b',    // slate-800 - for card backgrounds like bg-gray-800/50
+          DEFAULT: '#f8fafc', // slate-50 - main bg, very light
+          'primary': '#f8fafc', // slate-50
+          'secondary': '#f1f5f9', // slate-100 - slightly darker for cards, table headers
+          'surface': '#ffffff', // white - for table rows, surfaces needing high contrast
+          'card': '#f1f5f9',    // slate-100 - for card backgrounds
         },
         'theme-text': {
-          DEFAULT: '#f1f5f9', // slate-100 - main text color
-          'primary': '#f1f5f9', // slate-100
-          'secondary': '#94a3b8', // slate-400 - for less important text like placeholders
-          'muted': '#64748b',  // slate-500 - for muted text
+          DEFAULT: '#0f172a', // slate-900 - main text color, very dark
+          'primary': '#0f172a', // slate-900
+          'secondary': '#64748b', // slate-500 - for less important text like placeholders, labels
+          'muted': '#94a3b8',  // slate-400 - for muted/disabled text
         },
         'theme-border': {
-          DEFAULT: '#334155', // slate-700 - for borders like border-gray-700
-          'light': '#475569', // slate-600
+          DEFAULT: '#cbd5e1', // slate-300 - standard border color
+          'light': '#e2e8f0', // slate-200 - lighter border
         },
-        // Primary and secondary action colors (keeping existing ones like blue/cyan)
+        // Primary action color (keeping blue, but adjusting shades for light theme)
         'theme-primary': {
           50: '#eff6ff',
           100: '#dbeafe',
-          500: '#3b82f6', // blue-500
-          600: '#2563eb', // blue-600
-          700: '#1d4ed8', // blue-700
+          500: '#3b82f6', // blue-500 - vibrant primary
+          600: '#2563eb', // blue-600 - hover state
+          700: '#1d4ed8', // blue-700 - active/strong state
         },
+        // Secondary action color (cyan adjusted for vibrancy on light)
         'theme-secondary': {
           50: '#ecfeff',
           100: '#cffafe',
@@ -40,11 +42,12 @@ module.exports = {
           600: '#0891b2', // cyan-600
           700: '#0e7490', // cyan-700
         },
+        // Accent color (keeping amber, good contrast on light)
         'theme-accent': {
-          400: '#f59e0b', // amber-500 (from gradient in titles)
+          400: '#fbbf24', // amber-400 - slightly lighter amber for accents/titles
           500: '#f59e0b', // amber-500
         },
-        // Keeping original slate/grays for compatibility if needed
+        // --- Keeping original slate/grays for compatibility if needed ---
         // slate: {
         //   50: '#f8fafc',
         //   100: '#f1f5f9',
@@ -58,9 +61,9 @@ module.exports = {
         //   900: '#0f172a',
         // },
       },
-      // Optional: Define gradients used in your theme
+      // Optional: Define gradients used in your theme (using new light theme colors)
       // backgroundImage: {
-      //   'theme-gradient-main': 'linear-gradient(to bottom right, theme(colors.theme-background.primary), theme(colors.theme-background.secondary), theme(colors.theme-background.DEFAULT))',
+      //   'theme-gradient-main': 'linear-gradient(to bottom right, theme(colors.theme-background.primary), theme(colors.theme-background.secondary))',
       //   'theme-gradient-title': 'linear-gradient(to right, theme(colors.theme-accent.400), theme(colors.theme-primary.500))',
       // }
     },
