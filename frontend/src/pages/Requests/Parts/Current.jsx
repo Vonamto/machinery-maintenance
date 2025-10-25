@@ -129,17 +129,31 @@ export default function PartsCurrentRequests() {
             console.log("Response body:", result); // Log response body
 
             if (result.status === "success") {
-                // Update the local state with the edited data
-                const updatedRows = [...rows];
-                // Update the specific row in the state with new values
-                // The Completion Date will be updated by the backend and reflected on page reload or refetch
-                updatedRows[index] = {
-                    ...updatedRows[index],
-                    "Status": updatePayload.Status,
-                    "Handled By": updatePayload["Handled By"]
-                    // Do not update Completion Date here as it might not be in the response yet
-                };
-                setRows(updatedRows);
+                // --- AUTO-REMOVE LOGIC BEGINS ---
+                // Determine if the updated status makes the row no longer "current"
+                const isNoLongerCurrent = updatePayload.Status === "Completed" || updatePayload.Status === "Rejected";
+
+                if (isNoLongerCurrent) {
+                    // Remove the row from the local state array
+                    const updatedRows = [...rows];
+                    updatedRows.splice(index, 1); // Remove the item at the current index
+                    setRows(updatedRows);
+                    console.log("Row removed from view as status changed to non-current:", updatePayload.Status);
+                } else {
+                    // If status is still current (Pending, In Progress), update the specific row in the state
+                    const updatedRows = [...rows];
+                    // Update the specific row in the state with new values
+                    updatedRows[index] = {
+                        ...updatedRows[index],
+                        "Status": updatePayload.Status,
+                        "Handled By": updatePayload["Handled By"]
+                        // Do not update Completion Date here as it might not be in the response yet
+                    };
+                    setRows(updatedRows);
+                    console.log("Row updated in view with new status/data.");
+                }
+                // --- AUTO-REMOVE LOGIC ENDS ---
+
                 setEditingRow(null);
                 setEditData({});
                 alert("Request updated successfully!");
