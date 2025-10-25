@@ -32,4 +32,13 @@ export default function Navbar({ user }) {
                     )}
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-2 px-4 py-2 bg
+                        className="flex items-center gap-2 px-4 py-2 bg-theme-primary-600 hover:bg-theme-primary-700 text-theme-text-primary rounded-lg transition-colors" // Apply theme colors
+                    >
+                        <LogOut size={18} />
+                        <span className="hidden sm:inline">Logout</span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    );
+}
