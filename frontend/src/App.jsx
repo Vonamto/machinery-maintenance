@@ -14,6 +14,7 @@ import MaintenanceHistory from "./pages/Maintenance/History";
 import RequestsMenu from "./pages/Requests/index";
 import PartsRequestsMenu from "./pages/Requests/Parts/index";
 import PartsRequestForm from "./pages/Requests/Parts/Form";
+import PartsCurrentRequests from "./pages/Requests/Parts/Current";
 
 export default function App() {
   return (
@@ -85,6 +86,16 @@ export default function App() {
           element={
             <ProtectedRoute>
               <PartsRequestForm />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Parts Current Requests */}
+        <Route
+          path="/requests/parts/current"
+          element={
+            <ProtectedRoute>
+              <PartsCurrentRequests />
             </ProtectedRoute>
           }
         />
