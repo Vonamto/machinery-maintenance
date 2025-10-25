@@ -21,101 +21,104 @@ import PartsRequestsHistory from "./pages/Requests/Parts/RequestsHistory";
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        
-        {/* Dashboard (home) */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        
-        {/* Maintenance menu */}
-        <Route
-          path="/maintenance"
-          element={
-            <ProtectedRoute>
-              <MaintenanceIndex />
-            </ProtectedRoute>
-          }
-        />
-        
-        {/* Maintenance subpages */}
-        <Route
-          path="/maintenance/form"
-          element={
-            <ProtectedRoute>
-              <MaintenanceForm />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/maintenance/history"
-          element={
-            <ProtectedRoute>
-              <MaintenanceHistory />
-            </ProtectedRoute>
-          }
-        />
+      {/* Apply the main background theme color class here */}
+      <div className="min-h-screen bg-theme-background-primary text-theme-text-primary">
+        <Routes>
+          <Route path="/login" element={<Login />} />
 
-        {/* Requests menu */}
-        <Route
-          path="/requests"
-          element={
-            <ProtectedRoute>
-              <RequestsMenu />
-            </ProtectedRoute>
-          }
-        />
+          {/* Dashboard (home) */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Parts Requests submenu */}
-        <Route
-          path="/requests/parts"
-          element={
-            <ProtectedRoute>
-              <PartsRequestsMenu />
-            </ProtectedRoute>
-          }
-        />
+          {/* Maintenance menu */}
+          <Route
+            path="/maintenance"
+            element={
+              <ProtectedRoute>
+                <MaintenanceIndex />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Parts Request Form */}
-        <Route
-          path="/requests/parts/form"
-          element={
-            <ProtectedRoute>
-              <PartsRequestForm />
-            </ProtectedRoute>
-          }
-        />
+          {/* Maintenance subpages */}
+          <Route
+            path="/maintenance/form"
+            element={
+              <ProtectedRoute>
+                <MaintenanceForm />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/maintenance/history"
+            element={
+              <ProtectedRoute>
+                <MaintenanceHistory />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Parts Current Requests */}
-        <Route
-          path="/requests/parts/current"
-          element={
-            <ProtectedRoute>
-              <PartsCurrentRequests />
-            </ProtectedRoute>
-          }
-        />
+          {/* Requests menu */}
+          <Route
+            path="/requests"
+            element={
+              <ProtectedRoute>
+                <RequestsMenu />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* --- NEW ROUTE --- */}
-        {/* Parts Requests History */}
-        <Route
-          path="/requests/parts/history"
-          element={
-            <ProtectedRoute>
-              <PartsRequestsHistory />
-            </ProtectedRoute>
-          }
-        />
+          {/* Parts Requests submenu */}
+          <Route
+            path="/requests/parts"
+            element={
+              <ProtectedRoute>
+                <PartsRequestsMenu />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Parts Request Form */}
+          <Route
+            path="/requests/parts/form"
+            element={
+              <ProtectedRoute>
+                <PartsRequestForm />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Parts Current Requests */}
+          <Route
+            path="/requests/parts/current"
+            element={
+              <ProtectedRoute>
+                <PartsCurrentRequests />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* --- NEW ROUTE --- */}
+          {/* Parts Requests History */}
+          <Route
+            path="/requests/parts/history"
+            element={
+              <ProtectedRoute>
+                <PartsRequestsHistory />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
     </BrowserRouter>
   );
 }
