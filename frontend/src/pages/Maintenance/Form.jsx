@@ -9,9 +9,9 @@ import { fetchWithAuth } from "@/api/api";
 
 /**
  * Add Maintenance Log Form
- * - Date auto-filled but editable (user requested auto-fill, not locked)
- * - Model / Plate / Driver interdependent dropdowns (choose any order)
- * - Performed By dropdown shows users with Role Supervisor or Mechanic + "Myself"
+ * - Date auto-filled but editable
+ * - Model / Plate / Driver interdependent dropdowns
+ * - Performed By dropdown shows users with Role Supervisor or Mechanic
  * - Photo upload (file or camera) -> base64 preview
  * - Submits to POST /api/add/Maintenance_Log (protected)
  */
@@ -21,7 +21,6 @@ export default function MaintenanceForm() {
   const navigate = useNavigate();
   const cache = useCache();
 
-  // initial date auto-filled but editable
   const todayDate = new Date().toISOString().split("T")[0];
 
   const [form, setForm] = useState({
@@ -42,26 +41,24 @@ export default function MaintenanceForm() {
   const [driverOptions, setDriverOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // load models from cache
+  // Load models from cache
   useEffect(() => {
     const models = cache.getModels ? cache.getModels() : [];
     setModelOptions(models);
   }, [cache]);
 
-  // When model changes -> set plates matching model
+  // When model changes → update plates
   useEffect(() => {
     const model = form["Model / Type"];
     if (!model) {
       setPlateOptions([]);
-      // do not clear plate/driver automatically here; leave to user
       return;
     }
     const plates = cache.getPlatesByModel ? cache.getPlatesByModel(model) : [];
     setPlateOptions(plates);
-    // if only one plate, optionally preselect? we'll leave selection to user
   }, [form["Model / Type"], cache]);
 
-  // When plate changes -> auto-fill model & drivers
+  // When plate changes → update model & drivers
   useEffect(() => {
     const plate = form["Plate Number"];
     if (!plate) {
@@ -70,7 +67,6 @@ export default function MaintenanceForm() {
     }
     const eq = cache.getEquipmentByPlate ? cache.getEquipmentByPlate(plate) : null;
     if (eq) {
-      // auto-fill model if missing or different
       setForm((p) => ({
         ...p,
         "Model / Type": eq["Model / Type"] || p["Model / Type"],
@@ -80,17 +76,14 @@ export default function MaintenanceForm() {
     }
   }, [form["Plate Number"], cache]);
 
-  // When driver selected -> try to fill plate+model if unique or present plate choices if multiple
+  // When driver changes → try to fill model & plate
   useEffect(() => {
     const driver = form.Driver;
-    if (!driver) {
-      return;
-    }
+    if (!driver) return;
 
-    // find equipment rows that include this driver
     const allEquipment = cache.getEquipment ? cache.getEquipment() : cache.equipment || [];
     const matches = (allEquipment || []).filter(
-      (e) => (e["Driver 1"] === driver) || (e["Driver 2"] === driver) || (e["Driver"] === driver)
+      (e) => e["Driver 1"] === driver || e["Driver 2"] === driver || e["Driver"] === driver
     );
 
     if (matches.length === 1) {
@@ -103,38 +96,34 @@ export default function MaintenanceForm() {
       setPlateOptions([eq["Plate Number"]]);
       setDriverOptions([matches[0]["Driver 1"], matches[0]["Driver 2"]].filter(Boolean));
     } else if (matches.length > 1) {
-      // multiple vehicles: let user choose plate among matches
       setPlateOptions(matches.map((m) => m["Plate Number"]));
-      // keep drivers as-is (could be duplicates)
-      setDriverOptions([...new Set(matches.flatMap((m) => [m["Driver 1"], m["Driver 2"]]).filter(Boolean))]);
+      setDriverOptions([
+        ...new Set(matches.flatMap((m) => [m["Driver 1"], m["Driver 2"]]).filter(Boolean)),
+      ]);
     } else {
-      // no match — clear plate options
       setPlateOptions([]);
     }
   }, [form.Driver, cache]);
 
-  // generic change handler
+  // Generic change handler
   const handleChange = (name, value) => {
     setForm((p) => ({ ...p, [name]: value }));
   };
 
-  // file -> base64
+  // Convert file to base64
   const handleFile = (file, field) => {
     if (!file) return;
     const reader = new FileReader();
-    reader.onloadend = () => {
-      handleChange(field, reader.result);
-    };
+    reader.onloadend = () => handleChange(field, reader.result);
     reader.readAsDataURL(file);
   };
 
-  // submit
+  // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // validation: minimal
     if (!form["Model / Type"] && !form["Plate Number"] && !form.Driver) {
-      alert("Please choose at least Model, Plate Number or Driver.");
+      alert("Please choose at least Model, Plate Number, or Driver.");
       return;
     }
     if (!form["Description of Work"]) {
@@ -156,28 +145,26 @@ export default function MaintenanceForm() {
 
       const data = await res.json();
       if (data.status === "success") {
-        alert("✅ Maintenance log added.");
-        // navigate back to maintenance menu
+        alert("✅ Maintenance log added successfully.");
         navigate("/maintenance");
       } else {
-        alert("❌ Error: " + (data.message || "Unknown"));
+        alert("❌ Error: " + (data.message || "Unknown error"));
       }
     } catch (err) {
-      console.error("submit error", err);
+      console.error("Submit error:", err);
       alert("Network error submitting form.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Performed by options: from cached usernames (safe list)
+  // Get performer names (Supervisor + Mechanic)
   const cachedUsers = cache.getUsernames ? cache.getUsernames() : cache.usernames || [];
   const performers = (cachedUsers || [])
     .filter((u) => u.Role && ["Supervisor", "Mechanic"].includes(u.Role))
-    .map((u) => u.Name || u["Full Name"] || u.Name)
+    .map((u) => u.Name || u["Full Name"])
     .filter(Boolean);
 
-  // ensure current user present in options
   if (user?.full_name && !performers.includes(user.full_name)) {
     performers.unshift(user.full_name);
   }
@@ -187,6 +174,7 @@ export default function MaintenanceForm() {
       <Navbar user={user} />
 
       <div className="max-w-3xl mx-auto p-6">
+        {/* Back button */}
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-4 transition"
@@ -198,8 +186,11 @@ export default function MaintenanceForm() {
           Add Maintenance Log
         </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-5 bg-white/6 p-6 rounded-2xl border border-white/10 shadow-lg">
-          {/* Date (auto-fill but editable) */}
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-5 bg-white/5 p-6 rounded-2xl border border-white/10 shadow-lg"
+        >
+          {/* Date */}
           <div>
             <label className="block text-sm text-gray-300 mb-1">Date</label>
             <input
@@ -243,14 +234,13 @@ export default function MaintenanceForm() {
                       {p}
                     </option>
                   ))
-                : // if no filtered plates, fallback to all equipment plates so user can still choose
-                  cache.getEquipment
-                    ? (cache.getEquipment() || []).map((e) => (
-                        <option key={e["Plate Number"]} value={e["Plate Number"]}>
-                          {e["Plate Number"]}
-                        </option>
-                      ))
-                    : null}
+                : cache.getEquipment
+                ? (cache.getEquipment() || []).map((e) => (
+                    <option key={e["Plate Number"]} value={e["Plate Number"]}>
+                      {e["Plate Number"]}
+                    </option>
+                  ))
+                : null}
             </select>
           </div>
 
@@ -269,8 +259,7 @@ export default function MaintenanceForm() {
                       {d}
                     </option>
                   ))
-                : // fallback to all drivers available in equipment
-                  Array.from(
+                : Array.from(
                     new Set(
                       (cache.getEquipment ? cache.getEquipment() : cache.equipment || [])
                         .flatMap((eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]])
@@ -304,7 +293,7 @@ export default function MaintenanceForm() {
               onChange={(e) => handleChange("Performed By", e.target.value)}
               className="w-full p-2 rounded bg-gray-800 text-white"
             >
-              <option value="">{user?.full_name ? `Myself (${user.full_name})` : "Select performer"}</option>
+              <option value="">— Select Performer —</option>
               {performers.map((p) => (
                 <option key={p} value={p}>
                   {p}
@@ -363,6 +352,7 @@ export default function MaintenanceForm() {
             </div>
           ))}
 
+          {/* Submit */}
           <div>
             <button
               type="submit"
