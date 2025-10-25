@@ -92,9 +92,11 @@ export default function MaintenanceHistory() {
                       <td className="p-2">{r["Performed By"]}</td>
                       <td className="p-2">{r["Description of Work"]}</td>
                       <td className="p-2">{r["Comments"]}</td>
-                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map((field) => (
-                        <td key={`${i}-${field}`}> {/* Use a unique key combining row index and field name */}
-                          {r[field] ? (
+                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map((field) => {
+                        // Explicitly define the content for each photo cell
+                        let cellContent;
+                        if (r[field]) {
+                          cellContent = (
                             <a
                               href={r[field]}
                               target="_blank"
@@ -115,11 +117,17 @@ export default function MaintenanceHistory() {
                                 <ExternalLink size={20} className="text-theme-primary-400" /> {/* Apply theme color for icon */}
                               </div>
                             </a>
-                          ) : (
-                            <span className="text-theme-text-muted p-2">---</span> {/* Apply theme color for placeholder, added p-2 for consistency */}
-                          )}
-                        </td>
-                      ))}
+                          );
+                        } else {
+                          cellContent = <span className="text-theme-text-muted p-2">---</span>; {/* Apply theme color for placeholder, added p-2 for consistency */}
+                        }
+
+                        return (
+                          <td key={`${i}-${field}`} className="p-2"> {/* Use a unique key combining row index and field name, and apply p-2 to td */}
+                            {cellContent}
+                          </td>
+                        );
+                      })}
                     </tr>
                   ))
                 )}
