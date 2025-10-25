@@ -95,5 +95,38 @@ export default function MaintenanceHistory() {
                       {["Photo Before", "Photo After", "Photo Repair/Problem"].map((field) => (
                         <td key={field} className="p-2">
                           {r[field] ? (
-                            <a href={r[field]} target="_blank" rel="noopener noreferrer" className="relative group block">
-                              <img src={getThumbnailUrl(r[field])} alt={field} className="h-16 w-16 object-cover rounded border border-white/20 gro
+                            
+                              href={r[field]}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="relative group block"
+                            >
+                              <img
+                                src={getThumbnailUrl(r[field])}
+                                alt={field}
+                                className="h-16 w-16 object-cover rounded border border-white/20 group-hover:scale-110 transition-transform duration-150"
+                                onError={(e) => {
+                                  e.target.style.display = "none";
+                                  e.target.nextSibling.style.display = "flex";
+                                }}
+                              />
+                              <div className="hidden h-16 w-16 items-center justify-center bg-gray-700 rounded border border-white/20 group-hover:bg-gray-600">
+                                <ExternalLink size={20} className="text-cyan-400" />
+                              </div>
+                            </a>
+                          ) : (
+                            <span className="text-gray-500">---</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
