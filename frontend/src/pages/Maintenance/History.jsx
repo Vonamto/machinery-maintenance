@@ -1,13 +1,16 @@
 // frontend/src/pages/Maintenance/History.jsx
 import React, { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
 
 export default function MaintenanceHistory() {
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function load() {
@@ -33,6 +36,14 @@ export default function MaintenanceHistory() {
       <Navbar user={user} />
 
       <div className="max-w-7xl mx-auto p-6">
+        {/* Back button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition"
+        >
+          <ArrowLeft size={18} /> Back
+        </button>
+
         <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-500">
           Maintenance History
         </h3>
@@ -50,7 +61,7 @@ export default function MaintenanceHistory() {
                   <th className="p-2">Plate Number</th>
                   <th className="p-2">Driver</th>
                   <th className="p-2">Performed By</th>
-                  <th className="p-2">Description of Work</th>
+                  <th className="p-2">Description</th>
                   <th className="p-2">Comments</th>
                   <th className="p-2">Photo Before</th>
                   <th className="p-2">Photo After</th>
@@ -90,7 +101,7 @@ export default function MaintenanceHistory() {
                                 <img
                                   src={r[f]}
                                   alt={f}
-                                  className="h-16 w-16 object-cover rounded border border-white/10"
+                                  className="h-16 w-16 object-cover rounded border border-white/20 hover:scale-110 transition-transform duration-150"
                                 />
                               </a>
                             ) : (
