@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Camera, Upload } from "lucide-react";
 import Navbar from "@/components/Navbar";
+// Import the custom hook instead of the context object
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
@@ -17,6 +18,7 @@ import { fetchWithAuth } from "@/api/api";
  */
 
 export default function MaintenanceForm() {
+  // Use the custom hook
   const { user } = useAuth();
   const navigate = useNavigate();
   const cache = useCache();
@@ -170,45 +172,50 @@ export default function MaintenanceForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
+    // Apply main theme background and text color
+    <div className="min-h-screen bg-theme-background-primary text-theme-text-primary">
       <Navbar user={user} />
 
       <div className="max-w-3xl mx-auto p-6">
-        {/* Back button */}
+        {/* Back button - Apply theme color */}
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-4 transition"
+          className="inline-flex items-center gap-2 text-theme-primary-500 hover:text-theme-primary-400 mb-4 transition"
         >
           <ArrowLeft size={18} /> Back
         </button>
 
+        {/* Title - Keep the gradient for visual appeal */}
         <h1 className="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
           Add Maintenance Log
         </h1>
 
         <form
           onSubmit={handleSubmit}
-          className="space-y-5 bg-white/5 p-6 rounded-2xl border border-white/10 shadow-lg"
+          // Apply theme colors for form container
+          className="space-y-5 bg-theme-background-surface p-6 rounded-2xl border border-theme-border-light shadow-lg"
         >
           {/* Date */}
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Date</label>
+            <label className="block text-sm text-theme-text-secondary mb-1">Date</label>
             <input
               type="date"
               name="Date"
               value={form.Date}
               onChange={(e) => handleChange("Date", e.target.value)}
-              className="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white"
+              // Apply theme colors for input
+              className="w-full p-2 rounded bg-theme-background-secondary text-theme-text-primary border border-theme-border-light"
             />
           </div>
 
           {/* Model */}
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Model / Type</label>
+            <label className="block text-sm text-theme-text-secondary mb-1">Model / Type</label>
             <select
               value={form["Model / Type"]}
               onChange={(e) => handleChange("Model / Type", e.target.value)}
-              className="w-full p-2 rounded bg-gray-800 text-white"
+              // Apply theme colors for select
+              className="w-full p-2 rounded bg-theme-background-secondary text-theme-text-primary"
             >
               <option value="">— Choose Model —</option>
               {modelOptions.map((m) => (
@@ -221,11 +228,12 @@ export default function MaintenanceForm() {
 
           {/* Plate */}
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Plate Number</label>
+            <label className="block text-sm text-theme-text-secondary mb-1">Plate Number</label>
             <select
               value={form["Plate Number"]}
               onChange={(e) => handleChange("Plate Number", e.target.value)}
-              className="w-full p-2 rounded bg-gray-800 text-white"
+              // Apply theme colors for select
+              className="w-full p-2 rounded bg-theme-background-secondary text-theme-text-primary"
             >
               <option value="">— Choose Plate —</option>
               {plateOptions.length
@@ -246,11 +254,12 @@ export default function MaintenanceForm() {
 
           {/* Driver */}
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Driver</label>
+            <label className="block text-sm text-theme-text-secondary mb-1">Driver</label>
             <select
               value={form.Driver}
               onChange={(e) => handleChange("Driver", e.target.value)}
-              className="w-full p-2 rounded bg-gray-800 text-white"
+              // Apply theme colors for select
+              className="w-full p-2 rounded bg-theme-background-secondary text-theme-text-primary"
             >
               <option value="">— Choose Driver —</option>
               {driverOptions.length
@@ -275,23 +284,25 @@ export default function MaintenanceForm() {
 
           {/* Description */}
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Description of Work</label>
+            <label className="block text-sm text-theme-text-secondary mb-1">Description of Work</label>
             <textarea
               rows={3}
               value={form["Description of Work"]}
               onChange={(e) => handleChange("Description of Work", e.target.value)}
-              className="w-full p-2 rounded bg-gray-800 text-white"
+              // Apply theme colors for textarea
+              className="w-full p-2 rounded bg-theme-background-secondary text-theme-text-primary"
               placeholder="Describe the maintenance performed..."
             />
           </div>
 
           {/* Performed By */}
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Performed By</label>
+            <label className="block text-sm text-theme-text-secondary mb-1">Performed By</label>
             <select
               value={form["Performed By"]}
               onChange={(e) => handleChange("Performed By", e.target.value)}
-              className="w-full p-2 rounded bg-gray-800 text-white"
+              // Apply theme colors for select
+              className="w-full p-2 rounded bg-theme-background-secondary text-theme-text-primary"
             >
               <option value="">— Select Performer —</option>
               {performers.map((p) => (
@@ -304,21 +315,22 @@ export default function MaintenanceForm() {
 
           {/* Comments */}
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Comments</label>
+            <label className="block text-sm text-theme-text-secondary mb-1">Comments</label>
             <textarea
               rows={2}
               value={form.Comments}
               onChange={(e) => handleChange("Comments", e.target.value)}
-              className="w-full p-2 rounded bg-gray-800 text-white"
+              // Apply theme colors for textarea
+              className="w-full p-2 rounded bg-theme-background-secondary text-theme-text-primary"
             />
           </div>
 
           {/* Photos */}
           {["Photo Before", "Photo After", "Photo Repair/Problem"].map((field) => (
             <div key={field}>
-              <label className="block text-sm text-gray-300 mb-2">{field}</label>
+              <label className="block text-sm text-theme-text-secondary mb-2">{field}</label>
               <div className="flex gap-3">
-                <label className="flex items-center gap-2 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">
+                <label className="flex items-center gap-2 cursor-pointer bg-theme-primary-600 hover:bg-theme-primary-700 text-theme-text-primary px-3 py-2 rounded">
                   <Upload size={16} />
                   Upload
                   <input
@@ -329,7 +341,7 @@ export default function MaintenanceForm() {
                   />
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-2 rounded">
+                <label className="flex items-center gap-2 cursor-pointer bg-theme-secondary-600 hover:bg-theme-secondary-700 text-theme-text-primary px-3 py-2 rounded">
                   <Camera size={16} />
                   Camera
                   <input
@@ -346,7 +358,7 @@ export default function MaintenanceForm() {
                 <img
                   src={form[field]}
                   alt={field}
-                  className="mt-3 max-h-44 rounded border border-white/10 object-contain"
+                  className="mt-3 max-h-44 rounded border border-theme-border-light object-contain"
                 />
               )}
             </div>
@@ -357,7 +369,8 @@ export default function MaintenanceForm() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 hover:brightness-110 text-white font-semibold"
+              // Apply theme colors for submit button
+              className="w-full py-3 rounded-lg bg-gradient-to-r from-theme-primary-600 to-theme-secondary-500 hover:brightness-110 text-theme-text-primary font-semibold"
             >
               {submitting ? "Submitting..." : "Submit Maintenance Log"}
             </button>
