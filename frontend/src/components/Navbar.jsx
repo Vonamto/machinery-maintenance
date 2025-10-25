@@ -1,12 +1,14 @@
 // frontend/src/components/Navbar.jsx
-import React, { useContext } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, User } from "lucide-react";
-import { AuthContext } from "@/context/AuthContext";
+// Import the custom hook instead of the context object
+import { useAuth } from "@/context/AuthContext";
 
 export default function Navbar({ user }) {
     const navigate = useNavigate();
-    const { logout } = useContext(AuthContext);
+    // Use the custom hook to get the logout function
+    const { logout } = useAuth();
 
     const handleLogout = () => {
         logout();
@@ -30,13 +32,4 @@ export default function Navbar({ user }) {
                     )}
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-2 px-4 py-2 bg-theme-primary-600 hover:bg-theme-primary-700 text-theme-text-primary rounded-lg transition-colors" // Apply theme colors
-                    >
-                        <LogOut size={18} />
-                        <span className="hidden sm:inline">Logout</span>
-                    </button>
-                </div>
-            </div>
-        </nav>
-    );
-}
+                        className="flex items-center gap-2 px-4 py-2 bg
