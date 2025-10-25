@@ -228,6 +228,7 @@ export default function PartsCurrentRequests() {
                                         <td className="p-2">{r["Requested Parts"]}</td>
                                         {editingRow === i ? (
                                             <>
+                                                {/* Ensure consistent padding and width for edit cells */}
                                                 <td className="p-2">
                                                     <select
                                                         value={editData.Status}
@@ -256,15 +257,16 @@ export default function PartsCurrentRequests() {
                                             </>
                                         ) : (
                                             <>
+                                                {/* Ensure consistent padding for view cells */}
                                                 <td className="p-2">{r["Status"]}</td>
                                                 <td className="p-2">{r["Handled By"]}</td>
                                             </>
                                         )}
+                                        {/* Ensure consistent padding for Comments cell */}
                                         <td className="p-2 max-w-xs truncate">{r["Comments"]}</td>
                                         <td className="p-2">
                                             {r["Attachment Photo"] ? (
-                                                
-                                                   <a href={r["Attachment Photo"]}
+                                                <a href={r["Attachment Photo"]}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="relative group block"
