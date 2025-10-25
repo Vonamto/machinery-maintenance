@@ -35,21 +35,18 @@ export default function MaintenanceHistory() {
   // Helper: Convert Google Drive links to thumbnail-friendly format
   const getThumbnailUrl = (url) => {
     if (!url) return null;
-    // Extract file ID from Google Drive URL
     const match = url.match(/id=([^&]+)/);
     if (match) {
       const fileId = match[1];
-      // Use Google Drive thumbnail API
       return `https://drive.google.com/thumbnail?id=${fileId}&sz=w200`;
     }
-    return url; // fallback to original if not a Drive link
+    return url;
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
       <div className="max-w-7xl mx-auto p-6">
-        {/* Back button */}
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition"
@@ -102,37 +99,33 @@ export default function MaintenanceHistory() {
                       <td className="p-2">{r["Performed By"]}</td>
                       <td className="p-2">{r["Description of Work"]}</td>
                       <td className="p-2">{r["Comments"]}</td>
-                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
-                        (f) => (
-                          <td key={f} className="p-2">
-                            {r[f] ? (
-                              
-                                href={r[f]}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="relative group block"
-                              >
-                                <img
-                                  src={getThumbnailUrl(r[f])}
-                                  alt={f}
-                                  className="h-16 w-16 object-cover rounded border border-white/20 group-hover:scale-110 transition-transform duration-150"
-                                  onError={(e) => {
-                                    // Fallback if thumbnail fails
-                                    e.target.style.display = "none";
-                                    e.target.nextSibling.style.display = "flex";
-                                  }}
-                                />
-                                {/* Fallback icon if image fails to load */}
-                                <div className="hidden h-16 w-16 items-center justify-center bg-gray-700 rounded border border-white/20 group-hover:bg-gray-600">
-                                  <ExternalLink size={20} className="text-cyan-400" />
-                                </div>
-                              </a>
-                            ) : (
-                              <span className="text-gray-500">---</span>
-                            )}
-                          </td>
-                        )
-                      )}
+                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map((f) => (
+                        <td key={f} className="p-2">
+                          {r[f] ? (
+                            
+                              href={r[f]}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="relative group block"
+                            >
+                              <img
+                                src={getThumbnailUrl(r[f])}
+                                alt={f}
+                                className="h-16 w-16 object-cover rounded border border-white/20 group-hover:scale-110 transition-transform duration-150"
+                                onError={(e) => {
+                                  e.target.style.display = "none";
+                                  e.target.nextSibling.style.display = "flex";
+                                }}
+                              />
+                              <div className="hidden h-16 w-16 items-center justify-center bg-gray-700 rounded border border-white/20 group-hover:bg-gray-600">
+                                <ExternalLink size={20} className="text-cyan-400" />
+                              </div>
+                            </a>
+                          ) : (
+                            <span className="text-gray-500">---</span>
+                          )}
+                        </td>
+                      ))}
                     </tr>
                   ))
                 )}
