@@ -1,4 +1,4 @@
-// frontend/src/pages/Requests/Parts/CurrentRequests.jsx
+// frontend/src/pages/Requests/Parts/Current.jsx (or CurrentRequests.jsx) - Updated with theme colors and fixed JSX
 import React, { useEffect, useState } from "react";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import Navbar from "@/components/Navbar"; // Import Navbar for consistent styling
@@ -301,32 +301,39 @@ export default function PartsCurrentRequests() {
                                         )}
                                         <td className="p-2 max-w-xs truncate">{r["Comments"]}</td>
                                         <td className="p-2">
-                                            {r["Attachment Photo"] ? (
-                                                <a
-                                                    href={r["Attachment Photo"]}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="relative group block"
-                                                >
-                                                    {/* Apply theme border color to photo */}
-                                                    <img
-                                                        src={getThumbnailUrl(r["Attachment Photo"])} // Use thumbnail function
-                                                        alt="Attachment"
-                                                        className="h-16 w-16 object-cover rounded border border-theme-border-light group-hover:scale-110 transition-transform duration-150"
-                                                        onError={(e) => {
-                                                            e.target.style.display = "none";
-                                                            e.target.nextSibling.style.display = "flex";
-                                                        }}
-                                                    />
-                                                    <div className="hidden group-hover:flex absolute inset-0 bg-theme-background-secondary/70 items-center justify-center rounded border border-theme-border-light">
-                                                        {/* Apply theme color for icon */}
-                                                        <ExternalLink className="w-6 h-6 text-theme-primary-400" />
-                                                    </div>
-                                                </a>
-                                            ) : (
-                                                {/* Apply theme color */}
-                                                <span className="text-theme-text-muted">No Photo</span>
-                                            )}
+                                            {/* Explicitly define photo cell content to avoid JSX parsing issues */}
+                                            {(() => {
+                                                if (r["Attachment Photo"]) {
+                                                    return (
+                                                        <a
+                                                            href={r["Attachment Photo"]}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="relative group block"
+                                                        >
+                                                            {/* Apply theme border color to photo */}
+                                                            <img
+                                                                src={getThumbnailUrl(r["Attachment Photo"])} // Use thumbnail function
+                                                                alt="Attachment"
+                                                                className="h-16 w-16 object-cover rounded border border-theme-border-light group-hover:scale-110 transition-transform duration-150"
+                                                                onError={(e) => {
+                                                                    e.target.style.display = "none";
+                                                                    e.target.nextSibling.style.display = "flex";
+                                                                }}
+                                                            />
+                                                            <div className="hidden group-hover:flex absolute inset-0 bg-theme-background-secondary/70 items-center justify-center rounded border border-theme-border-light">
+                                                                {/* Apply theme color for icon */}
+                                                                <ExternalLink className="w-6 h-6 text-theme-primary-400" />
+                                                            </div>
+                                                        </a>
+                                                    );
+                                                } else {
+                                                    return (
+                                                        // Apply theme color
+                                                        <span className="text-theme-text-muted">No Photo</span>
+                                                    );
+                                                }
+                                            })()}
                                         </td>
                                         {canEdit && (
                                             <td className="p-2">
