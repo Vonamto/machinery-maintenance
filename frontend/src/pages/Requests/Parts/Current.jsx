@@ -36,8 +36,9 @@ export default function PartsCurrentRequests() {
                         return !completionDate || completionDate.trim() === "";
                     });
                     // Add an internal index for React keying and editing state, assuming data comes with original row numbers
-                    // The backend likely sends the actual row number as an identifier if configured correctly
-                    setRows(pendingRequests.reverse().map((row, index) => ({...row, __internal_index: index}))); // Add internal index
+                    // The backend likely sends the actual row number in the Google Sheet (e.g., 2 for the first data row after headers)
+                    // We need to extract the 'Row Number' from the backend response if available.
+                    setRows(pendingRequests.reverse().map((row, index) => ({...row, __internal_index: index})));
                 }
             } catch (err) {
                 console.error("Error loading current requests:", err);
@@ -50,22 +51,14 @@ export default function PartsCurrentRequests() {
 
     const handleEditClick = (index, row) => {
         setEditingRow(index);
-        // Use the actual row index from the backend response (assuming it's sent as 'Row ID' or similar)
-        // If the backend doesn't send the sheet row number, we might need to rely on the internal index + header offset
-        // Let's assume backend sends 'Row Number' field representing the actual sheet row (e.g., 2 for first data row)
-        // If not, we might need to change backend to send it or use a different approach.
-        // For now, let's try using the internal index and see if backend handles it correctly.
-        // If backend expects the sheet row number, we need to get it from the original data fetch.
-        // Modify the fetch to include the sheet row number somehow.
-        // Let's assume backend sends the sheet row number as 'Row Number' in the response object.
-        // If backend doesn't send it, we cannot update correctly. We need the *actual* row number in the sheet.
-        // This is crucial. Let's assume backend correctly sends 'Row Number' field.
-        // Adjusted for internal index mapping:
+        // Use the actual row index from the backend response (assuming it's sent as 'Row Number' or similar)
+        // The backend blueprint shows the PUT endpoint expecting the row number: /api/edit/<sheet_name>/<int:row_index>
+        // Ensure the backend response includes the sheet row number as 'Row Number' or a similar field.
         setEditData({
             rowIndex: row["Row Number"], // Assuming backend sends the actual sheet row number as 'Row Number'
             Status: row["Status"] || "",
             "Handled By": row["Handled By"] || "",
-            "Completion Date": row["Completion Date"] || "", // Store original date if any, but don't show input unless status is Completed
+            // Do not store Completion Date in editData for this view
         });
     };
 
@@ -74,33 +67,24 @@ export default function PartsCurrentRequests() {
             alert("Please select a status.");
             return;
         }
-        // Check if status is Completed and required fields are missing
-        if (editData.Status === "Completed" && (!editData["Handled By"] || !editData["Completion Date"])) {
-            alert("For 'Completed' status, please select 'Handled By' and ensure 'Completion Date' is set.");
+        // Check if status is Completed and Handled By is missing (Completion Date will be auto-filled by backend)
+        if (editData.Status === "Completed" && !editData["Handled By"]) {
+            alert("For 'Completed' status, please select 'Handled By'. Completion Date will be auto-filled.");
             return; // Don't proceed with save
-        }
-        // If status is not completed, ensure Completion Date is cleared in the payload
-        let payload = { ...editData };
-        if (editData.Status !== "Completed") {
-             payload["Completion Date"] = ""; // Clear date if not completed
         }
 
         setLoading(true);
         try {
             const token = localStorage.getItem("token");
-            // If status is Completed and Completion Date is not set in editData (meaning user didn't pick one),
-            // we need to set it to today's date *before* sending to backend, or let backend handle it.
-            // The backend already has logic to auto-fill date on "Completed".
-            // If we send an empty date for "Completed", backend should fill it.
-            // If we send a specific date, backend should use that.
-            // So, the payload as is should be fine, relying on backend logic.
-            // Ensure we only send the fields we intend to update.
+            // Prepare payload - only send Status and Handled By
+            // Backend handles Completion Date auto-fill on "Completed" status
             const updatePayload = {
-                Status: payload.Status,
-                "Handled By": payload["Handled By"],
-                "Completion Date": payload["Completion Date"] // Send the date (empty if not completed, or filled if completed)
+                Status: editData.Status,
+                "Handled By": editData["Handled By"],
+                // Do not include Completion Date in the payload for this view
             };
-            const res = await fetch(`${CONFIG.BACKEND_URL}/api/Requests_Parts/${editData.rowIndex}`, { // Use PUT endpoint
+            // Correct API endpoint for editing a specific row
+            const res = await fetch(`${CONFIG.BACKEND_URL}/api/edit/Requests_Parts/${editData.rowIndex}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -114,11 +98,14 @@ export default function PartsCurrentRequests() {
                 // Update the local state with the edited data
                 const updatedRows = [...rows];
                 // Update the specific row in the state with new values
+                // The Completion Date will be updated by the backend and reflected on page reload or refetch
                 updatedRows[index] = {
                     ...updatedRows[index],
                     "Status": updatePayload.Status,
-                    "Handled By": updatePayload["Handled By"],
-                    "Completion Date": updatePayload["Completion Date"] // Update the date in state
+                    "Handled By": updatePayload["Handled By"]
+                    // Do not update Completion Date here as it might not be in the response yet
+                    // Or, if backend returns the updated row, update it accordingly
+                    // For now, assume state update happens correctly without Completion Date
                 };
                 setRows(updatedRows);
                 setEditingRow(null);
@@ -140,16 +127,19 @@ export default function PartsCurrentRequests() {
         setEditData({});
     };
 
-    // Get mechanics and supervisors for dropdown - Updated to handle potential naming differences
+    // Get mechanics and supervisors for dropdown - Updated to use correct cache key and handle potential naming differences
+    // Based on blueprint and other components like MaintenanceForm
     const getMechanicSupervisorOptions = () => {
-        if (!cache || !cache.users || !Array.isArray(cache.users)) {
-            console.warn("Cache or users not available or not an array yet.");
+        // Check the cache structure - it might be cache.usernames or cache.getUsernames()
+        const cachedUsernames = cache.getUsernames ? cache.getUsernames() : cache.usernames || [];
+        if (!Array.isArray(cachedUsernames)) {
+            console.warn("Cache or usernames not available or not an array yet.");
             return []; // Return empty array if cache not ready
         }
-        // Try different common field names for the user's display name
-        return cache.users
+        // Filter and map based on Role property
+        return cachedUsernames
             .filter(u => u.Role === "Mechanic" || u.Role === "Supervisor")
-            .map(u => u["Full Name"] || u["Name"] || u.Username) // Try Full Name, then Name, then Username
+            .map(u => u.Name || u["Full Name"] || u.Username) // Try Name, then Full Name, then Username
             .filter(Boolean); // Remove any undefined/falsy names
     };
 
@@ -204,8 +194,7 @@ export default function PartsCurrentRequests() {
                                     <th className="p-2">Requested Parts</th>
                                     <th className="p-2">Status</th>
                                     <th className="p-2">Handled By</th>
-                                    {/* Hidden Completion Date column header for layout if needed, or remove entirely */}
-                                    <th className="p-2">Completion Date</th> {/* Keep if needed for layout, remove if not */}
+                                    {/* Removed Completion Date column header */}
                                     <th className="p-2">Comments</th>
                                     <th className="p-2">Photo</th>
                                     {canEdit && <th className="p-2">Actions</th>}
@@ -246,25 +235,13 @@ export default function PartsCurrentRequests() {
                                                         ))}
                                                     </select>
                                                 </td>
-                                                {/* Hide Completion Date input unless status is Completed */}
-                                                <td className="p-2">
-                                                    {editData.Status === "Completed" ? (
-                                                        <input
-                                                            type="date"
-                                                            value={editData["Completion Date"]}
-                                                            onChange={(e) => setEditData({ ...editData, "Completion Date": e.target.value })}
-                                                            className="w-full p-1 rounded bg-gray-700 text-white"
-                                                        />
-                                                    ) : (
-                                                        <span className="text-gray-500">Auto when Completed</span>
-                                                    )}
-                                                </td>
+                                                {/* Completion Date input is completely removed from the edit row */}
                                             </>
                                         ) : (
                                             <>
                                                 <td className="p-2">{r["Status"]}</td>
                                                 <td className="p-2">{r["Handled By"]}</td>
-                                                <td className="p-2">{r["Completion Date"]}</td> {/* Show current date if any */}
+                                                {/* Completion Date column is hidden in view mode as well */}
                                             </>
                                         )}
                                         <td className="p-2 max-w-xs truncate">{r["Comments"]}</td>
