@@ -38,21 +38,25 @@ export default function PartsRequestsMenu() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
+    // Apply main theme background and text color
+    <div className="min-h-screen bg-theme-background-primary text-theme-text-primary">
       <Navbar user={user} />
       <div className="p-6">
+        {/* Back button - Apply theme color */}
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition"
+          className="inline-flex items-center gap-2 text-theme-primary-500 hover:text-theme-primary-400 mb-6 transition"
         >
           <ArrowLeft size={18} /> Back
         </button>
+        {/* Title - Keep the gradient for visual appeal */}
         <h1 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
           Spare Parts Requests
         </h1>
         <div className="grid gap-8 sm:grid-cols-3">
           {cards.map((card) => (
             <Link to={card.link} key={card.title}>
+              {/* Card styling remains the same for visual distinction */}
               <Card
                 className={`rounded-2xl bg-gradient-to-br ${card.gradient} ${card.glow} hover:scale-[1.04] hover:brightness-110 transition-all duration-300 border border-white/10`}
               >
