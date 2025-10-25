@@ -1,46 +1,42 @@
 // frontend/src/components/Navbar.jsx
-import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { LogOut, Home } from "lucide-react";
+import React, { useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { LogOut, User } from "lucide-react";
+import { AuthContext } from "@/context/AuthContext";
 
 export default function Navbar({ user }) {
-  const navigate = useNavigate();
-  const location = useLocation();
+    const navigate = useNavigate();
+    const { logout } = useContext(AuthContext);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
+    const handleLogout = () => {
+        logout();
+        navigate("/login");
+    };
 
-  const goDashboard = () => navigate("/dashboard");
-
-  // Hide Navbar on login page
-  if (location.pathname === "/login") return null;
-
-  return (
-    <header className="bg-gray-900/90 backdrop-blur-lg text-white shadow-md flex justify-between items-center px-6 py-3 sticky top-0 z-50 border-b border-white/10">
-      <h1 className="text-lg font-semibold">
-        👋 Welcome, <span className="text-cyan-400">{user?.full_name || user?.username}</span>
-      </h1>
-
-      <div className="flex items-center gap-3">
-        <button
-          onClick={goDashboard}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition"
-        >
-          <Home size={18} />
-          Dashboard
-        </button>
-
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg transition"
-        >
-          <LogOut size={18} />
-          Logout
-        </button>
-      </div>
-    </header>
-  );
+    return (
+        <nav className="sticky top-0 z-10 p-4 bg-theme-background-secondary backdrop-blur-sm border-b border-theme-border-light"> {/* Apply theme colors */}
+            <div className="flex justify-between items-center max-w-7xl mx-auto">
+                <div className="flex items-center space-x-4">
+                    <h1 className="text-xl font-bold text-theme-text-primary cursor-pointer" onClick={() => navigate("/")}>
+                        🛠️ Machinery Maintenance
+                    </h1>
+                </div>
+                <div className="flex items-center space-x-4">
+                    {user && (
+                        <div className="flex items-center space-x-2 text-theme-text-primary">
+                            <User size={20} />
+                            <span className="hidden sm:inline text-sm">{user.full_name || user.username} ({user.role})</span>
+                        </div>
+                    )}
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 px-4 py-2 bg-theme-primary-600 hover:bg-theme-primary-700 text-theme-text-primary rounded-lg transition-colors" // Apply theme colors
+                    >
+                        <LogOut size={18} />
+                        <span className="hidden sm:inline">Logout</span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    );
 }
