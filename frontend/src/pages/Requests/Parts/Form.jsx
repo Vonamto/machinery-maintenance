@@ -145,8 +145,8 @@ export default function PartsRequestForm() {
           Request Spare Parts
         </h1>
         <form onSubmit={handleSubmit} 
-              // Apply theme colors for form container, keeping distinct field styles
-              className="space-y-5 bg-theme-background-surface p-6 rounded-2xl border border-theme-border-light shadow-lg">
+              // Apply a darker theme background for the form container, keeping distinct field styles
+              className="space-y-5 bg-theme-background-secondary p-6 rounded-2xl border border-theme-border-light shadow-lg">
           <div>
             <label className="block text-sm text-theme-text-secondary mb-1">Request Date</label>
             {/* Keep original bg-gray-800 for this specific field */}
