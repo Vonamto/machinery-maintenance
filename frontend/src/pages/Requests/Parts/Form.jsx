@@ -104,10 +104,15 @@ export default function PartsRequestForm() {
     }
     setSubmitting(true);
     try {
+      // Prepare the payload: include the form data and set Status to "Pending"
+      const payload = {
+        ...form,
+        Status: "Pending" // Add the default status here before sending
+      };
       const res = await fetchWithAuth("/api/add/Requests_Parts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload), // Send the updated payload
       });
       const data = await res.json();
       if (data.status === "success") {
@@ -180,15 +185,4 @@ export default function PartsRequestForm() {
                 <Camera size={16} />Camera<input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Attachment Photo")} />
               </label>
             </div>
-            {form["Attachment Photo"] && (<img src={form["Attachment Photo"]} alt="Attachment" className="mt-3 max-h-44 rounded border border-white/10 object-contain" />)}
-          </div>
-          <div>
-            <button type="submit" disabled={submitting} className="w-full py-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 hover:brightness-110 text-white font-semibold">
-              {submitting ? "Submitting..." : "Submit Request"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
+            {form["Attachment Photo"] && (<img src={form["Attachment Photo"]} alt="Attachment" className
