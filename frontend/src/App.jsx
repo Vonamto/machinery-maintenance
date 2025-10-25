@@ -10,12 +10,15 @@ import MaintenanceIndex from "./pages/Maintenance/index";
 import MaintenanceForm from "./pages/Maintenance/Form";
 import MaintenanceHistory from "./pages/Maintenance/History";
 
+// Requests pages
+import RequestsMenu from "./pages/Requests/index";
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-
+        
         {/* Dashboard (home) */}
         <Route
           path="/"
@@ -25,7 +28,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-
+        
         {/* Maintenance menu */}
         <Route
           path="/maintenance"
@@ -35,7 +38,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-
+        
         {/* Maintenance subpages */}
         <Route
           path="/maintenance/form"
@@ -54,6 +57,16 @@ export default function App() {
           }
         />
 
+        {/* Requests menu */}
+        <Route
+          path="/requests"
+          element={
+            <ProtectedRoute>
+              <RequestsMenu />
+            </ProtectedRoute>
+          }
+        />
+        
         {/* fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
