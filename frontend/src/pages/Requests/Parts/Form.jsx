@@ -147,12 +147,14 @@ export default function PartsRequestForm() {
         <form onSubmit={handleSubmit} 
               // Apply a darker theme background for the form container, keeping distinct field styles
               className="space-y-5 bg-theme-background-secondary p-6 rounded-2xl border border-theme-border-light shadow-lg">
-          <div>
+          {/* Request Date Field Container */}
+          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
             <label className="block text-sm text-theme-text-secondary mb-1">Request Date</label>
             {/* Keep original bg-gray-800 for this specific field */}
             <input type="date" value={form["Request Date"]} onChange={(e) => handleChange("Request Date", e.target.value)} className="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white" />
           </div>
-          <div>
+          {/* Model / Type Field Container */}
+          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
             <label className="block text-sm text-theme-text-secondary mb-1">Model / Type</label>
             {/* Keep original bg-gray-800 for this specific field */}
             <select value={form["Model / Type"]} onChange={(e) => handleChange("Model / Type", e.target.value)} className="w-full p-2 rounded bg-gray-800 text-white">
@@ -162,7 +164,8 @@ export default function PartsRequestForm() {
               ))}
             </select>
           </div>
-          <div>
+          {/* Plate Number Field Container */}
+          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
             <label className="block text-sm text-theme-text-secondary mb-1">Plate Number</label>
             {/* Keep original bg-gray-800 for this specific field */}
             <select value={form["Plate Number"]} onChange={(e) => handleChange("Plate Number", e.target.value)} className="w-full p-2 rounded bg-gray-800 text-white">
@@ -170,7 +173,8 @@ export default function PartsRequestForm() {
               {plateOptions.length ? plateOptions.map((p) => (<option key={p} value={p}>{p}</option>)) : cache.getEquipment ? (cache.getEquipment() || []).map((e) => (<option key={e["Plate Number"]} value={e["Plate Number"]}>{e["Plate Number"]}</option>)) : null}
             </select>
           </div>
-          <div>
+          {/* Driver Field Container */}
+          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
             <label className="block text-sm text-theme-text-secondary mb-1">Driver</label>
             {/* Keep original bg-gray-800 for this specific field */}
             <select value={form.Driver} onChange={(e) => handleChange("Driver", e.target.value)} className="w-full p-2 rounded bg-gray-800 text-white">
@@ -178,17 +182,20 @@ export default function PartsRequestForm() {
               {driverOptions.length ? driverOptions.map((d) => (<option key={d} value={d}>{d}</option>)) : Array.from(new Set((cache.getEquipment ? cache.getEquipment() : cache.equipment || []).flatMap((eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]]).filter(Boolean))).map((d) => (<option key={d} value={d}>{d}</option>))}
             </select>
           </div>
-          <div>
+          {/* Requested Parts Field Container */}
+          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
             <label className="block text-sm text-theme-text-secondary mb-1">Requested Parts</label>
             {/* Keep original bg-gray-800 for this specific field */}
             <textarea rows={3} value={form["Requested Parts"]} onChange={(e) => handleChange("Requested Parts", e.target.value)} className="w-full p-2 rounded bg-gray-800 text-white" placeholder="List the parts needed..." />
           </div>
-          <div>
+          {/* Comments Field Container */}
+          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
             <label className="block text-sm text-theme-text-secondary mb-1">Comments</label>
             {/* Keep original bg-gray-800 for this specific field */}
             <textarea rows={2} value={form.Comments} onChange={(e) => handleChange("Comments", e.target.value)} className="w-full p-2 rounded bg-gray-800 text-white" />
           </div>
-          <div>
+          {/* Attachment Photo Field Container */}
+          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
             <label className="block text-sm text-theme-text-secondary mb-2">Attachment Photo</label>
             <div className="flex gap-3">
               {/* Keep original bg-blue-600 for Upload button */}
@@ -209,7 +216,8 @@ export default function PartsRequestForm() {
               />
             )}
           </div>
-          <div>
+          {/* Submit Button Container */}
+          <div className="p-3 bg-theme-background-surface/30 rounded-lg border border-theme-border-light">
             {/* Keep original gradient for Submit button */}
             <button type="submit" disabled={submitting} className="w-full py-3 rounded-lg bg-gradient-to-r from-theme-primary-600 to-theme-secondary-500 hover:brightness-110 text-theme-text-primary font-semibold">
               {submitting ? "Submitting..." : "Submit Request"}
