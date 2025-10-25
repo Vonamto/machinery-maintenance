@@ -96,7 +96,7 @@ export default function MaintenanceHistory() {
                         <td key={field} className="p-2">
                           {r[field] ? (
                             
-                              href={r[field]}
+                              <a href={r[field]}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="relative group block"
