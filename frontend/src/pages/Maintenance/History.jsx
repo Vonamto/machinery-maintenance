@@ -6,6 +6,14 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
 
+/**
+ * Maintenance History Page
+ * - Shows all maintenance logs in a table
+ * - Displays image thumbnails (Google Drive links auto-fixed)
+ * - Click thumbnail to open full image in a new tab
+ * - Includes back button
+ */
+
 export default function MaintenanceHistory() {
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
@@ -31,21 +39,14 @@ export default function MaintenanceHistory() {
     load();
   }, []);
 
-  // Helper: get valid image src (handles base64 or URL)
-  const getImageSrc = (val) => {
-    if (!val) return null;
-
-    // base64 (data:image/...)
-    if (val.startsWith("data:image")) return val;
-
-    // stored full URL
-    if (val.startsWith("http")) return val;
-
-    // backend relative upload path (e.g. /uploads/photo.jpg)
-    if (val.startsWith("/")) return `${CONFIG.BACKEND_URL}${val}`;
-
-    // fallback (if only base64 part)
-    return `data:image/jpeg;base64,${val}`;
+  // helper: handle Google Drive links for previews
+  const getImageSrc = (url) => {
+    if (!url) return "";
+    if (url.includes("drive.google.com")) {
+      // fix Google Drive preview links
+      return url.replace("uc?id=", "uc?export=view&id=");
+    }
+    return url;
   };
 
   return (
@@ -106,18 +107,17 @@ export default function MaintenanceHistory() {
                       <td className="p-2">{r["Performed By"]}</td>
                       <td className="p-2">{r["Description of Work"]}</td>
                       <td className="p-2">{r["Comments"]}</td>
-                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map((f) => {
-                        const imgSrc = getImageSrc(r[f]);
-                        return (
+                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
+                        (f) => (
                           <td key={f} className="p-2">
-                            {imgSrc ? (
+                            {r[f] ? (
                               <a
-                                href={imgSrc}
+                                href={getImageSrc(r[f])}
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
                                 <img
-                                  src={imgSrc}
+                                  src={getImageSrc(r[f])}
                                   alt={f}
                                   className="h-16 w-16 object-cover rounded border border-white/20 hover:scale-110 transition-transform duration-150"
                                 />
@@ -126,8 +126,8 @@ export default function MaintenanceHistory() {
                               <span className="text-gray-500">—</span>
                             )}
                           </td>
-                        );
-                      })}
+                        )
+                      )}
                     </tr>
                   ))
                 )}
