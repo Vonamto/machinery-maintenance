@@ -196,7 +196,7 @@ export default function MaintenanceForm() {
           className="space-y-5 bg-theme-background-surface p-6 rounded-2xl border border-theme-border-light shadow-lg"
         >
           {/* Date */}
-          <div>
+          <div className="p-3 bg-theme-background-secondary/30 rounded-lg border border-theme-border-light"> {/* Add container */}
             <label className="block text-sm text-theme-text-secondary mb-1">Date</label>
             <input
               type="date"
@@ -209,7 +209,7 @@ export default function MaintenanceForm() {
           </div>
 
           {/* Model */}
-          <div>
+          <div className="p-3 bg-theme-background-secondary/30 rounded-lg border border-theme-border-light"> {/* Add container */}
             <label className="block text-sm text-theme-text-secondary mb-1">Model / Type</label>
             <select
               value={form["Model / Type"]}
@@ -227,7 +227,7 @@ export default function MaintenanceForm() {
           </div>
 
           {/* Plate */}
-          <div>
+          <div className="p-3 bg-theme-background-secondary/30 rounded-lg border border-theme-border-light"> {/* Add container */}
             <label className="block text-sm text-theme-text-secondary mb-1">Plate Number</label>
             <select
               value={form["Plate Number"]}
@@ -253,7 +253,7 @@ export default function MaintenanceForm() {
           </div>
 
           {/* Driver */}
-          <div>
+          <div className="p-3 bg-theme-background-secondary/30 rounded-lg border border-theme-border-light"> {/* Add container */}
             <label className="block text-sm text-theme-text-secondary mb-1">Driver</label>
             <select
               value={form.Driver}
@@ -283,7 +283,7 @@ export default function MaintenanceForm() {
           </div>
 
           {/* Description */}
-          <div>
+          <div className="p-3 bg-theme-background-secondary/30 rounded-lg border border-theme-border-light"> {/* Add container */}
             <label className="block text-sm text-theme-text-secondary mb-1">Description of Work</label>
             <textarea
               rows={3}
@@ -296,7 +296,7 @@ export default function MaintenanceForm() {
           </div>
 
           {/* Performed By */}
-          <div>
+          <div className="p-3 bg-theme-background-secondary/30 rounded-lg border border-theme-border-light"> {/* Add container */}
             <label className="block text-sm text-theme-text-secondary mb-1">Performed By</label>
             <select
               value={form["Performed By"]}
@@ -314,7 +314,7 @@ export default function MaintenanceForm() {
           </div>
 
           {/* Comments */}
-          <div>
+          <div className="p-3 bg-theme-background-secondary/30 rounded-lg border border-theme-border-light"> {/* Add container */}
             <label className="block text-sm text-theme-text-secondary mb-1">Comments</label>
             <textarea
               rows={2}
@@ -327,7 +327,7 @@ export default function MaintenanceForm() {
 
           {/* Photos */}
           {["Photo Before", "Photo After", "Photo Repair/Problem"].map((field) => (
-            <div key={field}>
+            <div key={field} className="p-3 bg-theme-background-secondary/30 rounded-lg border border-theme-border-light"> {/* Add container */}
               <label className="block text-sm text-theme-text-secondary mb-2">{field}</label>
               <div className="flex gap-3">
                 <label className="flex items-center gap-2 cursor-pointer bg-theme-primary-600 hover:bg-theme-primary-700 text-theme-text-primary px-3 py-2 rounded">
@@ -365,7 +365,7 @@ export default function MaintenanceForm() {
           ))}
 
           {/* Submit */}
-          <div>
+          <div className="p-3 bg-theme-background-secondary/30 rounded-lg border border-theme-border-light"> {/* Add container */}
             <button
               type="submit"
               disabled={submitting}
