@@ -93,7 +93,7 @@ export default function MaintenanceHistory() {
                       <td className="p-2">{r["Description of Work"]}</td>
                       <td className="p-2">{r["Comments"]}</td>
                       {["Photo Before", "Photo After", "Photo Repair/Problem"].map((field) => (
-                        <td key={field} className="p-2">
+                        <td key={`${i}-${field}`}> {/* Use a unique key combining row index and field name */}
                           {r[field] ? (
                             <a
                               href={r[field]}
@@ -116,7 +116,7 @@ export default function MaintenanceHistory() {
                               </div>
                             </a>
                           ) : (
-                            <span className="text-theme-text-muted">---</span> {/* Apply theme color for placeholder */}
+                            <span className="text-theme-text-muted p-2">---</span> {/* Apply theme color for placeholder, added p-2 for consistency */}
                           )}
                         </td>
                       ))}
