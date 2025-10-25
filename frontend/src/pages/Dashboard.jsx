@@ -1,96 +1,75 @@
 // frontend/src/pages/Dashboard.jsx
-import React from "react";
+import React, { useContext } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import Navbar from "../components/Navbar";
-import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, ClipboardList, Droplets, Truck, Users } from "lucide-react";
+import { Wrench, FileText, Car, SprayCan, Users, HardHat, Truck } from "lucide-react";
+import Navbar from "@/components/Navbar";
+import { AuthContext } from "@/context/AuthContext";
 
 export default function Dashboard() {
-  const { user } = useAuth();
-  const role = user?.role || "Guest";
+    const { user } = useContext(AuthContext);
 
-  const cards = [
-    {
-      title: "Maintenance Log",
-      description: "Fill or view maintenance operations",
-      icon: <Wrench className="w-8 h-8 text-white drop-shadow-md" />,
-      link: "/maintenance",
-      allowed: ["Supervisor", "Mechanic", "Driver"],
-      glow: "shadow-[0_0_15px_2px_rgba(59,130,246,0.6)]", // blue glow
-      gradient: "from-blue-600 to-cyan-500",
-    },
-    {
-      title: "Maintenance Requests",
-      description: "Manage Spare Parts and Oil/Grease requests",
-      icon: <ClipboardList className="w-8 h-8 text-white drop-shadow-md" />,
-      link: "/requests",
-      allowed: ["Supervisor", "Mechanic", "Driver"],
-      glow: "shadow-[0_0_15px_2px_rgba(34,197,94,0.6)]", // green glow
-      gradient: "from-emerald-600 to-green-500",
-    },
-    {
-      title: "Cleaning Log",
-      description: "Record and view cleaning activities",
-      icon: <Droplets className="w-8 h-8 text-white drop-shadow-md" />,
-      link: "/cleaning",
-      allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
-      glow: "shadow-[0_0_15px_2px_rgba(56,189,248,0.6)]", // sky glow
-      gradient: "from-sky-600 to-indigo-500",
-    },
-    {
-      title: "Equipment List",
-      description: "View and manage all vehicles/equipment",
-      icon: <Truck className="w-8 h-8 text-white drop-shadow-md" />,
-      link: "/equipment",
-      allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
-      glow: "shadow-[0_0_15px_2px_rgba(251,146,60,0.6)]", // orange glow
-      gradient: "from-orange-600 to-yellow-500",
-    },
-    {
-      title: "Users",
-      description: "Manage user accounts and roles",
-      icon: <Users className="w-8 h-8 text-white drop-shadow-md" />,
-      link: "/users",
-      allowed: ["Supervisor"],
-      glow: "shadow-[0_0_15px_2px_rgba(168,85,247,0.6)]", // purple glow
-      gradient: "from-purple-600 to-pink-500",
-    },
-  ];
+    // Define card configuration based on user role
+    const cardConfig = [
+        {
+            title: "Maintenance Log",
+            path: "/maintenance",
+            icon: <Wrench className="w-8 h-8" />,
+            roles: ["Supervisor", "Mechanic", "Driver"],
+            color: "from-blue-500 to-cyan-500"
+        },
+        {
+            title: "Maintenance Requests",
+            path: "/requests",
+            icon: <FileText className="w-8 h-8" />,
+            roles: ["Supervisor", "Mechanic", "Driver"],
+            color: "from-amber-500 to-orange-500"
+        },
+        {
+            title: "Cleaning Log",
+            path: "/cleaning",
+            icon: <SprayCan className="w-8 h-8" />,
+            roles: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"], // Assuming all can view/add to cleaning
+            color: "from-emerald-500 to-teal-500"
+        },
+        {
+            title: "Equipment List",
+            path: "/equipment",
+            icon: <Truck className="w-8 h-8" />,
+            roles: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
+            color: "from-violet-500 to-purple-500"
+        },
+        {
+            title: "Users",
+            path: "/users",
+            icon: <Users className="w-8 h-8" />,
+            roles: ["Supervisor"],
+            color: "from-rose-500 to-pink-500"
+        }
+    ];
 
-  const visibleCards = cards.filter((card) => card.allowed.includes(role));
+    // Filter cards based on user role
+    const visibleCards = cardConfig.filter(card => card.roles.includes(user?.role));
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white">
-      {/* ✅ Navbar */}
-      <Navbar user={user} />
-
-      <div className="p-6">
-        <h1 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-          Dashboard
-        </h1>
-
-        {/* ✅ Cards grid */}
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {visibleCards.map((card) => (
-            <Link to={card.link} key={card.title}>
-              <Card
-                className={`rounded-2xl bg-gradient-to-br ${card.gradient} ${card.glow} hover:scale-[1.04] hover:brightness-110 transition-all duration-300 border border-white/10`}
-              >
-                <CardContent className="flex flex-col items-center justify-center p-8 text-center space-y-3">
-                  <div className="p-3 rounded-full bg-white/10 backdrop-blur-sm">
-                    {card.icon}
-                  </div>
-                  <h2 className="text-xl font-semibold text-white drop-shadow-md">
-                    {card.title}
-                  </h2>
-                  <p className="text-gray-100/90 text-sm">{card.description}</p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+    return (
+        <div className="min-h-screen bg-theme-background-primary text-theme-text-primary"> {/* Apply main theme colors */}
+            <Navbar user={user} />
+            <div className="p-6">
+                <h1 className="text-3xl font-bold mb-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">
+                    Maintenance Management Dashboard
+                </h1>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {visibleCards.map((card, index) => (
+                        <Link
+                            key={index}
+                            to={card.path}
+                            className={`p-6 rounded-2xl shadow-lg bg-gradient-to-br ${card.color} text-white flex flex-col items-center justify-center transform transition-transform hover:scale-105`}
+                        >
+                            <div className="mb-4">{card.icon}</div>
+                            <h2 className="text-xl font-semibold">{card.title}</h2>
+                        </Link>
+                    ))}
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }
