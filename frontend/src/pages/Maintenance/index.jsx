@@ -1,13 +1,14 @@
 // frontend/src/pages/Maintenance/index.jsx
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { ClipboardPlus, History } from "lucide-react";
+import { ClipboardPlus, History, ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 
 export default function Maintenance() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const cards = [
     {
@@ -33,6 +34,14 @@ export default function Maintenance() {
       <Navbar user={user} />
 
       <div className="p-6">
+        {/* Back button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition"
+        >
+          <ArrowLeft size={18} /> Back
+        </button>
+
         <h1 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
           Maintenance
         </h1>
