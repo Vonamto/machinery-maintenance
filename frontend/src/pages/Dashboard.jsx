@@ -1,12 +1,14 @@
 // frontend/src/pages/Dashboard.jsx
-import React, { useContext } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { Wrench, FileText, Car, SprayCan, Users, HardHat, Truck } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import { AuthContext } from "@/context/AuthContext";
+// Import the custom hook instead of the context object
+import { useAuth } from "@/context/AuthContext";
 
 export default function Dashboard() {
-    const { user } = useContext(AuthContext);
+    // Use the custom hook to get the user
+    const { user } = useAuth();
 
     // Define card configuration based on user role
     const cardConfig = [
