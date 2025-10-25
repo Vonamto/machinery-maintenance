@@ -27,22 +27,22 @@ export default function Navbar({ user }) {
                     <h1 className="text-lg font-semibold text-theme-text-primary">
                         👋 Welcome, {user?.full_name || user?.username || "User"}
                     </h1>
-                    {/* Add Dashboard button */}
+                </div>
+                {/* Group Dashboard and Logout buttons together on the right */}
+                <div className="flex items-center space-x-2"> {/* Group buttons, reduced space-x */}
                     <button
                         onClick={goToDashboard}
-                        className="flex items-center gap-2 px-3 py-2 bg-theme-primary-600 hover:bg-theme-primary-700 text-theme-text-primary rounded-lg transition-colors text-sm" // Apply theme colors
+                        className="flex items-center gap-1 px-3 py-2 bg-theme-primary-600 hover:bg-theme-primary-700 text-theme-text-primary rounded-lg transition-colors text-sm" // Reduced gap, smaller padding
                     >
-                        <Home size={16} /> {/* Smaller icon */}
-                        Dashboard
+                        <Home size={14} /> {/* Smaller icon */}
+                        <span>Dashboard</span> {/* Keep text visible */}
                     </button>
-                </div>
-                <div className="flex items-center space-x-4">
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-2 px-4 py-2 bg-theme-primary-600 hover:bg-theme-primary-700 text-theme-text-primary rounded-lg transition-colors" // Apply theme colors
+                        className="flex items-center gap-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-theme-text-primary rounded-lg transition-colors text-sm" // Red background, reduced gap, smaller padding
                     >
-                        <LogOut size={18} />
-                        <span className="hidden sm:inline">Logout</span>
+                        <LogOut size={14} /> {/* Smaller icon */}
+                        <span>Logout</span> {/* Keep text visible */}
                     </button>
                 </div>
             </div>
