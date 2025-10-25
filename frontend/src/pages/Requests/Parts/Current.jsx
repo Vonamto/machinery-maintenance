@@ -1,7 +1,7 @@
 // frontend/src/pages/Requests/Parts/CurrentRequests.jsx
 import React, { useEffect, useState } from "react";
 import { ArrowLeft, ExternalLink } from "lucide-react";
-import Navbar from "@/components/Navbar";
+import Navbar from "@/components/Navbar"; // Import Navbar for consistent styling
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useCache } from "@/context/CacheContext"; // Import Cache Context
@@ -29,8 +29,12 @@ export default function PartsCurrentRequests() {
                 });
                 const data = await res.json();
                 if (Array.isArray(data)) {
-                    // Filter for pending/in-progress requests (Completion Date is empty or null)
-                    const pendingRequests = data.filter(row => !row["Completion Date"] || row["Completion Date"].trim() === "");
+                    // Filter for pending/in-progress requests (Completion Date is empty, null, or whitespace)
+                    const pendingRequests = data.filter(row => {
+                        const completionDate = row["Completion Date"];
+                        // Check for null, undefined, empty string, or just whitespace
+                        return !completionDate || completionDate.trim() === "";
+                    });
                     setRows(pendingRequests.reverse()); // Reverse for newest first
                 }
             } catch (err) {
@@ -137,9 +141,10 @@ export default function PartsCurrentRequests() {
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
             <Navbar user={user} />
             <div className="p-6">
+                {/* Back button using Navbar's styling approach */}
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center text-gray-300 hover:text-white mb-6 transition-colors"
+                    className="flex items-center text-blue-500 hover:text-blue-400 mb-6 transition-colors" // Changed text color to blue
                 >
                     <ArrowLeft className="w-5 h-5 mr-2" />
                     Back
