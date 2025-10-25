@@ -64,14 +64,16 @@ export default function PartsRequestsHistory() {
         <div className="min-h-screen bg-theme-background-primary text-theme-text-primary">
             <Navbar user={user} />
             <div className="p-6">
+                {/* Back button - Apply theme color */}
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center text-theme-primary-500 hover:text-theme-primary-400 mb-6 transition-colors" // Apply theme color
+                    className="flex items-center text-theme-primary-500 hover:text-theme-primary-400 mb-6 transition-colors"
                 >
                     <ArrowLeft className="w-5 h-5 mr-2" />
                     Back
                 </button>
 
+                {/* Submenu title with consistent styling */}
                 <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Parts Requests History</h3>
 
                 {loading ? (
@@ -82,7 +84,8 @@ export default function PartsRequestsHistory() {
 
                 {rows.length === 0 ? (
                     <div className="text-center py-8">
-                        <p className="text-theme-text-muted">No completed or rejected requests found.</p> {/* Apply theme color */}
+                        {/* Apply theme color */}
+                        <p className="text-theme-text-muted">No completed or rejected requests found.</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
@@ -118,30 +121,37 @@ export default function PartsRequestsHistory() {
                                         <td className="p-2">{r["Completion Date"]}</td>
                                         <td className="p-2 max-w-xs truncate">{r["Comments"]}</td>
                                         <td className="p-2">
-                                            {r["Attachment Photo"] ? (
-                                                <a
-                                                    href={r["Attachment Photo"]}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="relative group block"
-                                                >
-                                                    {/* Apply theme border color to photo */}
-                                                    <img
-                                                        src={getThumbnailUrl(r["Attachment Photo"])} // Use thumbnail function
-                                                        alt="Attachment"
-                                                        className="h-16 w-16 object-cover rounded border border-theme-border-light group-hover:scale-110 transition-transform duration-150"
-                                                        onError={(e) => {
-                                                            e.target.style.display = "none";
-                                                            e.target.nextSibling.style.display = "flex";
-                                                        }}
-                                                    />
-                                                    <div className="hidden group-hover:flex absolute inset-0 bg-theme-background-secondary/70 items-center justify-center rounded border border-theme-border-light">
-                                                        <ExternalLink className="w-6 h-6 text-theme-primary-400" /> {/* Apply theme color for icon */}
-                                                    </div>
-                                                </a>
-                                            ) : (
-                                                <span className="text-theme-text-muted">No Photo</span> {/* Apply theme color */}
-                                            )}
+                                            {/* Explicitly define photo cell content to avoid JSX parsing issues */}
+                                            {(() => {
+                                                if (r["Attachment Photo"]) {
+                                                    return (
+                                                        <a
+                                                            href={r["Attachment Photo"]}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="relative group block"
+                                                        >
+                                                            {/* Apply theme border color to photo */}
+                                                            <img
+                                                                src={getThumbnailUrl(r["Attachment Photo"])} // Use thumbnail function
+                                                                alt="Attachment"
+                                                                className="h-16 w-16 object-cover rounded border border-theme-border-light group-hover:scale-110 transition-transform duration-150"
+                                                                onError={(e) => {
+                                                                    e.target.style.display = "none";
+                                                                    e.target.nextSibling.style.display = "flex";
+                                                                }}
+                                                            />
+                                                            <div className="hidden group-hover:flex absolute inset-0 bg-theme-background-secondary/70 items-center justify-center rounded border border-theme-border-light">
+                                                                {/* Apply theme color for icon */}
+                                                                <ExternalLink className="w-6 h-6 text-theme-primary-400" />
+                                                            </div>
+                                                        </a>
+                                                    );
+                                                } else {
+                                                    // Apply theme color
+                                                    return <span className="text-theme-text-muted">No Photo</span>;
+                                                }
+                                            })()}
                                         </td>
                                         {/* No Actions column for history view */}
                                     </tr>
