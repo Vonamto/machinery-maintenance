@@ -2,11 +2,14 @@
 import React, { useEffect, useState } from "react";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import Navbar from "@/components/Navbar";
+// Import the custom hook instead of the context object
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
+import { getThumbnailUrl } from "@/utils/imageUtils"; // Import the shared thumbnail utility
 
 export default function MaintenanceHistory() {
+  // Use the custom hook
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -31,35 +34,31 @@ export default function MaintenanceHistory() {
     load();
   }, []);
 
-  const getThumbnailUrl = (url) => {
-    if (!url) return null;
-    const match = url.match(/id=([^&]+)/);
-    if (match) {
-      const fileId = match[1];
-      return `https://drive.google.com/thumbnail?id=${fileId}&sz=w200`;
-    }
-    return url;
-  };
+  // No need to redefine getThumbnailUrl here if it's in utils/imageUtils.js
+  // const getThumbnailUrl = (url) => { ... }; // Remove this local definition
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
+    // Apply main theme background and text color
+    <div className="min-h-screen bg-theme-background-primary text-theme-text-primary">
       <Navbar user={user} />
       <div className="max-w-7xl mx-auto p-6">
+        {/* Back button - Apply theme color */}
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition"
+          className="inline-flex items-center gap-2 text-theme-primary-500 hover:text-theme-primary-400 mb-6 transition"
         >
           <ArrowLeft size={18} /> Back
         </button>
+        {/* Title - Keep the gradient for visual appeal */}
         <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-500">
           Maintenance History
         </h3>
         {loading ? (
           <p>Loading...</p>
         ) : (
-          <div className="overflow-x-auto border border-white/10 rounded-lg">
+          <div className="overflow-x-auto border border-theme-border-light rounded-lg"> {/* Apply theme border color */}
             <table className="w-full text-sm text-left">
-              <thead className="bg-white/10">
+              <thead className="bg-theme-background-secondary"> {/* Apply theme color for header */}
                 <tr>
                   <th className="p-2">#</th>
                   <th className="p-2">Date</th>
@@ -77,13 +76,14 @@ export default function MaintenanceHistory() {
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan="11" className="text-center p-4 text-gray-400">
+                    <td colSpan="11" className="text-center p-4 text-theme-text-muted"> {/* Apply theme color for muted text */}
                       No maintenance records yet.
                     </td>
                   </tr>
                 ) : (
                   rows.map((r, i) => (
-                    <tr key={i} className={i % 2 === 0 ? "bg-white/5" : "bg-transparent"}>
+                    // Apply alternating row colors using theme colors
+                    <tr key={i} className={i % 2 === 0 ? "bg-theme-background-surface" : "bg-theme-background-secondary/30"}>
                       <td className="p-2">{i + 1}</td>
                       <td className="p-2">{r["Date"]}</td>
                       <td className="p-2">{r["Model / Type"]}</td>
@@ -95,27 +95,28 @@ export default function MaintenanceHistory() {
                       {["Photo Before", "Photo After", "Photo Repair/Problem"].map((field) => (
                         <td key={field} className="p-2">
                           {r[field] ? (
-                            
-                              <a href={r[field]}
+                            <a
+                              href={r[field]}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="relative group block"
                             >
+                              {/* Use the imported thumbnail utility */}
                               <img
                                 src={getThumbnailUrl(r[field])}
                                 alt={field}
-                                className="h-16 w-16 object-cover rounded border border-white/20 group-hover:scale-110 transition-transform duration-150"
+                                className="h-16 w-16 object-cover rounded border border-theme-border-light group-hover:scale-110 transition-transform duration-150" // Apply theme border color
                                 onError={(e) => {
                                   e.target.style.display = "none";
                                   e.target.nextSibling.style.display = "flex";
                                 }}
                               />
-                              <div className="hidden h-16 w-16 items-center justify-center bg-gray-700 rounded border border-white/20 group-hover:bg-gray-600">
-                                <ExternalLink size={20} className="text-cyan-400" />
+                              <div className="hidden h-16 w-16 items-center justify-center bg-theme-background-secondary rounded border border-theme-border-light group-hover:bg-theme-background-primary">
+                                <ExternalLink size={20} className="text-theme-primary-400" /> {/* Apply theme color for icon */}
                               </div>
                             </a>
                           ) : (
-                            <span className="text-gray-500">---</span>
+                            <span className="text-theme-text-muted">---</span> {/* Apply theme color for placeholder */}
                           )}
                         </td>
                       ))}
