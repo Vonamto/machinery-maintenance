@@ -193,9 +193,10 @@ export default function PartsCurrentRequests() {
 
     if (loading && rows.length === 0) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
+            // Apply main theme background and text color
+            <div className="min-h-screen bg-theme-background-primary text-theme-text-primary flex items-center justify-center">
                 <div className="text-center">
-                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-theme-primary-500 mb-4"></div>
                     <p className="text-lg">Loading current requests...</p>
                 </div>
             </div>
@@ -203,13 +204,15 @@ export default function PartsCurrentRequests() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
+        // Apply main theme background and text color
+        <div className="min-h-screen bg-theme-background-primary text-theme-text-primary">
             <Navbar user={user} />
             <div className="p-6">
                 {/* Back button using Navbar's styling approach */}
+                {/* Apply theme color */}
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center text-blue-500 hover:text-blue-400 mb-6 transition-colors" // Changed text color to blue
+                    className="flex items-center text-theme-primary-500 hover:text-theme-primary-400 mb-6 transition-colors" // Changed text color to theme primary
                 >
                     <ArrowLeft className="w-5 h-5 mr-2" />
                     Back
@@ -226,12 +229,15 @@ export default function PartsCurrentRequests() {
 
                 {rows.length === 0 ? (
                     <div className="text-center py-8">
-                        <p className="text-gray-400">No pending or in-progress requests found.</p>
+                        {/* Apply theme color */}
+                        <p className="text-theme-text-muted">No pending or in-progress requests found.</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="min-w-full bg-gray-800/50 rounded-lg overflow-hidden">
-                            <thead className="bg-gray-700">
+                        {/* Apply theme colors for table container */}
+                        <table className="min-w-full bg-theme-background-card rounded-lg overflow-hidden">
+                            {/* Apply theme color for table header */}
+                            <thead className="bg-theme-background-secondary">
                                 <tr>
                                     <th className="p-2">Request Date</th>
                                     <th className="p-2">Model / Type</th>
@@ -248,7 +254,8 @@ export default function PartsCurrentRequests() {
                             </thead>
                             <tbody>
                                 {rows.map((r, i) => (
-                                    <tr key={r.__original_index} className={i % 2 === 0 ? "bg-white/5" : "bg-transparent"}> {/* Use original index for key if available */}
+                                    // Apply alternating row colors using theme colors
+                                    <tr key={r.__original_index} className={i % 2 === 0 ? "bg-theme-background-surface" : "bg-theme-background-secondary/30"}> {/* Use original index for key if available */}
                                         <td className="p-2">{r["Request Date"]}</td>
                                         <td className="p-2">{r["Model / Type"]}</td>
                                         <td className="p-2">{r["Plate Number"]}</td>
@@ -257,10 +264,11 @@ export default function PartsCurrentRequests() {
                                         {editingRow === i ? (
                                             <>
                                                 <td className="p-2">
+                                                    {/* Apply theme colors for edit select */}
                                                     <select
                                                         value={editData.Status}
                                                         onChange={(e) => setEditData({ ...editData, Status: e.target.value })}
-                                                        className="w-full p-1 rounded bg-gray-700 text-white"
+                                                        className="w-full p-1 rounded bg-theme-background-secondary text-theme-text-primary"
                                                     >
                                                         <option value="">Select Status</option>
                                                         <option value="Pending">Pending</option>
@@ -270,10 +278,11 @@ export default function PartsCurrentRequests() {
                                                     </select>
                                                 </td>
                                                 <td className="p-2">
+                                                    {/* Apply theme colors for edit select */}
                                                     <select
                                                         value={editData["Handled By"]}
                                                         onChange={(e) => setEditData({ ...editData, "Handled By": e.target.value })}
-                                                        className="w-full p-1 rounded bg-gray-700 text-white"
+                                                        className="w-full p-1 rounded bg-theme-background-secondary text-theme-text-primary"
                                                     >
                                                         <option value="">Select Handler</option>
                                                         {mechanicSupervisorOptions.map(name => (
@@ -299,44 +308,50 @@ export default function PartsCurrentRequests() {
                                                     rel="noopener noreferrer"
                                                     className="relative group block"
                                                 >
+                                                    {/* Apply theme border color to photo */}
                                                     <img
                                                         src={getThumbnailUrl(r["Attachment Photo"])} // Use thumbnail function
                                                         alt="Attachment"
-                                                        className="h-16 w-16 object-cover rounded border border-white/20 group-hover:scale-110 transition-transform duration-150"
+                                                        className="h-16 w-16 object-cover rounded border border-theme-border-light group-hover:scale-110 transition-transform duration-150"
                                                         onError={(e) => {
                                                             e.target.style.display = "none";
                                                             e.target.nextSibling.style.display = "flex";
                                                         }}
                                                     />
-                                                    <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded border border-white/20">
-                                                        <ExternalLink className="w-6 h-6 text-white" />
+                                                    <div className="hidden group-hover:flex absolute inset-0 bg-theme-background-secondary/70 items-center justify-center rounded border border-theme-border-light">
+                                                        {/* Apply theme color for icon */}
+                                                        <ExternalLink className="w-6 h-6 text-theme-primary-400" />
                                                     </div>
                                                 </a>
                                             ) : (
-                                                <span className="text-gray-500">No Photo</span>
+                                                {/* Apply theme color */}
+                                                <span className="text-theme-text-muted">No Photo</span>
                                             )}
                                         </td>
                                         {canEdit && (
                                             <td className="p-2">
                                                 {editingRow === i ? (
                                                     <div className="flex space-x-2">
+                                                        {/* Apply theme colors for Save button */}
                                                         <button
                                                             onClick={() => handleSaveClick(i)}
-                                                            className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm"
+                                                            className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm text-theme-text-primary"
                                                         >
                                                             Save
                                                         </button>
+                                                        {/* Apply theme colors for Cancel button */}
                                                         <button
                                                             onClick={handleCancelClick}
-                                                            className="px-3 py-1 bg-gray-600 hover:bg-gray-700 rounded text-sm"
+                                                            className="px-3 py-1 bg-gray-600 hover:bg-gray-700 rounded text-sm text-theme-text-primary"
                                                         >
                                                             Cancel
                                                         </button>
                                                     </div>
                                                 ) : (
+                                                    {/* Apply theme colors for Edit button */}
                                                     <button
                                                         onClick={() => handleEditClick(i, r)}
-                                                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm"
+                                                        className="px-3 py-1 bg-theme-primary-600 hover:bg-theme-primary-700 rounded text-sm text-theme-text-primary"
                                                     >
                                                         Edit
                                                     </button>
