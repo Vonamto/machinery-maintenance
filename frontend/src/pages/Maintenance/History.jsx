@@ -1,5 +1,4 @@
 // frontend/src/pages/Maintenance/History.jsx
-
 import React, { useEffect, useState } from "react";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -32,7 +31,6 @@ export default function MaintenanceHistory() {
     load();
   }, []);
 
-  // Helper: Convert Google Drive links to thumbnail-friendly format
   const getThumbnailUrl = (url) => {
     if (!url) return null;
     const match = url.match(/id=([^&]+)/);
@@ -53,11 +51,9 @@ export default function MaintenanceHistory() {
         >
           <ArrowLeft size={18} /> Back
         </button>
-
         <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-500">
           Maintenance History
         </h3>
-
         {loading ? (
           <p>Loading...</p>
         ) : (
@@ -87,10 +83,7 @@ export default function MaintenanceHistory() {
                   </tr>
                 ) : (
                   rows.map((r, i) => (
-                    <tr
-                      key={i}
-                      className={i % 2 === 0 ? "bg-white/5" : "bg-transparent"}
-                    >
+                    <tr key={i} className={i % 2 === 0 ? "bg-white/5" : "bg-transparent"}>
                       <td className="p-2">{i + 1}</td>
                       <td className="p-2">{r["Date"]}</td>
                       <td className="p-2">{r["Model / Type"]}</td>
@@ -99,41 +92,8 @@ export default function MaintenanceHistory() {
                       <td className="p-2">{r["Performed By"]}</td>
                       <td className="p-2">{r["Description of Work"]}</td>
                       <td className="p-2">{r["Comments"]}</td>
-                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map((f) => (
-                        <td key={f} className="p-2">
-                          {r[f] ? (
-                            
-                              href={r[f]}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="relative group block"
-                            >
-                              <img
-                                src={getThumbnailUrl(r[f])}
-                                alt={f}
-                                className="h-16 w-16 object-cover rounded border border-white/20 group-hover:scale-110 transition-transform duration-150"
-                                onError={(e) => {
-                                  e.target.style.display = "none";
-                                  e.target.nextSibling.style.display = "flex";
-                                }}
-                              />
-                              <div className="hidden h-16 w-16 items-center justify-center bg-gray-700 rounded border border-white/20 group-hover:bg-gray-600">
-                                <ExternalLink size={20} className="text-cyan-400" />
-                              </div>
-                            </a>
-                          ) : (
-                            <span className="text-gray-500">---</span>
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map((field) => (
+                        <td key={field} className="p-2">
+                          {r[field] ? (
+                            <a href={r[field]} target="_blank" rel="noopener noreferrer" className="relative group block">
+                              <img src={getThumbnailUrl(r[field])} alt={field} className="h-16 w-16 object-cover rounded border border-white/20 gro
