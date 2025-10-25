@@ -3,11 +3,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Camera, Upload } from "lucide-react";
 import Navbar from "@/components/Navbar";
+// Import the custom hook instead of the context object
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
 
 export default function PartsRequestForm() {
+  // Use the custom hook
   const { user } = useAuth();
   const navigate = useNavigate();
   const cache = useCache();
@@ -130,22 +132,29 @@ export default function PartsRequestForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
+    // Apply main theme background and text color
+    <div className="min-h-screen bg-theme-background-primary text-theme-text-primary">
       <Navbar user={user} />
       <div className="max-w-3xl mx-auto p-6">
-        <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-4 transition">
+        {/* Back button - Apply theme color */}
+        <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-theme-primary-500 hover:text-theme-primary-400 mb-4 transition">
           <ArrowLeft size={18} /> Back
         </button>
+        {/* Title - Keep the gradient for visual appeal */}
         <h1 className="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
           Request Spare Parts
         </h1>
-        <form onSubmit={handleSubmit} className="space-y-5 bg-white/5 p-6 rounded-2xl border border-white/10 shadow-lg">
+        <form onSubmit={handleSubmit} 
+              // Apply theme colors for form container, keeping distinct field styles
+              className="space-y-5 bg-theme-background-surface p-6 rounded-2xl border border-theme-border-light shadow-lg">
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Request Date</label>
+            <label className="block text-sm text-theme-text-secondary mb-1">Request Date</label>
+            {/* Keep original bg-gray-800 for this specific field */}
             <input type="date" value={form["Request Date"]} onChange={(e) => handleChange("Request Date", e.target.value)} className="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white" />
           </div>
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Model / Type</label>
+            <label className="block text-sm text-theme-text-secondary mb-1">Model / Type</label>
+            {/* Keep original bg-gray-800 for this specific field */}
             <select value={form["Model / Type"]} onChange={(e) => handleChange("Model / Type", e.target.value)} className="w-full p-2 rounded bg-gray-800 text-white">
               <option value="">--- Choose Model ---</option>
               {modelOptions.map((m) => (
@@ -154,34 +163,40 @@ export default function PartsRequestForm() {
             </select>
           </div>
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Plate Number</label>
+            <label className="block text-sm text-theme-text-secondary mb-1">Plate Number</label>
+            {/* Keep original bg-gray-800 for this specific field */}
             <select value={form["Plate Number"]} onChange={(e) => handleChange("Plate Number", e.target.value)} className="w-full p-2 rounded bg-gray-800 text-white">
               <option value="">--- Choose Plate ---</option>
               {plateOptions.length ? plateOptions.map((p) => (<option key={p} value={p}>{p}</option>)) : cache.getEquipment ? (cache.getEquipment() || []).map((e) => (<option key={e["Plate Number"]} value={e["Plate Number"]}>{e["Plate Number"]}</option>)) : null}
             </select>
           </div>
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Driver</label>
+            <label className="block text-sm text-theme-text-secondary mb-1">Driver</label>
+            {/* Keep original bg-gray-800 for this specific field */}
             <select value={form.Driver} onChange={(e) => handleChange("Driver", e.target.value)} className="w-full p-2 rounded bg-gray-800 text-white">
               <option value="">--- Choose Driver ---</option>
               {driverOptions.length ? driverOptions.map((d) => (<option key={d} value={d}>{d}</option>)) : Array.from(new Set((cache.getEquipment ? cache.getEquipment() : cache.equipment || []).flatMap((eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]]).filter(Boolean))).map((d) => (<option key={d} value={d}>{d}</option>))}
             </select>
           </div>
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Requested Parts</label>
+            <label className="block text-sm text-theme-text-secondary mb-1">Requested Parts</label>
+            {/* Keep original bg-gray-800 for this specific field */}
             <textarea rows={3} value={form["Requested Parts"]} onChange={(e) => handleChange("Requested Parts", e.target.value)} className="w-full p-2 rounded bg-gray-800 text-white" placeholder="List the parts needed..." />
           </div>
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Comments</label>
+            <label className="block text-sm text-theme-text-secondary mb-1">Comments</label>
+            {/* Keep original bg-gray-800 for this specific field */}
             <textarea rows={2} value={form.Comments} onChange={(e) => handleChange("Comments", e.target.value)} className="w-full p-2 rounded bg-gray-800 text-white" />
           </div>
           <div>
-            <label className="block text-sm text-gray-300 mb-2">Attachment Photo</label>
+            <label className="block text-sm text-theme-text-secondary mb-2">Attachment Photo</label>
             <div className="flex gap-3">
-              <label className="flex items-center gap-2 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">
+              {/* Keep original bg-blue-600 for Upload button */}
+              <label className="flex items-center gap-2 cursor-pointer bg-theme-primary-600 hover:bg-theme-primary-700 text-theme-text-primary px-3 py-2 rounded">
                 <Upload size={16} />Upload<input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Attachment Photo")} />
               </label>
-              <label className="flex items-center gap-2 cursor-pointer bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-2 rounded">
+              {/* Keep original bg-cyan-600 for Camera button */}
+              <label className="flex items-center gap-2 cursor-pointer bg-theme-secondary-600 hover:bg-theme-secondary-700 text-theme-text-primary px-3 py-2 rounded">
                 <Camera size={16} />Camera<input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Attachment Photo")} />
               </label>
             </div>
@@ -189,12 +204,14 @@ export default function PartsRequestForm() {
               <img
                 src={form["Attachment Photo"]}
                 alt="Attachment"
-                className="mt-3 max-h-44 rounded border border-white/10 object-contain"
+                // Apply theme border color to photo
+                className="mt-3 max-h-44 rounded border border-theme-border-light object-contain"
               />
             )}
           </div>
           <div>
-            <button type="submit" disabled={submitting} className="w-full py-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 hover:brightness-110 text-white font-semibold">
+            {/* Keep original gradient for Submit button */}
+            <button type="submit" disabled={submitting} className="w-full py-3 rounded-lg bg-gradient-to-r from-theme-primary-600 to-theme-secondary-500 hover:brightness-110 text-theme-text-primary font-semibold">
               {submitting ? "Submitting..." : "Submit Request"}
             </button>
           </div>
