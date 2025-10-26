@@ -18,7 +18,7 @@ export default function PartsRequestForm() {
     "Model / Type": "",
     "Plate Number": "",
     Driver: "",
-    "Requested Parts": "",
+    "Requested Parts": "", // This internal field name stays the same
     Comments: "",
     "Attachment Photo": "",
   });
@@ -98,12 +98,13 @@ export default function PartsRequestForm() {
       alert("Please choose at least Model, Plate Number, or Driver.");
       return;
     }
-    if (!form["Requested Parts"]) {
-      alert("Please enter the requested parts.");
+    if (!form["Requested Parts"]) { // Internal field name check
+      alert("Please enter the requested parts."); // Alert message can be generic
       return;
     }
     setSubmitting(true);
     try {
+      // The payload still uses the original field name "Requested Parts"
       const payload = { ...form, Status: "Pending" };
       const res = await fetchWithAuth("/api/add/Requests_Parts", {
         method: "POST",
@@ -141,10 +142,12 @@ export default function PartsRequestForm() {
             <Package className="w-8 h-8 text-white" />
           </div>
           <div>
+            {/* Changed Title */}
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-              Request Spare Parts
+              Maintenance & Spare Parts Request
             </h1>
-            <p className="text-gray-400 text-sm mt-1">Fill in the details below to submit your parts request</p>
+            {/* Changed Subtitle */}
+            <p className="text-gray-400 text-sm mt-1">Fill in the details below to submit your request</p>
           </div>
         </div>
 
@@ -206,13 +209,15 @@ export default function PartsRequestForm() {
           </div>
 
           <div className="group">
-            <label className="block text-sm font-medium text-gray-300 mb-2">Requested Parts</label>
+            {/* Changed Label */}
+            <label className="block text-sm font-medium text-gray-300 mb-2">Describe Your Request</label>
             <textarea
               rows={4}
-              value={form["Requested Parts"]}
-              onChange={(e) => handleChange("Requested Parts", e.target.value)}
+              value={form["Requested Parts"]} // Internal field name unchanged
+              onChange={(e) => handleChange("Requested Parts", e.target.value)} // Internal field name unchanged
               className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all resize-none"
-              placeholder="List the parts needed..."
+              {/* Changed Placeholder */}
+              placeholder="Describe the Problem or Needed Part"
             />
           </div>
 
