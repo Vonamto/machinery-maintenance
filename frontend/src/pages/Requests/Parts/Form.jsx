@@ -142,9 +142,9 @@ export default function PartsRequestForm() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-              Request Spare Parts
+              Maintenance & Spare Parts Request
             </h1>
-            <p className="text-gray-400 text-sm mt-1">Fill in the details below to submit your parts request</p>
+            <p className="text-gray-400 text-sm mt-1">Fill in the details below to submit your request</p>
           </div>
         </div>
 
@@ -206,13 +206,13 @@ export default function PartsRequestForm() {
           </div>
 
           <div className="group">
-            <label className="block text-sm font-medium text-gray-300 mb-2">Requested Parts</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Describe Your Request</label>
             <textarea
               rows={4}
               value={form["Requested Parts"]}
               onChange={(e) => handleChange("Requested Parts", e.target.value)}
               className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all resize-none"
-              placeholder="List the parts needed..."
+              placeholder="Describe the Problem or Needed Part"
             />
           </div>
 
