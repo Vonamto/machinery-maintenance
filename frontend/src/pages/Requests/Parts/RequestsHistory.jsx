@@ -38,14 +38,13 @@ export default function PartsRequestsHistory() {
         });
         const data = await res.json();
         if (Array.isArray(data)) {
-          // ✅ include both Completed and Rejected
+          // ✅ Include Completed (with date) and Rejected (even without date)
           const historyRequests = data.filter((row) => {
-            const completionDate = row["Completion Date"];
-            const status = (row["Status"] || "").trim();
+            const status = (row["Status"] || "").trim().toLowerCase();
+            const completionDate = (row["Completion Date"] || "").trim();
             return (
-              completionDate &&
-              completionDate.trim() !== "" &&
-              ["Completed", "Rejected"].includes(status)
+              (status === "completed" && completionDate !== "") ||
+              status === "rejected"
             );
           });
           setRows(historyRequests.reverse());
@@ -60,19 +59,20 @@ export default function PartsRequestsHistory() {
   }, []);
 
   const getStatusBadge = (status) => {
+    const lower = (status || "").toLowerCase();
     const styles = {
-      Completed: {
+      completed: {
         bg: "bg-green-500/20",
         text: "text-green-300",
         icon: <CheckCircle size={14} />,
       },
-      Rejected: {
+      rejected: {
         bg: "bg-red-500/20",
         text: "text-red-300",
         icon: <XCircle size={14} />,
       },
     };
-    const style = styles[status] || {
+    const style = styles[lower] || {
       bg: "bg-gray-500/20",
       text: "text-gray-300",
       icon: <HistoryIcon size={14} />,
@@ -109,7 +109,7 @@ export default function PartsRequestsHistory() {
           <ArrowLeft
             size={18}
             className="group-hover:-translate-x-1 transition-transform"
-          />{" "}
+          />
           Back
         </button>
 
