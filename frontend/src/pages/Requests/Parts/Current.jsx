@@ -289,7 +289,7 @@ export default function PartsCurrentRequests() {
                                         <td className="p-4">
                                             {r["Attachment Photo"] ? (
                                                 
-                                                    href={r["Attachment Photo"]}
+                                                   <a href={r["Attachment Photo"]}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="relative group block"
