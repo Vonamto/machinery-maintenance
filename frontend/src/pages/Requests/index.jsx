@@ -12,8 +12,8 @@ export default function RequestsMenu() {
 
   const cards = [
     {
-      title: "Spare Parts Requests",
-      description: "Request parts, view status and history",
+      title: "Maintenance & Spare Parts Request",
+      description: "Make a Maintenance Request & Keep Track of Your Requests",
       icon: <Package className="w-10 h-10 text-white drop-shadow-md" />,
       link: "/requests/parts",
       gradient: "from-blue-600 to-cyan-500",
