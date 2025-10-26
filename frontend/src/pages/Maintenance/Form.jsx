@@ -1,315 +1,305 @@
-// frontend/src/pages/Maintenance/Form.jsx
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Upload, Wrench } from "lucide-react";
+// frontend/src/pages/Maintenance/History.jsx
+import React, { useEffect, useState, useMemo } from "react";
+import {
+  ArrowLeft,
+  ExternalLink,
+  History as HistoryIcon,
+  Wrench,
+  XCircle,
+} from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
-import { useCache } from "@/context/CacheContext";
-import { fetchWithAuth } from "@/api/api";
+import { useNavigate } from "react-router-dom";
+import CONFIG from "@/config";
 
-export default function MaintenanceForm() {
+const getThumbnailUrl = (url) => {
+  if (!url) return null;
+  const match = url.match(/id=([^&]+)/);
+  if (match) {
+    const fileId = match[1];
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w200`;
+  }
+  return url;
+};
+
+export default function MaintenanceHistory() {
   const { user } = useAuth();
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const cache = useCache();
 
-  const todayDate = new Date().toISOString().split("T")[0];
-
-  const [form, setForm] = useState({
-    Date: todayDate,
-    "Model / Type": "",
-    "Plate Number": "",
-    Driver: "",
-    "Description of Work": "",
-    "Performed By": user?.full_name || "",
-    Comments: "",
-    "Photo Before": "",
-    "Photo After": "",
-    "Photo Repair/Problem": "",
+  // filters
+  const [filters, setFilters] = useState({
+    model: "",
+    plate: "",
+    driver: "",
+    from: "",
+    to: "",
   });
 
-  const [modelOptions, setModelOptions] = useState([]);
-  const [plateOptions, setPlateOptions] = useState([]);
-  const [driverOptions, setDriverOptions] = useState([]);
-  const [submitting, setSubmitting] = useState(false);
-
   useEffect(() => {
-    const models = cache.getModels ? cache.getModels() : [];
-    setModelOptions(models);
-  }, [cache]);
-
-  useEffect(() => {
-    const model = form["Model / Type"];
-    if (!model) {
-      setPlateOptions([]);
-      return;
-    }
-    const plates = cache.getPlatesByModel ? cache.getPlatesByModel(model) : [];
-    setPlateOptions(plates);
-  }, [form["Model / Type"], cache]);
-
-  useEffect(() => {
-    const plate = form["Plate Number"];
-    if (!plate) {
-      setDriverOptions([]);
-      return;
-    }
-    const eq = cache.getEquipmentByPlate ? cache.getEquipmentByPlate(plate) : null;
-    if (eq) {
-      setForm((p) => ({ ...p, "Model / Type": eq["Model / Type"] || p["Model / Type"] }));
-      const drivers = cache.getDriversByPlate ? cache.getDriversByPlate(plate) : [];
-      setDriverOptions(drivers);
-    }
-  }, [form["Plate Number"], cache]);
-
-  useEffect(() => {
-    const driver = form.Driver;
-    if (!driver) return;
-    const allEquipment = cache.getEquipment ? cache.getEquipment() : cache.equipment || [];
-    const matches = (allEquipment || []).filter(
-      (e) => e["Driver 1"] === driver || e["Driver 2"] === driver || e["Driver"] === driver
-    );
-    if (matches.length === 1) {
-      const eq = matches[0];
-      setForm((p) => ({
-        ...p,
-        "Plate Number": eq["Plate Number"] || p["Plate Number"],
-        "Model / Type": eq["Model / Type"] || p["Model / Type"],
-      }));
-      setPlateOptions([eq["Plate Number"]]);
-      setDriverOptions([matches[0]["Driver 1"], matches[0]["Driver 2"]].filter(Boolean));
-    } else if (matches.length > 1) {
-      setPlateOptions(matches.map((m) => m["Plate Number"]));
-      setDriverOptions([...new Set(matches.flatMap((m) => [m["Driver 1"], m["Driver 2"]]).filter(Boolean))]);
-    } else {
-      setPlateOptions([]);
-    }
-  }, [form.Driver, cache]);
-
-  const handleChange = (name, value) => {
-    setForm((p) => ({ ...p, [name]: value }));
-  };
-
-  const handleFile = (file, field) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => handleChange(field, reader.result);
-    reader.readAsDataURL(file);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!form["Model / Type"] && !form["Plate Number"] && !form.Driver) {
-      alert("Please choose at least Model, Plate Number, or Driver.");
-      return;
-    }
-    if (!form["Description of Work"]) {
-      alert("Please enter a description of work.");
-      return;
-    }
-    if (!form["Performed By"]) {
-      alert("Please select who performed the work.");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const res = await fetchWithAuth("/api/add/Maintenance_Log", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (data.status === "success") {
-        alert("✅ Maintenance log added successfully.");
-        navigate("/maintenance");
-      } else {
-        alert("❌ Error: " + (data.message || "Unknown error"));
+    async function load() {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${CONFIG.BACKEND_URL}/api/Maintenance_Log`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (Array.isArray(data)) setRows(data.reverse());
+      } catch (err) {
+        console.error("Error loading maintenance history:", err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Submit error:", err);
-      alert("Network error submitting form.");
-    } finally {
-      setSubmitting(false);
     }
-  };
+    load();
+  }, []);
 
-  const cachedUsers = cache.getUsernames ? cache.getUsernames() : cache.usernames || [];
-  const performers = (cachedUsers || [])
-    .filter((u) => u.Role && ["Supervisor", "Mechanic"].includes(u.Role))
-    .map((u) => u.Name || u["Full Name"])
-    .filter(Boolean);
+  // derive dropdown options dynamically
+  const modelOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(rows.map((r) => r["Model / Type"]).filter(Boolean))
+      ).sort(),
+    [rows]
+  );
 
-  if (user?.full_name && !performers.includes(user.full_name)) {
-    performers.unshift(user.full_name);
+  const plateOptions = useMemo(
+    () =>
+      Array.from(new Set(rows.map((r) => r["Plate Number"]).filter(Boolean))).sort(),
+    [rows]
+  );
+
+  const driverOptions = useMemo(
+    () =>
+      Array.from(new Set(rows.map((r) => r["Driver"]).filter(Boolean))).sort(),
+    [rows]
+  );
+
+  // apply filters
+  const filteredRows = useMemo(() => {
+    return rows.filter((r) => {
+      const date = r["Date"];
+      const model = r["Model / Type"] || "";
+      const plate = r["Plate Number"] || "";
+      const driver = r["Driver"] || "";
+
+      const matchModel = !filters.model || model === filters.model;
+      const matchPlate = !filters.plate || plate === filters.plate;
+      const matchDriver = !filters.driver || driver === filters.driver;
+
+      let matchDate = true;
+      if (filters.from && date < filters.from) matchDate = false;
+      if (filters.to && date > filters.to) matchDate = false;
+
+      return matchModel && matchPlate && matchDriver && matchDate;
+    });
+  }, [rows, filters]);
+
+  const resetFilters = () =>
+    setFilters({ model: "", plate: "", driver: "", from: "", to: "" });
+
+  if (loading && rows.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mb-4"></div>
+          <p className="text-lg">Loading maintenance history...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* back button */}
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back
+          <ArrowLeft
+            size={18}
+            className="group-hover:-translate-x-1 transition-transform"
+          />
+          Back
         </button>
 
+        {/* header */}
         <div className="mb-8 flex items-center gap-4">
           <div className="p-3 rounded-xl bg-gradient-to-br from-green-600 to-emerald-500 shadow-lg shadow-green-500/40">
             <Wrench className="w-8 h-8 text-white" />
           </div>
           <div>
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">
-              Maintenance Work Log
+              Maintenance History
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              Record completed maintenance or repairs
+              View and filter completed maintenance logs
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Date</label>
-              <input
-                type="date"
-                value={form.Date}
-                onChange={(e) => handleChange("Date", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Model / Type</label>
-              <select
-                value={form["Model / Type"]}
-                onChange={(e) => handleChange("Model / Type", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
-              >
-                <option value="">--- Choose Model ---</option>
-                {modelOptions.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Plate Number</label>
-              <select
-                value={form["Plate Number"]}
-                onChange={(e) => handleChange("Plate Number", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
-              >
-                <option value="">--- Choose Plate ---</option>
-                {plateOptions.length
-                  ? plateOptions.map((p) => (<option key={p} value={p}>{p}</option>))
-                  : cache.getEquipment
-                  ? (cache.getEquipment() || []).map((e) => (
-                      <option key={e["Plate Number"]} value={e["Plate Number"]}>{e["Plate Number"]}</option>
-                    ))
-                  : null}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Driver</label>
-              <select
-                value={form.Driver}
-                onChange={(e) => handleChange("Driver", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
-              >
-                <option value="">--- Choose Driver ---</option>
-                {driverOptions.length
-                  ? driverOptions.map((d) => (<option key={d} value={d}>{d}</option>))
-                  : Array.from(
-                      new Set(
-                        (cache.getEquipment ? cache.getEquipment() : cache.equipment || [])
-                          .flatMap((eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]])
-                          .filter(Boolean)
-                      )
-                    ).map((d) => (<option key={d} value={d}>{d}</option>))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Description of Work</label>
-            <textarea
-              rows={4}
-              value={form["Description of Work"]}
-              onChange={(e) => handleChange("Description of Work", e.target.value)}
-              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all resize-none"
-              placeholder="Describe the maintenance performed..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Performed By</label>
+        {/* filters */}
+        <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-4 mb-8 shadow-lg">
+          <div className="grid md:grid-cols-5 sm:grid-cols-2 gap-4">
             <select
-              value={form["Performed By"]}
-              onChange={(e) => handleChange("Performed By", e.target.value)}
-              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
+              value={filters.model}
+              onChange={(e) => setFilters((f) => ({ ...f, model: e.target.value }))}
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
             >
-              <option value="">--- Select Performer ---</option>
-              {performers.map((p) => (
-                <option key={p} value={p}>{p}</option>
+              <option value="">Model</option>
+              {modelOptions.map((m) => (
+                <option key={m}>{m}</option>
               ))}
             </select>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Comments</label>
-            <textarea
-              rows={3}
-              value={form.Comments}
-              onChange={(e) => handleChange("Comments", e.target.value)}
-              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all resize-none"
+            <select
+              value={filters.plate}
+              onChange={(e) => setFilters((f) => ({ ...f, plate: e.target.value }))}
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+            >
+              <option value="">Plate</option>
+              {plateOptions.map((p) => (
+                <option key={p}>{p}</option>
+              ))}
+            </select>
+
+            <select
+              value={filters.driver}
+              onChange={(e) => setFilters((f) => ({ ...f, driver: e.target.value }))}
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+            >
+              <option value="">Driver</option>
+              {driverOptions.map((d) => (
+                <option key={d}>{d}</option>
+              ))}
+            </select>
+
+            <input
+              type="date"
+              value={filters.from}
+              onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+              placeholder="From"
+            />
+            <input
+              type="date"
+              value={filters.to}
+              onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+              placeholder="To"
             />
           </div>
 
-          {["Photo Before", "Photo After", "Photo Repair/Problem"].map((field) => (
-            <div key={field}>
-              <label className="block text-sm font-medium text-gray-300 mb-3">{field}</label>
-              <div className="flex gap-3">
-                <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-3 rounded-xl transition-all shadow-lg shadow-green-500/30 hover:shadow-green-500/50">
-                  <Upload size={18} />
-                  <span className="font-medium">Upload</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], field)} />
-                </label>
-                <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white px-4 py-3 rounded-xl transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50">
-                  <Camera size={18} />
-                  <span className="font-medium">Camera</span>
-                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], field)} />
-                </label>
-              </div>
-              {form[field] && (
-                <div className="mt-4 p-2 bg-gray-800/30 rounded-xl border border-gray-700">
-                  <img src={form[field]} alt={field} className="max-h-64 mx-auto rounded-lg object-contain" />
-                </div>
-              )}
-            </div>
-          ))}
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={resetFilters}
+              className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium transition-all"
+            >
+              <XCircle size={14} />
+              Reset Filters
+            </button>
+          </div>
+        </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full py-4 rounded-xl bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white font-semibold text-lg shadow-lg shadow-green-500/50 hover:shadow-green-500/70 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Submitting...
-              </span>
-            ) : (
-              "Submit Maintenance Log"
-            )}
-          </button>
-        </form>
+        {/* main content */}
+        {filteredRows.length === 0 ? (
+          <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
+            <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-400 text-lg">No records match your filters.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
+            <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
+              <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
+                <tr>
+                  {[
+                    "#",
+                    "Date",
+                    "Model / Type",
+                    "Plate Number",
+                    "Driver",
+                    "Performed By",
+                    "Description",
+                    "Comments",
+                    "Photo Before",
+                    "Photo After",
+                    "Photo Repair/Problem",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="p-4 text-left text-sm font-semibold text-gray-300"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRows.map((r, i) => (
+                  <tr
+                    key={i}
+                    className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
+                      i % 2 === 0 ? "bg-white/[0.02]" : ""
+                    }`}
+                  >
+                    <td className="p-4 text-sm text-gray-400">{i + 1}</td>
+                    <td className="p-4 text-sm">{r["Date"]}</td>
+                    <td className="p-4 text-sm">{r["Model / Type"]}</td>
+                    <td className="p-4 text-sm font-mono">
+                      {r["Plate Number"]}
+                    </td>
+                    <td className="p-4 text-sm">{r["Driver"]}</td>
+                    <td className="p-4 text-sm">{r["Performed By"]}</td>
+                    <td className="p-4 text-sm max-w-xs truncate">
+                      {r["Description of Work"] || (
+                        <span className="text-gray-500">—</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-sm max-w-xs truncate">
+                      {r["Comments"] || (
+                        <span className="text-gray-500">—</span>
+                      )}
+                    </td>
+
+                    {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
+                      (field) => (
+                        <td key={field} className="p-4">
+                          {r[field] ? (
+                            <a
+                              href={r[field]}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="relative group block"
+                            >
+                              <img
+                                src={getThumbnailUrl(r[field])}
+                                alt={field}
+                                className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-emerald-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
+                                onError={(e) => {
+                                  e.target.style.display = "none";
+                                  e.target.nextSibling.style.display = "flex";
+                                }}
+                              />
+                              <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                                <ExternalLink className="w-6 h-6 text-emerald-400" />
+                              </div>
+                            </a>
+                          ) : (
+                            <span className="text-gray-500 text-sm">—</span>
+                          )}
+                        </td>
+                      )
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
