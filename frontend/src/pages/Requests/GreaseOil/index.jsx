@@ -1,7 +1,8 @@
 // frontend/src/pages/Requests/GreaseOil/index.jsx
 import React from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import { Droplets, ArrowLeft } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Droplets, Package, Clock, History, ArrowLeft } from "lucide-react"; // Updated icons import
 import Navbar from "../../../components/Navbar";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -21,60 +22,68 @@ export default function GreaseOilMenu() {
     );
   }
 
+  // Updated cards with consistent style and appropriate icons
   const cards = [
     {
       title: "Request Grease/Oil Service",
       description: "Submit a new grease or oil service request",
-      icon: <Droplets className="w-10 h-10 text-white drop-shadow-md" />,
+      icon: <Package className="w-10 h-10 text-white drop-shadow-md" />, // Changed icon
       link: "/requests/grease-oil/form",
-      gradient: "from-amber-600 to-orange-500",
-      glow: "shadow-[0_0_15px_2px_rgba(251,146,60,0.6)]",
+      gradient: "from-blue-600 to-cyan-500", // Consistent style
+      glow: "shadow-[0_0_15px_2px_rgba(59,130,246,0.6)]", // Consistent style
     },
     {
       title: "Current Grease/Oil Requests",
       description: "View and manage pending requests",
-      icon: <Droplets className="w-10 h-10 text-white drop-shadow-md" />,
+      icon: <Clock className="w-10 h-10 text-white drop-shadow-md" />, // Changed icon
       link: "/requests/grease-oil/current",
-      gradient: "from-amber-700 to-yellow-600",
-      glow: "shadow-[0_0_15px_2px_rgba(251,146,60,0.6)]",
+      gradient: "from-amber-600 to-orange-500", // Consistent style
+      glow: "shadow-[0_0_15px_2px_rgba(251,146,60,0.6)]", // Consistent style
     },
     {
       title: "Grease/Oil Requests History",
       description: "View completed or rejected requests",
-      icon: <Droplets className="w-10 h-10 text-white drop-shadow-md" />,
+      icon: <History className="w-10 h-10 text-white drop-shadow-md" />, // Changed icon
       link: "/requests/grease-oil/history",
-      gradient: "from-amber-800 to-yellow-700",
-      glow: "shadow-[0_0_15px_2px_rgba(251,146,60,0.6)]",
+      gradient: "from-emerald-600 to-green-500", // Consistent style
+      glow: "shadow-[0_0_15px_2px_rgba(34,197,94,0.6)]", // Consistent style
     },
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
-      <div className="max-w-6xl mx-auto p-6">
-        {/* Back Button */}
+      <div className="p-6"> {/* Consistent padding */}
+        {/* Back Button - Consistent style */}
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
+          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition"
         >
-          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition" />
-          Back
+          <ArrowLeft size={18} /> Back
         </button>
 
-        <h1 className="text-3xl font-bold text-center mb-8">Grease & Oil Requests</h1>
+        {/* Page Header - Consistent style */}
+        <h1 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+          Grease & Oil Requests {/* Updated title */}
+        </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {cards.map((card, index) => (
-            <Link key={index} to={card.link}>
-              <div className={`p-6 rounded-2xl bg-gradient-to-br ${card.gradient} ${card.glow} shadow-xl transition-transform group hover:scale-[1.02]`}>
-                <div className="flex flex-col items-center text-center">
-                  <div className="p-3 rounded-full bg-black/20 mb-4">
+        {/* Cards Grid - Consistent layout */}
+        <div className="grid gap-8 sm:grid-cols-3">
+          {cards.map((card) => ( // Removed index, used card.title as key
+            <Link to={card.link} key={card.title}>
+              {/* Card - Consistent styling using Card component */}
+              <Card
+                className={`rounded-2xl bg-gradient-to-br ${card.gradient} ${card.glow} hover:scale-[1.04] hover:brightness-110 transition-all duration-300 border border-white/10`}
+              >
+                <CardContent className="flex flex-col items-center justify-center p-8 text-center space-y-3">
+                  {/* Icon container - Consistent styling */}
+                  <div className="p-3 rounded-full bg-white/10 backdrop-blur-sm">
                     {card.icon}
                   </div>
                   <h2 className="text-xl font-semibold text-white drop-shadow-md">{card.title}</h2>
-                  <p className="text-gray-100/90 text-sm mt-2">{card.description}</p>
-                </div>
-              </div>
+                  <p className="text-gray-100/90 text-sm">{card.description}</p>
+                </CardContent>
+              </Card>
             </Link>
           ))}
         </div>
