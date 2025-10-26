@@ -33,15 +33,20 @@ export default function RequestsMenu() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
       <div className="p-6">
+        {/* Back button */}
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition"
         >
           <ArrowLeft size={18} /> Back
         </button>
+
+        {/* Page Header */}
         <h1 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
           Maintenance Requests
         </h1>
+
+        {/* Cards Grid */}
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-2">
           {cards.map((card) => (
             <Link to={card.link} key={card.title}>
