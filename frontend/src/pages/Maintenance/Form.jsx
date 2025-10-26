@@ -1,20 +1,11 @@
 // frontend/src/pages/Maintenance/Form.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Upload } from "lucide-react";
+import { ArrowLeft, Camera, Upload, Wrench } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
-
-/**
- * Add Maintenance Log Form
- * - Date auto-filled but editable
- * - Model / Plate / Driver interdependent dropdowns
- * - Performed By dropdown shows users with Role Supervisor or Mechanic
- * - Photo upload (file or camera) -> base64 preview
- * - Submits to POST /api/add/Maintenance_Log (protected)
- */
 
 export default function MaintenanceForm() {
   const { user } = useAuth();
@@ -41,13 +32,11 @@ export default function MaintenanceForm() {
   const [driverOptions, setDriverOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // Load models from cache
   useEffect(() => {
     const models = cache.getModels ? cache.getModels() : [];
     setModelOptions(models);
   }, [cache]);
 
-  // When model changes → update plates
   useEffect(() => {
     const model = form["Model / Type"];
     if (!model) {
@@ -58,7 +47,6 @@ export default function MaintenanceForm() {
     setPlateOptions(plates);
   }, [form["Model / Type"], cache]);
 
-  // When plate changes → update model & drivers
   useEffect(() => {
     const plate = form["Plate Number"];
     if (!plate) {
@@ -67,25 +55,19 @@ export default function MaintenanceForm() {
     }
     const eq = cache.getEquipmentByPlate ? cache.getEquipmentByPlate(plate) : null;
     if (eq) {
-      setForm((p) => ({
-        ...p,
-        "Model / Type": eq["Model / Type"] || p["Model / Type"],
-      }));
+      setForm((p) => ({ ...p, "Model / Type": eq["Model / Type"] || p["Model / Type"] }));
       const drivers = cache.getDriversByPlate ? cache.getDriversByPlate(plate) : [];
       setDriverOptions(drivers);
     }
   }, [form["Plate Number"], cache]);
 
-  // When driver changes → try to fill model & plate
   useEffect(() => {
     const driver = form.Driver;
     if (!driver) return;
-
     const allEquipment = cache.getEquipment ? cache.getEquipment() : cache.equipment || [];
     const matches = (allEquipment || []).filter(
       (e) => e["Driver 1"] === driver || e["Driver 2"] === driver || e["Driver"] === driver
     );
-
     if (matches.length === 1) {
       const eq = matches[0];
       setForm((p) => ({
@@ -97,20 +79,16 @@ export default function MaintenanceForm() {
       setDriverOptions([matches[0]["Driver 1"], matches[0]["Driver 2"]].filter(Boolean));
     } else if (matches.length > 1) {
       setPlateOptions(matches.map((m) => m["Plate Number"]));
-      setDriverOptions([
-        ...new Set(matches.flatMap((m) => [m["Driver 1"], m["Driver 2"]]).filter(Boolean)),
-      ]);
+      setDriverOptions([...new Set(matches.flatMap((m) => [m["Driver 1"], m["Driver 2"]]).filter(Boolean))]);
     } else {
       setPlateOptions([]);
     }
   }, [form.Driver, cache]);
 
-  // Generic change handler
   const handleChange = (name, value) => {
     setForm((p) => ({ ...p, [name]: value }));
   };
 
-  // Convert file to base64
   const handleFile = (file, field) => {
     if (!file) return;
     const reader = new FileReader();
@@ -118,7 +96,6 @@ export default function MaintenanceForm() {
     reader.readAsDataURL(file);
   };
 
-  // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -142,7 +119,6 @@ export default function MaintenanceForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-
       const data = await res.json();
       if (data.status === "success") {
         alert("✅ Maintenance log added successfully.");
@@ -158,7 +134,6 @@ export default function MaintenanceForm() {
     }
   };
 
-  // Get performer names (Supervisor + Mechanic)
   const cachedUsers = cache.getUsernames ? cache.getUsernames() : cache.usernames || [];
   const performers = (cachedUsers || [])
     .filter((u) => u.Role && ["Supervisor", "Mechanic"].includes(u.Role))
@@ -172,196 +147,168 @@ export default function MaintenanceForm() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
-
-      <div className="max-w-3xl mx-auto p-6">
-        {/* Back button */}
+      <div className="max-w-4xl mx-auto p-6">
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-4 transition"
+          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
-          <ArrowLeft size={18} /> Back
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back
         </button>
 
-        <h1 className="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-          Add Maintenance Log
-        </h1>
-
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-5 bg-white/5 p-6 rounded-2xl border border-white/10 shadow-lg"
-        >
-          {/* Date */}
+        <div className="mb-8 flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-green-600 to-emerald-500 shadow-lg shadow-green-500/40">
+            <Wrench className="w-8 h-8 text-white" />
+          </div>
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Date</label>
-            <input
-              type="date"
-              name="Date"
-              value={form.Date}
-              onChange={(e) => handleChange("Date", e.target.value)}
-              className="w-full p-2 rounded bg-gray-800 border border-gray-700 text-white"
-            />
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">
+              Maintenance Work Log
+            </h1>
+            <p className="text-gray-400 text-sm mt-1">
+              Record completed maintenance or repairs
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Date</label>
+              <input
+                type="date"
+                value={form.Date}
+                onChange={(e) => handleChange("Date", e.target.value)}
+                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Model / Type</label>
+              <select
+                value={form["Model / Type"]}
+                onChange={(e) => handleChange("Model / Type", e.target.value)}
+                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
+              >
+                <option value="">--- Choose Model ---</option>
+                {modelOptions.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Plate Number</label>
+              <select
+                value={form["Plate Number"]}
+                onChange={(e) => handleChange("Plate Number", e.target.value)}
+                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
+              >
+                <option value="">--- Choose Plate ---</option>
+                {plateOptions.length
+                  ? plateOptions.map((p) => (<option key={p} value={p}>{p}</option>))
+                  : cache.getEquipment
+                  ? (cache.getEquipment() || []).map((e) => (
+                      <option key={e["Plate Number"]} value={e["Plate Number"]}>{e["Plate Number"]}</option>
+                    ))
+                  : null}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Driver</label>
+              <select
+                value={form.Driver}
+                onChange={(e) => handleChange("Driver", e.target.value)}
+                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
+              >
+                <option value="">--- Choose Driver ---</option>
+                {driverOptions.length
+                  ? driverOptions.map((d) => (<option key={d} value={d}>{d}</option>))
+                  : Array.from(
+                      new Set(
+                        (cache.getEquipment ? cache.getEquipment() : cache.equipment || [])
+                          .flatMap((eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]])
+                          .filter(Boolean)
+                      )
+                    ).map((d) => (<option key={d} value={d}>{d}</option>))}
+              </select>
+            </div>
           </div>
 
-          {/* Model */}
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Model / Type</label>
-            <select
-              value={form["Model / Type"]}
-              onChange={(e) => handleChange("Model / Type", e.target.value)}
-              className="w-full p-2 rounded bg-gray-800 text-white"
-            >
-              <option value="">— Choose Model —</option>
-              {modelOptions.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Plate */}
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Plate Number</label>
-            <select
-              value={form["Plate Number"]}
-              onChange={(e) => handleChange("Plate Number", e.target.value)}
-              className="w-full p-2 rounded bg-gray-800 text-white"
-            >
-              <option value="">— Choose Plate —</option>
-              {plateOptions.length
-                ? plateOptions.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))
-                : cache.getEquipment
-                ? (cache.getEquipment() || []).map((e) => (
-                    <option key={e["Plate Number"]} value={e["Plate Number"]}>
-                      {e["Plate Number"]}
-                    </option>
-                  ))
-                : null}
-            </select>
-          </div>
-
-          {/* Driver */}
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Driver</label>
-            <select
-              value={form.Driver}
-              onChange={(e) => handleChange("Driver", e.target.value)}
-              className="w-full p-2 rounded bg-gray-800 text-white"
-            >
-              <option value="">— Choose Driver —</option>
-              {driverOptions.length
-                ? driverOptions.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))
-                : Array.from(
-                    new Set(
-                      (cache.getEquipment ? cache.getEquipment() : cache.equipment || [])
-                        .flatMap((eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]])
-                        .filter(Boolean)
-                    )
-                  ).map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-            </select>
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Description of Work</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Description of Work</label>
             <textarea
-              rows={3}
+              rows={4}
               value={form["Description of Work"]}
               onChange={(e) => handleChange("Description of Work", e.target.value)}
-              className="w-full p-2 rounded bg-gray-800 text-white"
+              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all resize-none"
               placeholder="Describe the maintenance performed..."
             />
           </div>
 
-          {/* Performed By */}
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Performed By</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Performed By</label>
             <select
               value={form["Performed By"]}
               onChange={(e) => handleChange("Performed By", e.target.value)}
-              className="w-full p-2 rounded bg-gray-800 text-white"
+              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
             >
-              <option value="">— Select Performer —</option>
+              <option value="">--- Select Performer ---</option>
               {performers.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
+                <option key={p} value={p}>{p}</option>
               ))}
             </select>
           </div>
 
-          {/* Comments */}
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Comments</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Comments</label>
             <textarea
-              rows={2}
+              rows={3}
               value={form.Comments}
               onChange={(e) => handleChange("Comments", e.target.value)}
-              className="w-full p-2 rounded bg-gray-800 text-white"
+              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all resize-none"
             />
           </div>
 
-          {/* Photos */}
           {["Photo Before", "Photo After", "Photo Repair/Problem"].map((field) => (
             <div key={field}>
-              <label className="block text-sm text-gray-300 mb-2">{field}</label>
+              <label className="block text-sm font-medium text-gray-300 mb-3">{field}</label>
               <div className="flex gap-3">
-                <label className="flex items-center gap-2 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">
-                  <Upload size={16} />
-                  Upload
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleFile(e.target.files?.[0], field)}
-                  />
+                <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-3 rounded-xl transition-all shadow-lg shadow-green-500/30 hover:shadow-green-500/50">
+                  <Upload size={18} />
+                  <span className="font-medium">Upload</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], field)} />
                 </label>
-
-                <label className="flex items-center gap-2 cursor-pointer bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-2 rounded">
-                  <Camera size={16} />
-                  Camera
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={(e) => handleFile(e.target.files?.[0], field)}
-                  />
+                <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white px-4 py-3 rounded-xl transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50">
+                  <Camera size={18} />
+                  <span className="font-medium">Camera</span>
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], field)} />
                 </label>
               </div>
-
               {form[field] && (
-                <img
-                  src={form[field]}
-                  alt={field}
-                  className="mt-3 max-h-44 rounded border border-white/10 object-contain"
-                />
+                <div className="mt-4 p-2 bg-gray-800/30 rounded-xl border border-gray-700">
+                  <img src={form[field]} alt={field} className="max-h-64 mx-auto rounded-lg object-contain" />
+                </div>
               )}
             </div>
           ))}
 
-          {/* Submit */}
-          <div>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 hover:brightness-110 text-white font-semibold"
-            >
-              {submitting ? "Submitting..." : "Submit Maintenance Log"}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full py-4 rounded-xl bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white font-semibold text-lg shadow-lg shadow-green-500/50 hover:shadow-green-500/70 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Submitting...
+              </span>
+            ) : (
+              "Submit Maintenance Log"
+            )}
+          </button>
         </form>
       </div>
     </div>
