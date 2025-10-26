@@ -26,6 +26,38 @@ const getThumbnailUrl = (url) => {
   return url;
 };
 
+// Helper function to format the Appointment Date
+const formatAppointmentDate = (rawDateStr) => {
+  if (!rawDateStr) return rawDateStr; // Return as is if empty
+
+  // The raw date string from the input or sheet is likely in ISO format like "YYYY-MM-DDTHH:mm"
+  // Or it might already be a formatted string from the sheet.
+  // First, try to create a Date object assuming ISO format.
+  // If it's already a different format, this might still parse it correctly depending on the environment.
+  const date = new Date(rawDateStr);
+
+  // Check if the date object is valid
+  if (isNaN(date.getTime())) {
+    // If parsing failed, return the original string
+    console.warn(`Could not parse Appointment Date: ${rawDateStr}`);
+    return rawDateStr;
+  }
+
+  // Format using en-GB locale to get DD/MM/YYYY
+  // This also formats the time part correctly (HH:MM).
+  // The 'T' in the input format will be replaced by a space or handled by toLocaleString.
+  // We want "DD/MM/YYYY, HH:MM" or "DD/MM/YYYY HH:MM".
+  // toLocaleString with options is more reliable.
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+};
+
+
 export default function GreaseOilCurrent() {
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
@@ -389,8 +421,8 @@ export default function GreaseOilCurrent() {
                             <span className="text-gray-500">Unassigned</span>
                           )}
                         </td>
-                        <td className="p-4 text-sm"> {/* Display Appointment Date */}
-                          {r["Appointment Date"] || (
+                        <td className="p-4 text-sm"> {/* Display Appointment Date - FORMATTED */}
+                          {r["Appointment Date"] ? formatAppointmentDate(r["Appointment Date"]) : (
                             <span className="text-gray-500">—</span>
                           )}
                         </td>
