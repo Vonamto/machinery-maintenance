@@ -27,10 +27,10 @@ export default function GreaseOilMenu() {
     {
       title: "Request Grease/Oil Service",
       description: "Submit a new grease or oil service request",
-      icon: <Package className="w-10 h-10 text-white drop-shadow-md" />, // Changed icon
+      icon: <Droplets className="w-10 h-10 text-white drop-shadow-md" />, // Changed icon to Droplets for oil/grease
       link: "/requests/grease-oil/form",
-      gradient: "from-blue-600 to-cyan-500", // Consistent style
-      glow: "shadow-[0_0_15px_2px_rgba(59,130,246,0.6)]", // Consistent style
+      gradient: "from-blue-600 to-cyan-500", // Consistent style (or could change to amber if preferred)
+      glow: "shadow-[0_0_15px_2px_rgba(59,130,246,0.6)]", // Consistent style (or could change to amber if preferred)
     },
     {
       title: "Current Grease/Oil Requests",
@@ -62,8 +62,8 @@ export default function GreaseOilMenu() {
           <ArrowLeft size={18} /> Back
         </button>
 
-        {/* Page Header - Consistent style */}
-        <h1 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+        {/* Page Header - Updated gradient to amber/orange for oil/grease theme */}
+        <h1 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">
           Grease & Oil Requests {/* Updated title */}
         </h1>
 
