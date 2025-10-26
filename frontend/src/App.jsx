@@ -15,8 +15,13 @@ import RequestsMenu from "./pages/Requests/index";
 import PartsRequestsMenu from "./pages/Requests/Parts/index";
 import PartsRequestForm from "./pages/Requests/Parts/Form";
 import PartsCurrentRequests from "./pages/Requests/Parts/Current";
-// --- NEW IMPORT ---
 import PartsRequestsHistory from "./pages/Requests/Parts/RequestsHistory";
+
+// Grease/Oil Requests pages (NEW)
+import GreaseOilMenu from "./pages/Requests/GreaseOil/index"; // Import the new index page
+import GreaseOilForm from "./pages/Requests/GreaseOil/Form"; // Import the new form page
+import GreaseOilCurrent from "./pages/Requests/GreaseOil/Current"; // Import the new current page
+import GreaseOilHistory from "./pages/Requests/GreaseOil/History"; // Import the new history page
 
 export default function App() {
   return (
@@ -104,7 +109,6 @@ export default function App() {
             }
           />
 
-          {/* --- NEW ROUTE --- */}
           {/* Parts Requests History */}
           <Route
             path="/requests/parts/history"
@@ -114,6 +118,45 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* --- NEW ROUTES FOR GREASE/OIL REQUESTS --- */}
+          {/* Grease/Oil Requests submenu */}
+          <Route
+            path="/requests/grease-oil"
+            element={
+              <ProtectedRoute>
+                <GreaseOilMenu />
+              </ProtectedRoute>
+            }
+          />
+          {/* Grease/Oil Request Form */}
+          <Route
+            path="/requests/grease-oil/form"
+            element={
+              <ProtectedRoute>
+                <GreaseOilForm />
+              </ProtectedRoute>
+            }
+          />
+          {/* Grease/Oil Current Requests */}
+          <Route
+            path="/requests/grease-oil/current"
+            element={
+              <ProtectedRoute>
+                <GreaseOilCurrent />
+              </ProtectedRoute>
+            }
+          />
+          {/* Grease/Oil Requests History */}
+          <Route
+            path="/requests/grease-oil/history"
+            element={
+              <ProtectedRoute>
+                <GreaseOilHistory />
+              </ProtectedRoute>
+            }
+          />
+          {/* --- END NEW ROUTES --- */}
 
           {/* fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
