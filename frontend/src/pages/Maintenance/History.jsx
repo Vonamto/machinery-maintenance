@@ -1,10 +1,11 @@
 // frontend/src/pages/Maintenance/History.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   ArrowLeft,
   ExternalLink,
   History as HistoryIcon,
   Wrench,
+  XCircle,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
@@ -27,6 +28,15 @@ export default function MaintenanceHistory() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // filters
+  const [filters, setFilters] = useState({
+    model: "",
+    plate: "",
+    driver: "",
+    from: "",
+    to: "",
+  });
+
   useEffect(() => {
     async function load() {
       setLoading(true);
@@ -46,6 +56,50 @@ export default function MaintenanceHistory() {
     load();
   }, []);
 
+  // derive dropdown options dynamically
+  const modelOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(rows.map((r) => r["Model / Type"]).filter(Boolean))
+      ).sort(),
+    [rows]
+  );
+
+  const plateOptions = useMemo(
+    () =>
+      Array.from(new Set(rows.map((r) => r["Plate Number"]).filter(Boolean))).sort(),
+    [rows]
+  );
+
+  const driverOptions = useMemo(
+    () =>
+      Array.from(new Set(rows.map((r) => r["Driver"]).filter(Boolean))).sort(),
+    [rows]
+  );
+
+  // apply filters
+  const filteredRows = useMemo(() => {
+    return rows.filter((r) => {
+      const date = r["Date"];
+      const model = r["Model / Type"] || "";
+      const plate = r["Plate Number"] || "";
+      const driver = r["Driver"] || "";
+
+      const matchModel = !filters.model || model === filters.model;
+      const matchPlate = !filters.plate || plate === filters.plate;
+      const matchDriver = !filters.driver || driver === filters.driver;
+
+      let matchDate = true;
+      if (filters.from && date < filters.from) matchDate = false;
+      if (filters.to && date > filters.to) matchDate = false;
+
+      return matchModel && matchPlate && matchDriver && matchDate;
+    });
+  }, [rows, filters]);
+
+  const resetFilters = () =>
+    setFilters({ model: "", plate: "", driver: "", from: "", to: "" });
+
   if (loading && rows.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
@@ -61,6 +115,7 @@ export default function MaintenanceHistory() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
       <div className="max-w-7xl mx-auto p-6">
+        {/* back button */}
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
@@ -72,6 +127,7 @@ export default function MaintenanceHistory() {
           Back
         </button>
 
+        {/* header */}
         <div className="mb-8 flex items-center gap-4">
           <div className="p-3 rounded-xl bg-gradient-to-br from-green-600 to-emerald-500 shadow-lg shadow-green-500/40">
             <Wrench className="w-8 h-8 text-white" />
@@ -81,23 +137,79 @@ export default function MaintenanceHistory() {
               Maintenance History
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              View all completed maintenance and repair logs
+              View and filter completed maintenance logs
             </p>
           </div>
         </div>
 
-        {loading && (
-          <div className="text-center py-4 mb-4">
-            <p className="text-cyan-400">Loading history...</p>
-          </div>
-        )}
+        {/* filters */}
+        <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-4 mb-8 shadow-lg">
+          <div className="grid md:grid-cols-5 sm:grid-cols-2 gap-4">
+            <select
+              value={filters.model}
+              onChange={(e) => setFilters((f) => ({ ...f, model: e.target.value }))}
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+            >
+              <option value="">Model</option>
+              {modelOptions.map((m) => (
+                <option key={m}>{m}</option>
+              ))}
+            </select>
 
-        {rows.length === 0 ? (
+            <select
+              value={filters.plate}
+              onChange={(e) => setFilters((f) => ({ ...f, plate: e.target.value }))}
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+            >
+              <option value="">Plate</option>
+              {plateOptions.map((p) => (
+                <option key={p}>{p}</option>
+              ))}
+            </select>
+
+            <select
+              value={filters.driver}
+              onChange={(e) => setFilters((f) => ({ ...f, driver: e.target.value }))}
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+            >
+              <option value="">Driver</option>
+              {driverOptions.map((d) => (
+                <option key={d}>{d}</option>
+              ))}
+            </select>
+
+            <input
+              type="date"
+              value={filters.from}
+              onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+              placeholder="From"
+            />
+            <input
+              type="date"
+              value={filters.to}
+              onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+              placeholder="To"
+            />
+          </div>
+
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={resetFilters}
+              className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium transition-all"
+            >
+              <XCircle size={14} />
+              Reset Filters
+            </button>
+          </div>
+        </div>
+
+        {/* main content */}
+        {filteredRows.length === 0 ? (
           <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
             <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">
-              No maintenance records found.
-            </p>
+            <p className="text-gray-400 text-lg">No records match your filters.</p>
           </div>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
@@ -127,7 +239,7 @@ export default function MaintenanceHistory() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, i) => (
+                {filteredRows.map((r, i) => (
                   <tr
                     key={i}
                     className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
