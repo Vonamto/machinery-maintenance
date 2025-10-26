@@ -1,10 +1,25 @@
 // frontend/src/pages/Maintenance/History.jsx
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import {
+  ArrowLeft,
+  ExternalLink,
+  History as HistoryIcon,
+  Wrench,
+} from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
+
+const getThumbnailUrl = (url) => {
+  if (!url) return null;
+  const match = url.match(/id=([^&]+)/);
+  if (match) {
+    const fileId = match[1];
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w200`;
+  }
+  return url;
+};
 
 export default function MaintenanceHistory() {
   const { user } = useAuth();
@@ -23,7 +38,7 @@ export default function MaintenanceHistory() {
         const data = await res.json();
         if (Array.isArray(data)) setRows(data.reverse());
       } catch (err) {
-        console.error(err);
+        console.error("Error loading maintenance history:", err);
       } finally {
         setLoading(false);
       }
@@ -31,15 +46,16 @@ export default function MaintenanceHistory() {
     load();
   }, []);
 
-  const getThumbnailUrl = (url) => {
-    if (!url) return null;
-    const match = url.match(/id=([^&]+)/);
-    if (match) {
-      const fileId = match[1];
-      return `https://drive.google.com/thumbnail?id=${fileId}&sz=w200`;
-    }
-    return url;
-  };
+  if (loading && rows.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mb-4"></div>
+          <p className="text-lg">Loading maintenance history...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
@@ -47,56 +63,102 @@ export default function MaintenanceHistory() {
       <div className="max-w-7xl mx-auto p-6">
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition"
+          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
-          <ArrowLeft size={18} /> Back
+          <ArrowLeft
+            size={18}
+            className="group-hover:-translate-x-1 transition-transform"
+          />
+          Back
         </button>
-        <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-500">
-          Maintenance History
-        </h3>
-        {loading ? (
-          <p>Loading...</p>
+
+        <div className="mb-8 flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-green-600 to-emerald-500 shadow-lg shadow-green-500/40">
+            <Wrench className="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">
+              Maintenance History
+            </h1>
+            <p className="text-gray-400 text-sm mt-1">
+              View all completed maintenance and repair logs
+            </p>
+          </div>
+        </div>
+
+        {loading && (
+          <div className="text-center py-4 mb-4">
+            <p className="text-cyan-400">Loading history...</p>
+          </div>
+        )}
+
+        {rows.length === 0 ? (
+          <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
+            <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-400 text-lg">
+              No maintenance records found.
+            </p>
+          </div>
         ) : (
-          <div className="overflow-x-auto border border-white/10 rounded-lg">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-white/10">
+          <div className="overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
+            <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
+              <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
                 <tr>
-                  <th className="p-2">#</th>
-                  <th className="p-2">Date</th>
-                  <th className="p-2">Model / Type</th>
-                  <th className="p-2">Plate Number</th>
-                  <th className="p-2">Driver</th>
-                  <th className="p-2">Performed By</th>
-                  <th className="p-2">Description</th>
-                  <th className="p-2">Comments</th>
-                  <th className="p-2">Photo Before</th>
-                  <th className="p-2">Photo After</th>
-                  <th className="p-2">Photo Repair/Problem</th>
+                  {[
+                    "#",
+                    "Date",
+                    "Model / Type",
+                    "Plate Number",
+                    "Driver",
+                    "Performed By",
+                    "Description",
+                    "Comments",
+                    "Photo Before",
+                    "Photo After",
+                    "Photo Repair/Problem",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="p-4 text-left text-sm font-semibold text-gray-300"
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan="11" className="text-center p-4 text-gray-400">
-                      No maintenance records yet.
+                {rows.map((r, i) => (
+                  <tr
+                    key={i}
+                    className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
+                      i % 2 === 0 ? "bg-white/[0.02]" : ""
+                    }`}
+                  >
+                    <td className="p-4 text-sm text-gray-400">{i + 1}</td>
+                    <td className="p-4 text-sm">{r["Date"]}</td>
+                    <td className="p-4 text-sm">{r["Model / Type"]}</td>
+                    <td className="p-4 text-sm font-mono">
+                      {r["Plate Number"]}
                     </td>
-                  </tr>
-                ) : (
-                  rows.map((r, i) => (
-                    <tr key={i} className={i % 2 === 0 ? "bg-white/5" : "bg-transparent"}>
-                      <td className="p-2">{i + 1}</td>
-                      <td className="p-2">{r["Date"]}</td>
-                      <td className="p-2">{r["Model / Type"]}</td>
-                      <td className="p-2">{r["Plate Number"]}</td>
-                      <td className="p-2">{r["Driver"]}</td>
-                      <td className="p-2">{r["Performed By"]}</td>
-                      <td className="p-2">{r["Description of Work"]}</td>
-                      <td className="p-2">{r["Comments"]}</td>
-                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map((field) => (
-                        <td key={field} className="p-2">
+                    <td className="p-4 text-sm">{r["Driver"]}</td>
+                    <td className="p-4 text-sm">{r["Performed By"]}</td>
+                    <td className="p-4 text-sm max-w-xs truncate">
+                      {r["Description of Work"] || (
+                        <span className="text-gray-500">—</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-sm max-w-xs truncate">
+                      {r["Comments"] || (
+                        <span className="text-gray-500">—</span>
+                      )}
+                    </td>
+
+                    {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
+                      (field) => (
+                        <td key={field} className="p-4">
                           {r[field] ? (
-                            
-                              <a href={r[field]}
+                            <a
+                              href={r[field]}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="relative group block"
@@ -104,24 +166,24 @@ export default function MaintenanceHistory() {
                               <img
                                 src={getThumbnailUrl(r[field])}
                                 alt={field}
-                                className="h-16 w-16 object-cover rounded border border-white/20 group-hover:scale-110 transition-transform duration-150"
+                                className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-emerald-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
                                 onError={(e) => {
                                   e.target.style.display = "none";
                                   e.target.nextSibling.style.display = "flex";
                                 }}
                               />
-                              <div className="hidden h-16 w-16 items-center justify-center bg-gray-700 rounded border border-white/20 group-hover:bg-gray-600">
-                                <ExternalLink size={20} className="text-cyan-400" />
+                              <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                                <ExternalLink className="w-6 h-6 text-emerald-400" />
                               </div>
                             </a>
                           ) : (
-                            <span className="text-gray-500">---</span>
+                            <span className="text-gray-500 text-sm">—</span>
                           )}
                         </td>
-                      ))}
-                    </tr>
-                  ))
-                )}
+                      )
+                    )}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
