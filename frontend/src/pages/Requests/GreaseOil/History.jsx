@@ -1,10 +1,17 @@
 // frontend/src/pages/Requests/GreaseOil/History.jsx
-import React, { useEffect, useState } from "react";
-import { ArrowLeft, ExternalLink, Droplets, CheckCircle, XCircle, Filter } from "lucide-react"; // Removed duplicate XCircle
-import Navbar from "../../../components/Navbar"; // Adjusted path
-import { useAuth } from "../../../context/AuthContext"; // Adjusted path
-import { useNavigate } from "react-router-dom"; // Adjusted path
-import CONFIG from "../../../config"; // Adjusted path
+import React, { useEffect, useState, useMemo } from "react";
+import {
+  ArrowLeft,
+  ExternalLink,
+  History as HistoryIcon,
+  CheckCircle,
+  XCircle,
+  Droplets,
+} from "lucide-react";
+import Navbar from "@/components/Navbar";
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import CONFIG from "@/config";
 
 const getThumbnailUrl = (url) => {
   if (!url) return null;
@@ -37,24 +44,24 @@ export default function GreaseOilHistory() {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`${CONFIG.BACKEND_URL}/api/Grease_Oil_Requests`, { // Updated endpoint
+        const res = await fetch(`${CONFIG.BACKEND_URL}/api/Grease_Oil_Requests`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
         if (Array.isArray(data)) {
-          const dataWithIndex = data.map((row, originalIndex) => ({
-            ...row,
-            __original_index: originalIndex,
-          }));
-          // ✅ show only completed/rejected requests (completion date exists)
-          const completedRequests = dataWithIndex.filter((row) => {
-            const completionDate = row["Completion Date"];
-            return completionDate && completionDate.trim() !== "";
+          // ✅ Include completed or rejected only
+          const historyRequests = data.filter((r) => {
+            const status = (r["Status"] || "").trim().toLowerCase();
+            const completionDate = (r["Completion Date"] || "").trim();
+            return (
+              (status === "completed" && completionDate !== "") ||
+              status === "rejected"
+            );
           });
-          setRows(completedRequests.reverse());
+          setRows(historyRequests.reverse());
         }
       } catch (err) {
-        console.error("Error loading grease/oil requests history:", err);
+        console.error("Error loading grease/oil history:", err);
       } finally {
         setLoading(false);
       }
@@ -62,47 +69,58 @@ export default function GreaseOilHistory() {
     load();
   }, []);
 
+  // derive dropdown options dynamically
+  const modelOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(rows.map((r) => r["Model / Type"]).filter(Boolean))
+      ).sort(),
+    [rows]
+  );
+
+  const plateOptions = useMemo(
+    () =>
+      Array.from(new Set(rows.map((r) => r["Plate Number"]).filter(Boolean))).sort(),
+    [rows]
+  );
+
+  const driverOptions = useMemo(
+    () =>
+      Array.from(new Set(rows.map((r) => r["Driver"]).filter(Boolean))).sort(),
+    [rows]
+  );
+
   // Apply filters
-  const filteredRows = React.useMemo(() => {
+  const filteredRows = useMemo(() => {
     return rows.filter((r) => {
-      let matchModel = !filters.model || r["Model / Type"]?.includes(filters.model);
-      let matchPlate = !filters.plate || r["Plate Number"]?.includes(filters.plate);
-      let matchDriver = !filters.driver || r["Driver"]?.includes(filters.driver);
-      let lowerStatus = (r["Status"] || "").toLowerCase();
-      let matchStatus = !filters.status || lowerStatus.includes(filters.status.toLowerCase());
+      const date = r["Request Date"];
+      const model = r["Model / Type"] || "";
+      const plate = r["Plate Number"] || "";
+      const driver = r["Driver"] || "";
+      const status = (r["Status"] || "").toLowerCase();
+
+      const matchModel = !filters.model || model === filters.model;
+      const matchPlate = !filters.plate || plate === filters.plate;
+      const matchDriver = !filters.driver || driver === filters.driver;
+      const matchStatus = !filters.status || status === filters.status.toLowerCase();
+
       let matchDate = true;
-      if (filters.from) {
-        const date = new Date(r["Completion Date"]);
-        const from = new Date(filters.from);
-        if (date < from) matchDate = false;
-      }
-      if (filters.to) {
-        const date = new Date(r["Completion Date"]);
-        const to = new Date(filters.to);
-        if (date > to) matchDate = false;
-      }
+      if (filters.from && date < filters.from) matchDate = false;
+      if (filters.to && date > filters.to) matchDate = false;
+
       return matchModel && matchPlate && matchDriver && matchStatus && matchDate;
     });
   }, [rows, filters]);
 
-  // --- NEW LOGIC: Derive filter options from the loaded rows ---
-  const filterOptions = React.useMemo(() => {
-    const models = [...new Set(rows.map(r => r["Model / Type"]).filter(Boolean))].sort();
-    const plates = [...new Set(rows.map(r => r["Plate Number"]).filter(Boolean))].sort();
-    const drivers = [...new Set(rows.map(r => r["Driver"]).filter(Boolean))].sort();
-    const statuses = [...new Set(rows.map(r => r["Status"]).filter(Boolean))].sort(); // Get unique statuses from data too
-
-    return { models, plates, drivers, statuses };
-  }, [rows]);
-
-  const resetFilters = () => setFilters({
-    model: "",
-    plate: "",
-    driver: "",
-    from: "",
-    to: "",
-    status: "",
-  });
+  const resetFilters = () =>
+    setFilters({
+      model: "",
+      plate: "",
+      driver: "",
+      from: "",
+      to: "",
+      status: "",
+    });
 
   const getStatusBadge = (status) => {
     const lower = (status || "").toLowerCase();
@@ -118,11 +136,17 @@ export default function GreaseOilHistory() {
         icon: <XCircle size={14} />,
       },
     };
-    const style = styles[lower] || { bg: "bg-gray-500/20", text: "text-gray-300", icon: <XCircle size={14} /> };
+    const style = styles[lower] || {
+      bg: "bg-gray-500/20",
+      text: "text-gray-300",
+      icon: <HistoryIcon size={14} />,
+    };
     return (
-      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
+      <span
+        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}
+      >
         {style.icon}
-        {status || "Unknown"}
+        {status}
       </span>
     );
   };
@@ -131,8 +155,8 @@ export default function GreaseOilHistory() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500 mb-4"></div>
-          <p className="text-lg">Loading history...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mb-4"></div>
+          <p className="text-lg">Loading grease/oil requests history...</p>
         </div>
       </div>
     );
@@ -142,11 +166,15 @@ export default function GreaseOilHistory() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
       <div className="max-w-7xl mx-auto p-6">
+        {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+          <ArrowLeft
+            size={18}
+            className="group-hover:-translate-x-1 transition-transform"
+          />
           Back
         </button>
 
@@ -159,57 +187,58 @@ export default function GreaseOilHistory() {
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
               Grease / Oil Requests History
             </h1>
-            <p className="text-gray-400 text-sm mt-1">View and filter completed or rejected requests</p>
+            <p className="text-gray-400 text-sm mt-1">
+              View and filter completed or rejected requests
+            </p>
           </div>
         </div>
 
         {/* Filters */}
         <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-4 mb-8 shadow-lg">
           <div className="grid md:grid-cols-6 sm:grid-cols-2 gap-4">
-            {/* Model Filter - Populated dynamically */}
             <select
               value={filters.model}
               onChange={(e) => setFilters((f) => ({ ...f, model: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
             >
-              <option value="">All Models</option>
-              {filterOptions.models.map(model => (
-                <option key={model} value={model}>{model}</option>
+              <option value="">Model</option>
+              {modelOptions.map((m) => (
+                <option key={m}>{m}</option>
               ))}
             </select>
-            {/* Plate Filter - Populated dynamically */}
+
             <select
               value={filters.plate}
               onChange={(e) => setFilters((f) => ({ ...f, plate: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
             >
-              <option value="">All Plates</option>
-              {filterOptions.plates.map(plate => (
-                <option key={plate} value={plate}>{plate}</option>
+              <option value="">Plate</option>
+              {plateOptions.map((p) => (
+                <option key={p}>{p}</option>
               ))}
             </select>
-            {/* Driver Filter - Populated dynamically */}
+
             <select
               value={filters.driver}
               onChange={(e) => setFilters((f) => ({ ...f, driver: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
             >
-              <option value="">All Drivers</option>
-              {filterOptions.drivers.map(driver => (
-                <option key={driver} value={driver}>{driver}</option>
+              <option value="">Driver</option>
+              {driverOptions.map((d) => (
+                <option key={d}>{d}</option>
               ))}
             </select>
-            {/* Status Filter - Populated dynamically from data */}
+
             <select
               value={filters.status}
               onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
             >
-              <option value="">All Statuses</option>
-              {filterOptions.statuses.map(status => (
-                <option key={status} value={status}>{status}</option>
-              ))}
+              <option value="">Status</option>
+              <option value="Completed">Completed</option>
+              <option value="Rejected">Rejected</option>
             </select>
+
             <input
               type="date"
               value={filters.from}
@@ -223,12 +252,14 @@ export default function GreaseOilHistory() {
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
             />
           </div>
+
           <div className="flex justify-end mt-4">
             <button
               onClick={resetFilters}
               className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium transition-all"
             >
-              <XCircle size={14} />Reset Filters
+              <XCircle size={14} />
+              Reset Filters
             </button>
           </div>
         </div>
@@ -236,9 +267,9 @@ export default function GreaseOilHistory() {
         {/* Table */}
         {filteredRows.length === 0 ? (
           <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
-            <Filter className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+            <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400 text-lg">
-              No matching requests found.
+              No requests match your filters.
             </p>
           </div>
         ) : (
@@ -251,14 +282,13 @@ export default function GreaseOilHistory() {
                     "Model / Type",
                     "Plate Number",
                     "Driver",
-                    "Request Type", // Changed field name
+                    "Request Type",
                     "Status",
                     "Handled By",
-                    "Appointment Date",
                     "Completion Date",
                     "Comments",
-                    "Odometer Photo - Before", // Changed field name
-                    "Odometer Photo - After", // Changed field name
+                    "Photo Before",
+                    "Photo After",
                   ].map((h) => (
                     <th
                       key={h}
@@ -270,63 +300,54 @@ export default function GreaseOilHistory() {
                 </tr>
               </thead>
               <tbody>
-                {filteredRows.map((r) => (
+                {filteredRows.map((r, i) => (
                   <tr
-                    key={r.__original_index}
-                    className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${(r.__original_index % 2 === 0 ? "bg-white/[0.02]" : "")}`}
+                    key={i}
+                    className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
+                      i % 2 === 0 ? "bg-white/[0.02]" : ""
+                    }`}
                   >
                     <td className="p-4 text-sm">{r["Request Date"]}</td>
                     <td className="p-4 text-sm">{r["Model / Type"]}</td>
                     <td className="p-4 text-sm font-mono">{r["Plate Number"]}</td>
                     <td className="p-4 text-sm">{r["Driver"]}</td>
-                    <td className="p-4 text-sm max-w-xs truncate">{r["Request Type"]}</td> {/* Changed field name */}
+                    <td className="p-4 text-sm">{r["Request Type"]}</td>
                     <td className="p-4">{getStatusBadge(r["Status"])}</td>
-                    <td className="p-4 text-sm">{r["Handled By"] || <span className="text-gray-500">—</span>}</td>
-                    <td className="p-4 text-sm">{r["Appointment Date"] || <span className="text-gray-500">—</span>}</td>
-                    <td className="p-4 text-sm">{r["Completion Date"] || <span className="text-gray-500">—</span>}</td>
-                    <td className="p-4 text-sm max-w-xs truncate">{r["Comments"] || <span className="text-gray-500">—</span>}</td>
-                    <td className="p-4"> {/* Photo Before column -> Odometer Photo - Before */}
-                      {r["Photo Before"] ? ( // Accessing internal field name
-                        <a
-                          href={r["Photo Before"]} // Accessing internal field name
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="relative group block"
-                        >
-                          <img
-                            src={getThumbnailUrl(r["Photo Before"])} // Accessing internal field name
-                            alt="Odometer Photo - Before"
-                            className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
-                          />
-                          <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                            <ExternalLink className="w-6 h-6 text-cyan-400" />
-                          </div>
-                        </a>
-                      ) : (
-                        <span className="text-gray-500 text-sm">No Photo</span>
-                      )}
+                    <td className="p-4 text-sm">
+                      {r["Handled By"] || <span className="text-gray-500">—</span>}
                     </td>
-                    <td className="p-4"> {/* Photo After column -> Odometer Photo - After */}
-                      {r["Photo After"] ? ( // Accessing internal field name
-                        <a
-                          href={r["Photo After"]} // Accessing internal field name
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="relative group block"
-                        >
-                          <img
-                            src={getThumbnailUrl(r["Photo After"])} // Accessing internal field name
-                            alt="Odometer Photo - After"
-                            className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
-                          />
-                          <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                            <ExternalLink className="w-6 h-6 text-cyan-400" />
-                          </div>
-                        </a>
-                      ) : (
-                        <span className="text-gray-500 text-sm">No Photo</span>
-                      )}
+                    <td className="p-4 text-sm">{r["Completion Date"]}</td>
+                    <td className="p-4 text-sm max-w-xs truncate">
+                      {r["Comments"] || <span className="text-gray-500">—</span>}
                     </td>
+
+                    {["Photo Before", "Photo After"].map((field) => (
+                      <td key={field} className="p-4">
+                        {r[field] ? (
+                          <a
+                            href={r[field]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="relative group block"
+                          >
+                            <img
+                              src={getThumbnailUrl(r[field])}
+                              alt={field}
+                              className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
+                              onError={(e) => {
+                                e.target.style.display = "none";
+                                e.target.nextSibling.style.display = "flex";
+                              }}
+                            />
+                            <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                              <ExternalLink className="w-6 h-6 text-cyan-400" />
+                            </div>
+                          </a>
+                        ) : (
+                          <span className="text-gray-500 text-sm">—</span>
+                        )}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
