@@ -1,6 +1,6 @@
 // frontend/src/pages/Requests/GreaseOil/History.jsx
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, ExternalLink, Droplets, CheckCircle, XCircle, Filter, XCircle } from "lucide-react";
+import { ArrowLeft, ExternalLink, Droplets, CheckCircle, XCircle, Filter } from "lucide-react"; // Removed duplicate XCircle
 import Navbar from "../../../components/Navbar"; // Adjusted path
 import { useAuth } from "../../../context/AuthContext"; // Adjusted path
 import { useNavigate } from "react-router-dom"; // Adjusted path
