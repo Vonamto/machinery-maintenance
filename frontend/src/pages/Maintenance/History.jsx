@@ -6,6 +6,7 @@ import {
   History as HistoryIcon,
   Wrench,
   XCircle,
+  CheckCircle,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
@@ -100,6 +101,40 @@ export default function MaintenanceHistory() {
   const resetFilters = () =>
     setFilters({ model: "", plate: "", driver: "", from: "", to: "" });
 
+  const getStatusBadge = (status) => {
+    const lower = (status || "").toLowerCase();
+    const styles = {
+      completed: {
+        bg: "bg-green-500/20",
+        text: "text-green-300",
+        icon: <CheckCircle size={14} />,
+      },
+      "in progress": {
+        bg: "bg-yellow-500/20",
+        text: "text-yellow-300",
+        icon: <HistoryIcon size={14} />,
+      },
+      rejected: {
+        bg: "bg-red-500/20",
+        text: "text-red-300",
+        icon: <XCircle size={14} />,
+      },
+    };
+    const style = styles[lower] || {
+      bg: "bg-gray-500/20",
+      text: "text-gray-300",
+      icon: <HistoryIcon size={14} />,
+    };
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}
+      >
+        {style.icon}
+        {status || "—"}
+      </span>
+    );
+  };
+
   if (loading && rows.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
@@ -183,14 +218,12 @@ export default function MaintenanceHistory() {
               value={filters.from}
               onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-              placeholder="From"
             />
             <input
               type="date"
               value={filters.to}
               onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-              placeholder="To"
             />
           </div>
 
@@ -224,6 +257,8 @@ export default function MaintenanceHistory() {
                     "Driver",
                     "Performed By",
                     "Description",
+                    "Completion Date",
+                    "Status",
                     "Comments",
                     "Photo Before",
                     "Photo After",
@@ -249,9 +284,7 @@ export default function MaintenanceHistory() {
                     <td className="p-4 text-sm text-gray-400">{i + 1}</td>
                     <td className="p-4 text-sm">{r["Date"]}</td>
                     <td className="p-4 text-sm">{r["Model / Type"]}</td>
-                    <td className="p-4 text-sm font-mono">
-                      {r["Plate Number"]}
-                    </td>
+                    <td className="p-4 text-sm font-mono">{r["Plate Number"]}</td>
                     <td className="p-4 text-sm">{r["Driver"]}</td>
                     <td className="p-4 text-sm">{r["Performed By"]}</td>
                     <td className="p-4 text-sm max-w-xs truncate">
@@ -259,6 +292,15 @@ export default function MaintenanceHistory() {
                         <span className="text-gray-500">—</span>
                       )}
                     </td>
+
+                    <td className="p-4 text-sm">
+                      {r["Completion Date"] || (
+                        <span className="text-gray-500">—</span>
+                      )}
+                    </td>
+
+                    <td className="p-4">{getStatusBadge(r["Status"])}</td>
+
                     <td className="p-4 text-sm max-w-xs truncate">
                       {r["Comments"] || (
                         <span className="text-gray-500">—</span>
