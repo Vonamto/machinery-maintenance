@@ -17,16 +17,16 @@ import PartsRequestForm from "./pages/Requests/Parts/Form";
 import PartsCurrentRequests from "./pages/Requests/Parts/Current";
 import PartsRequestsHistory from "./pages/Requests/Parts/RequestsHistory";
 
-// Grease/Oil Requests pages (NEW)
-import GreaseOilMenu from "./pages/Requests/GreaseOil/index"; // Import the new index page
-import GreaseOilForm from "./pages/Requests/GreaseOil/Form"; // Import the new form page
-import GreaseOilCurrent from "./pages/Requests/GreaseOil/Current"; // Import the new current page
-import GreaseOilHistory from "./pages/Requests/GreaseOil/History"; // Import the new history page
+// Grease/Oil Requests pages
+import GreaseOilMenu from "./pages/Requests/GreaseOil/index";
+import GreaseOilForm from "./pages/Requests/GreaseOil/Form";
+import GreaseOilCurrent from "./pages/Requests/GreaseOil/Current";
+import GreaseOilHistory from "./pages/Requests/GreaseOil/History";
 
-// Cleaning pages (NEW)
-import CleaningIndex from "./pages/Cleaning/index"; // This is the one we just created
-import CleaningForm from "./pages/Cleaning/CleaningForm"; // This is the one we just created
-import CleaningHistory from "./pages/Cleaning/CleaningHistory"; // This is the one we just created
+// Cleaning pages
+import CleaningMenu from "./pages/Cleaning/index";
+import CleaningForm from "./pages/Cleaning/CleaningForm";
+import CleaningHistory from "./pages/Cleaning/CleaningHistory";
 
 export default function App() {
   return (
@@ -124,7 +124,6 @@ export default function App() {
             }
           />
 
-          {/* --- NEW ROUTES FOR GREASE/OIL REQUESTS --- */}
           {/* Grease/Oil Requests submenu */}
           <Route
             path="/requests/grease-oil"
@@ -134,6 +133,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
           {/* Grease/Oil Request Form */}
           <Route
             path="/requests/grease-oil/form"
@@ -143,6 +143,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
           {/* Grease/Oil Current Requests */}
           <Route
             path="/requests/grease-oil/current"
@@ -152,6 +153,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
           {/* Grease/Oil Requests History */}
           <Route
             path="/requests/grease-oil/history"
@@ -161,17 +163,19 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          {/* --- END NEW ROUTES --- */}
 
-          {/* --- NEW ROUTES FOR CLEANING (Now Included) --- */}
+          {/* --- NEW ROUTES FOR CLEANING --- */}
+          {/* Cleaning menu */}
           <Route
             path="/cleaning"
             element={
               <ProtectedRoute>
-                <CleaningIndex /> {/* Now correctly pointing to the index we created */}
+                <CleaningMenu />
               </ProtectedRoute>
             }
           />
+
+          {/* Cleaning Form */}
           <Route
             path="/cleaning/form"
             element={
@@ -180,6 +184,8 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Cleaning History */}
           <Route
             path="/cleaning/history"
             element={
@@ -188,7 +194,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          {/* --- END NEW ROUTES --- */}
+          {/* --- END CLEANING ROUTES --- */}
 
           {/* fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
