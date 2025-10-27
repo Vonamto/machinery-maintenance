@@ -67,11 +67,11 @@ export default function GreaseOilCurrent() {
             ...row,
             __original_index: originalIndex,
           }));
-          const pendingRequests = dataWithIndex.filter((row) => {
+          const pending = dataWithIndex.filter((row) => {
             const completionDate = row["Completion Date"];
             return !completionDate || completionDate.trim() === "";
           });
-          setRows(pendingRequests.reverse());
+          setRows(pending.reverse());
         }
       } catch (err) {
         console.error("Error loading current grease/oil requests:", err);
@@ -98,7 +98,7 @@ export default function GreaseOilCurrent() {
   const handleFile = (file, field) => {
     if (!file) return;
     const reader = new FileReader();
-    reader.onloadend = () => setEditData((prev) => ({ ...prev, [field]: reader.result }));
+    reader.onloadend = () => setEditData((p) => ({ ...p, [field]: reader.result }));
     reader.readAsDataURL(file);
   };
 
@@ -114,25 +114,23 @@ export default function GreaseOilCurrent() {
       alert("For 'Completed' or 'Rejected' status, please select 'Handled By'.");
       return;
     }
-
     if (editData.rowIndex === undefined || editData.rowIndex === null) {
-      alert("Cannot save: Row index is missing. Please refresh the page.");
+      alert("Cannot save: Row index missing. Please refresh.");
       return;
     }
 
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
-      const updatePayload = {
+      const payload = {
         Status: editData.Status,
         "Handled By": editData["Handled By"],
         "Appointment Date": editData["Appointment Date"],
         ...(editData["Photo After"] && { "Photo After": editData["Photo After"] }),
       };
 
-      if (editData.Status === "Completed" || editData.Status === "Rejected") {
-        const today = new Date();
-        updatePayload["Completion Date"] = today.toLocaleDateString("en-GB");
+      if (["Completed", "Rejected"].includes(editData.Status)) {
+        payload["Completion Date"] = new Date().toLocaleDateString("en-GB");
       }
 
       const res = await fetch(
@@ -143,36 +141,33 @@ export default function GreaseOilCurrent() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(updatePayload),
+          body: JSON.stringify(payload),
         }
       );
       const result = await res.json();
 
       if (result.status === "success") {
-        const isNoLongerCurrent =
-          updatePayload.Status === "Completed" || updatePayload.Status === "Rejected";
-
-        if (isNoLongerCurrent) {
-          const updatedRows = [...rows];
-          updatedRows.splice(index, 1);
-          setRows(updatedRows);
+        const isDone = ["Completed", "Rejected"].includes(payload.Status);
+        if (isDone) {
+          setRows((r) => r.filter((_, idx) => idx !== index));
         } else {
-          const updatedRows = [...rows];
-          updatedRows[index] = {
-            ...updatedRows[index],
-            ...updatePayload,
-          };
-          setRows(updatedRows);
+          setRows((r) =>
+            r.map((row, idx) =>
+              idx === index
+                ? { ...row, ...payload }
+                : row
+            )
+          );
         }
         setEditingRow(null);
         setEditData({});
-        alert("Request updated successfully!");
+        alert("✅ Request updated successfully!");
       } else {
-        alert(`Error: ${result.message || "Unknown error"}`);
+        alert(`❌ Error: ${result.message || "Unknown error"}`);
       }
     } catch (err) {
-      console.error("Error saving grease/oil request:", err);
-      alert("An error occurred while saving.");
+      console.error("Save error:", err);
+      alert("Network error during save.");
     } finally {
       setSaving(false);
     }
@@ -184,23 +179,16 @@ export default function GreaseOilCurrent() {
   };
 
   const getMechanicSupervisorOptions = () => {
-    const cachedUsernames = cache.getUsernames?.() || cache.usernames || [];
-    if (!Array.isArray(cachedUsernames)) return [];
-    return cachedUsernames
-      .filter((u) => u.Role === "Mechanic" || u.Role === "Supervisor")
-      .map((u) => u.Name || u.Username)
+    const cached = cache.getUsernames?.() || cache.usernames || [];
+    return cached
+      .filter((u) => ["Mechanic", "Supervisor"].includes(u.Role))
+      .map((u) => u.Name || u["Full Name"] || u.Username)
       .filter(Boolean);
   };
 
-  const mechanicSupervisorOptions = getMechanicSupervisorOptions();
-
   const getStatusBadge = (status) => {
     const styles = {
-      Pending: {
-        bg: "bg-yellow-500/20",
-        text: "text-yellow-300",
-        icon: <AlertCircle size={14} />,
-      },
+      Pending: { bg: "bg-yellow-500/20", text: "text-yellow-300", icon: <AlertCircle size={14} /> },
       "In Progress": {
         bg: "bg-blue-500/20",
         text: "text-blue-300",
@@ -211,18 +199,14 @@ export default function GreaseOilCurrent() {
         text: "text-green-300",
         icon: <CheckCircle size={14} />,
       },
-      Rejected: {
-        bg: "bg-red-500/20",
-        text: "text-red-300",
-        icon: <XCircle size={14} />,
-      },
+      Rejected: { bg: "bg-red-500/20", text: "text-red-300", icon: <XCircle size={14} /> },
     };
-    const style = styles[status] || styles["Pending"];
+    const s = styles[status] || styles.Pending;
     return (
       <span
-        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}
+        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${s.bg} ${s.text}`}
       >
-        {style.icon}
+        {s.icon}
         {status || "Pending"}
       </span>
     );
@@ -232,8 +216,8 @@ export default function GreaseOilCurrent() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500 mb-4"></div>
-          <p className="text-lg">Loading current requests...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500 mb-4"></div>
+          <p>Loading current requests...</p>
         </div>
       </div>
     );
@@ -294,22 +278,20 @@ export default function GreaseOilCurrent() {
                       {h}
                     </th>
                   ))}
-                  {canEdit && (
-                    <th className="p-4 text-left text-sm font-semibold text-gray-300">Actions</th>
-                  )}
+                  {canEdit && <th className="p-4 text-sm font-semibold text-gray-300">Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r, i) => (
                   <tr
                     key={r.__original_index}
-                    className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
+                    className={`border-t border-gray-700 hover:bg-white/5 transition ${
                       i % 2 === 0 ? "bg-white/[0.02]" : ""
                     }`}
                   >
                     <td className="p-4 text-sm">{r["Request Date"]}</td>
                     <td className="p-4 text-sm">{r["Model / Type"]}</td>
-                    <td className="p-4 text-sm font-mono">{r["Plate Number"]}</td>
+                    <td className="p-4 text-sm">{r["Plate Number"]}</td>
                     <td className="p-4 text-sm">{r["Driver"]}</td>
                     <td className="p-4 text-sm">{r["Request Type"]}</td>
                     <td className="p-4">{getStatusBadge(r["Status"])}</td>
@@ -331,7 +313,7 @@ export default function GreaseOilCurrent() {
                           <img
                             src={getThumbnailUrl(r["Photo Before"])}
                             alt="Before"
-                            className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all"
+                            className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition"
                           />
                           <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
                             <ExternalLink className="w-6 h-6 text-cyan-400" />
@@ -352,7 +334,7 @@ export default function GreaseOilCurrent() {
                           <img
                             src={getThumbnailUrl(r["Photo After"])}
                             alt="After"
-                            className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all"
+                            className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition"
                           />
                           <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
                             <ExternalLink className="w-6 h-6 text-cyan-400" />
@@ -362,6 +344,39 @@ export default function GreaseOilCurrent() {
                         <span className="text-gray-500 text-sm">No Photo</span>
                       )}
                     </td>
+                    {canEdit && (
+                      <td className="p-4">
+                        {editingRow === i ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleSaveClick(i)}
+                              disabled={saving}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg shadow-green-500/30 ${
+                                saving
+                                  ? "bg-green-700 opacity-70 cursor-not-allowed"
+                                  : "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+                              }`}
+                            >
+                              {saving ? "Saving..." : "Save"}
+                            </button>
+                            <button
+                              onClick={handleCancelClick}
+                              disabled={saving}
+                              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-all"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleEditClick(i, r)}
+                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-500/30"
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
