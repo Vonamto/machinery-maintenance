@@ -24,18 +24,9 @@ import GreaseOilCurrent from "./pages/Requests/GreaseOil/Current"; // Import the
 import GreaseOilHistory from "./pages/Requests/GreaseOil/History"; // Import the new history page
 
 // Cleaning pages (NEW)
-import CleaningIndex from "./pages/Cleaning/index"; // Assuming you'll create this as a menu
-import CleaningForm from "./pages/Cleaning/CleaningForm";
-import CleaningHistory from "./pages/Cleaning/CleaningHistory";
-
-// Equipment pages (NEW)
-import EquipmentIndex from "./pages/Equipment/index"; // Assuming you'll create this as a menu
-import EquipmentList from "./pages/Equipment/EquipmentList";
-import EquipmentManage from "./pages/Equipment/EquipmentManage";
-
-// Users pages (NEW)
-import UsersIndex from "./pages/Users/index"; // Assuming you'll create this as a menu
-import ManageUsers from "./pages/Users/ManageUsers";
+import CleaningIndex from "./pages/Cleaning/index"; // This is the one we just created
+import CleaningForm from "./pages/Cleaning/CleaningForm"; // This is the one we just created
+import CleaningHistory from "./pages/Cleaning/CleaningHistory"; // This is the one we just created
 
 export default function App() {
   return (
@@ -172,14 +163,12 @@ export default function App() {
           />
           {/* --- END NEW ROUTES --- */}
 
-          {/* --- NEW ROUTES FOR CLEANING --- */}
-          {/* Cleaning submenu (you might create this later, or just link directly to form/history) */}
-          {/* For now, you can link directly to /cleaning/form or /cleaning/history from the dashboard */}
+          {/* --- NEW ROUTES FOR CLEANING (Now Included) --- */}
           <Route
             path="/cleaning"
             element={
               <ProtectedRoute>
-                <CleaningHistory /> {/* Default to history view, or create a CleaningIndex for a menu */}
+                <CleaningIndex /> {/* Now correctly pointing to the index we created */}
               </ProtectedRoute>
             }
           />
@@ -196,52 +185,6 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <CleaningHistory />
-              </ProtectedRoute>
-            }
-          />
-          {/* --- END NEW ROUTES --- */}
-
-          {/* --- NEW ROUTES FOR EQUIPMENT --- */}
-          <Route
-            path="/equipment"
-            element={
-              <ProtectedRoute>
-                <EquipmentIndex />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/equipment/list"
-            element={
-              <ProtectedRoute>
-                <EquipmentList />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/equipment/manage"
-            element={
-              <ProtectedRoute>
-                <EquipmentManage />
-              </ProtectedRoute>
-            }
-          />
-          {/* --- END NEW ROUTES --- */}
-
-          {/* --- NEW ROUTES FOR USERS --- */}
-          <Route
-            path="/users"
-            element={
-              <ProtectedRoute>
-                <UsersIndex />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/users/manage"
-            element={
-              <ProtectedRoute>
-                <ManageUsers />
               </ProtectedRoute>
             }
           />
