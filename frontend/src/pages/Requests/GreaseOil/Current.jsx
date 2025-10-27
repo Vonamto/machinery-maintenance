@@ -10,11 +10,11 @@ import {
   Camera,
   Upload,
 } from "lucide-react";
-import Navbar from "../../../components/Navbar"; // Adjusted path
-import { useAuth } from "../../../context/AuthContext"; // Adjusted path
-import { useNavigate } from "react-router-dom"; // Adjusted path
-import { useCache } from "../../../context/CacheContext"; // Adjusted path
-import CONFIG from "../../../config"; // Adjusted path
+import Navbar from "../../../components/Navbar";
+import { useAuth } from "../../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useCache } from "../../../context/CacheContext";
+import CONFIG from "../../../config";
 
 const getThumbnailUrl = (url) => {
   if (!url) return null;
@@ -26,7 +26,6 @@ const getThumbnailUrl = (url) => {
   return url;
 };
 
-// Helper function to format the Appointment Date
 const formatAppointmentDate = (rawDateStr) => {
   if (!rawDateStr) return rawDateStr;
   const date = new Date(rawDateStr);
@@ -48,7 +47,7 @@ export default function GreaseOilCurrent() {
   const [loading, setLoading] = useState(false);
   const [editingRow, setEditingRow] = useState(null);
   const [editData, setEditData] = useState({});
-  const [saving, setSaving] = useState(false); // ✅ Added saving state
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const cache = useCache();
 
@@ -87,7 +86,6 @@ export default function GreaseOilCurrent() {
     setEditingRow(index);
     const actualRowIndex =
       row["Row Number"] !== undefined ? row["Row Number"] : (row.__original_index || 0) + 2;
-
     setEditData({
       rowIndex: actualRowIndex,
       Status: row["Status"] || "",
@@ -122,7 +120,7 @@ export default function GreaseOilCurrent() {
       return;
     }
 
-    setSaving(true); // ✅ start saving
+    setSaving(true);
     try {
       const token = localStorage.getItem("token");
       const updatePayload = {
@@ -134,8 +132,7 @@ export default function GreaseOilCurrent() {
 
       if (editData.Status === "Completed" || editData.Status === "Rejected") {
         const today = new Date();
-        const formattedDate = today.toLocaleDateString("en-GB");
-        updatePayload["Completion Date"] = formattedDate;
+        updatePayload["Completion Date"] = today.toLocaleDateString("en-GB");
       }
 
       const res = await fetch(
@@ -163,14 +160,10 @@ export default function GreaseOilCurrent() {
           const updatedRows = [...rows];
           updatedRows[index] = {
             ...updatedRows[index],
-            Status: updatePayload.Status,
-            "Handled By": updatePayload["Handled By"],
-            "Appointment Date": updatePayload["Appointment Date"],
-            ...(updatePayload["Photo After"] && { "Photo After": updatePayload["Photo After"] }),
+            ...updatePayload,
           };
           setRows(updatedRows);
         }
-
         setEditingRow(null);
         setEditData({});
         alert("Request updated successfully!");
@@ -179,9 +172,9 @@ export default function GreaseOilCurrent() {
       }
     } catch (err) {
       console.error("Error saving grease/oil request:", err);
-      alert("An error occurred while saving. Please check console for details.");
+      alert("An error occurred while saving.");
     } finally {
-      setSaving(false); // ✅ stop saving
+      setSaving(false);
     }
   };
 
@@ -195,7 +188,7 @@ export default function GreaseOilCurrent() {
     if (!Array.isArray(cachedUsernames)) return [];
     return cachedUsernames
       .filter((u) => u.Role === "Mechanic" || u.Role === "Supervisor")
-      .map((u) => u.Name || u["Full Name"] || u.Username)
+      .map((u) => u.Name || u.Username)
       .filter(Boolean);
   };
 
@@ -318,73 +311,15 @@ export default function GreaseOilCurrent() {
                     <td className="p-4 text-sm">{r["Model / Type"]}</td>
                     <td className="p-4 text-sm font-mono">{r["Plate Number"]}</td>
                     <td className="p-4 text-sm">{r["Driver"]}</td>
-                    <td className="p-4 text-sm max-w-xs truncate">{r["Request Type"]}</td>
-
-                    {editingRow === i ? (
-                      <>
-                        <td className="p-4">
-                          <select
-                            value={editData.Status}
-                            onChange={(e) =>
-                              setEditData({ ...editData, Status: e.target.value })
-                            }
-                            className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
-                          >
-                            <option value="">Select Status</option>
-                            <option value="Pending">Pending</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Rejected">Rejected</option>
-                          </select>
-                        </td>
-                        <td className="p-4">
-                          <select
-                            value={editData["Handled By"]}
-                            onChange={(e) =>
-                              setEditData({ ...editData, "Handled By": e.target.value })
-                            }
-                            className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
-                          >
-                            <option value="">Select Handler</option>
-                            {mechanicSupervisorOptions.map((name) => (
-                              <option key={name} value={name}>
-                                {name}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="p-4">
-                          <input
-                            type="datetime-local"
-                            value={editData["Appointment Date"]}
-                            onChange={(e) =>
-                              setEditData({ ...editData, "Appointment Date": e.target.value })
-                            }
-                            className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
-                          />
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td className="p-4">{getStatusBadge(r["Status"])}</td>
-                        <td className="p-4 text-sm">
-                          {r["Handled By"] || (
-                            <span className="text-gray-500">Unassigned</span>
-                          )}
-                        </td>
-                        <td className="p-4 text-sm">
-                          {r["Appointment Date"]
-                            ? formatAppointmentDate(r["Appointment Date"])
-                            : <span className="text-gray-500">—</span>}
-                        </td>
-                      </>
-                    )}
-
-                    <td className="p-4 text-sm max-w-xs truncate">
-                      {r["Comments"] || <span className="text-gray-500">—</span>}
+                    <td className="p-4 text-sm">{r["Request Type"]}</td>
+                    <td className="p-4">{getStatusBadge(r["Status"])}</td>
+                    <td className="p-4 text-sm">{r["Handled By"] || "—"}</td>
+                    <td className="p-4 text-sm">
+                      {r["Appointment Date"]
+                        ? formatAppointmentDate(r["Appointment Date"])
+                        : "—"}
                     </td>
-
-                    {/* Photo Before */}
+                    <td className="p-4 text-sm">{r["Comments"] || "—"}</td>
                     <td className="p-4">
                       {r["Photo Before"] ? (
                         <a
@@ -395,8 +330,8 @@ export default function GreaseOilCurrent() {
                         >
                           <img
                             src={getThumbnailUrl(r["Photo Before"])}
-                            alt="Odometer Before"
-                            className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
+                            alt="Before"
+                            className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all"
                           />
                           <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
                             <ExternalLink className="w-6 h-6 text-cyan-400" />
@@ -406,47 +341,8 @@ export default function GreaseOilCurrent() {
                         <span className="text-gray-500 text-sm">No Photo</span>
                       )}
                     </td>
-
-                    {/* Photo After */}
                     <td className="p-4">
-                      {editingRow === i ? (
-                        <div className="flex flex-col gap-2">
-                          <div className="flex gap-2">
-                            <label className="flex-1 flex items-center justify-center gap-1 cursor-pointer bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white px-2 py-1 rounded-lg transition-all text-xs">
-                              <Upload size={14} />
-                              <span>Upload</span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) =>
-                                  handleFile(e.target.files?.[0], "Photo After")
-                                }
-                              />
-                            </label>
-                            <label className="flex-1 flex items-center justify-center gap-1 cursor-pointer bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-2 py-1 rounded-lg transition-all text-xs">
-                              <Camera size={14} />
-                              <span>Camera</span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                capture="environment"
-                                className="hidden"
-                                onChange={(e) =>
-                                  handleFile(e.target.files?.[0], "Photo After")
-                                }
-                              />
-                            </label>
-                          </div>
-                          {editData["Photo After"] && (
-                            <img
-                              src={editData["Photo After"]}
-                              alt="Preview After"
-                              className="h-16 w-16 object-cover rounded-lg border border-gray-600 mx-auto"
-                            />
-                          )}
-                        </div>
-                      ) : r["Photo After"] ? (
+                      {r["Photo After"] ? (
                         <a
                           href={r["Photo After"]}
                           target="_blank"
@@ -455,9 +351,24 @@ export default function GreaseOilCurrent() {
                         >
                           <img
                             src={getThumbnailUrl(r["Photo After"])}
-                            alt="Odometer After"
-                            className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
+                            alt="After"
+                            className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all"
                           />
                           <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
                             <ExternalLink className="w-6 h-6 text-cyan-400" />
-                         
+                          </div>
+                        </a>
+                      ) : (
+                        <span className="text-gray-500 text-sm">No Photo</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
