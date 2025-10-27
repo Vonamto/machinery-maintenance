@@ -326,8 +326,8 @@ export default function GreaseOilCurrent() {
                     "Handled By",
                     "Appointment Date", // Added field
                     "Comments",
-                    "Photo Before", // Changed field name
-                    "Photo After", // Added field
+                    "Odometer Photo - Before", // Changed field name
+                    "Odometer Photo - After", // Changed field name
                   ].map((h) => (
                     <th
                       key={h}
@@ -433,17 +433,17 @@ export default function GreaseOilCurrent() {
                         <span className="text-gray-500">—</span>
                       )}
                     </td>
-                    <td className="p-4"> {/* Photo Before column */}
-                      {r["Photo Before"] ? (
+                    <td className="p-4"> {/* Photo Before column -> Odometer Photo - Before */}
+                      {r["Photo Before"] ? ( // Accessing internal field name
                         <a
-                          href={r["Photo Before"]}
+                          href={r["Photo Before"]} // Accessing internal field name
                           target="_blank"
                           rel="noopener noreferrer"
                           className="relative group block"
                         >
                           <img
-                            src={getThumbnailUrl(r["Photo Before"])}
-                            alt="Photo Before"
+                            src={getThumbnailUrl(r["Photo Before"])} // Accessing internal field name
+                            alt="Odometer Photo - Before"
                             className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
                           />
                           <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
@@ -454,7 +454,7 @@ export default function GreaseOilCurrent() {
                         <span className="text-gray-500 text-sm">No Photo</span>
                       )}
                     </td>
-                    <td className="p-4"> {/* Photo After column */}
+                    <td className="p-4"> {/* Photo After column -> Odometer Photo - After */}
                       {editingRow === i ? ( // Show upload/camera during edit
                         <div className="flex flex-col gap-2">
                           <div className="flex gap-2">
@@ -469,25 +469,25 @@ export default function GreaseOilCurrent() {
                               <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Photo After")} />
                             </label>
                           </div>
-                          {editData["Photo After"] && (
+                          {editData["Photo After"] && ( // Accessing internal field name
                             <img
-                              src={editData["Photo After"]}
+                              src={editData["Photo After"]} // Accessing internal field name
                               alt="Preview After"
                               className="h-16 w-16 object-cover rounded-lg border border-gray-600 mx-auto"
                             />
                           )}
                         </div>
                       ) : (
-                        r["Photo After"] ? ( // Show existing photo after if not editing
+                        r["Photo After"] ? ( // Accessing internal field name - Show existing photo after if not editing
                           <a
-                            href={r["Photo After"]}
+                            href={r["Photo After"]} // Accessing internal field name
                             target="_blank"
                             rel="noopener noreferrer"
                             className="relative group block"
                           >
                             <img
-                              src={getThumbnailUrl(r["Photo After"])}
-                              alt="Photo After"
+                              src={getThumbnailUrl(r["Photo After"])} // Accessing internal field name
+                              alt="Odometer Photo - After"
                               className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
                             />
                             <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
