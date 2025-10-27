@@ -287,8 +287,8 @@ export default function GreaseOilHistory() {
                     "Handled By",
                     "Completion Date",
                     "Comments",
-                    "Photo Before",
-                    "Photo After",
+                    "Odometer Photo - Before",
+                    "Odometer Photo - After",
                   ].map((h) => (
                     <th
                       key={h}
