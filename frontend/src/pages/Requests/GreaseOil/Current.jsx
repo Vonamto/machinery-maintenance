@@ -28,28 +28,16 @@ const getThumbnailUrl = (url) => {
 
 // Helper function to format the Appointment Date
 const formatAppointmentDate = (rawDateStr) => {
-  if (!rawDateStr) return rawDateStr; // Return as is if empty
+  if (!rawDateStr) return rawDateStr;
 
-  // The raw date string from the input or sheet is likely in ISO format like "YYYY-MM-DDTHH:mm"
-  // Or it might already be a formatted string from the sheet.
-  // First, try to create a Date object assuming ISO format.
-  // If it's already a different format, this might still parse it correctly depending on the environment.
   const date = new Date(rawDateStr);
-
-  // Check if the date object is valid
   if (isNaN(date.getTime())) {
-    // If parsing failed, return the original string
     console.warn(`Could not parse Appointment Date: ${rawDateStr}`);
     return rawDateStr;
   }
 
-  // Format using en-GB locale to get DD/MM/YYYY
-  // This also formats the time part correctly (HH:MM).
-  // The 'T' in the input format will be replaced by a space or handled by toLocaleString.
-  // We want "DD/MM/YYYY, HH:MM" or "DD/MM/YYYY HH:MM".
-  // toLocaleString with options is more reliable.
   const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+  const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
@@ -57,13 +45,13 @@ const formatAppointmentDate = (rawDateStr) => {
   return `${day}/${month}/${year} ${hours}:${minutes}`;
 };
 
-
 export default function GreaseOilCurrent() {
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingRow, setEditingRow] = useState(null);
   const [editData, setEditData] = useState({});
+  const [saving, setSaving] = useState(false); // ✅ Added saving state
   const navigate = useNavigate();
   const cache = useCache();
 
@@ -75,7 +63,7 @@ export default function GreaseOilCurrent() {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`${CONFIG.BACKEND_URL}/api/Grease_Oil_Requests`, { // Updated endpoint
+        const res = await fetch(`${CONFIG.BACKEND_URL}/api/Grease_Oil_Requests`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -84,7 +72,6 @@ export default function GreaseOilCurrent() {
             ...row,
             __original_index: originalIndex,
           }));
-          // ✅ show only current requests (no completion date)
           const pendingRequests = dataWithIndex.filter((row) => {
             const completionDate = row["Completion Date"];
             return !completionDate || completionDate.trim() === "";
@@ -111,8 +98,8 @@ export default function GreaseOilCurrent() {
       rowIndex: actualRowIndex,
       Status: row["Status"] || "",
       "Handled By": row["Handled By"] || "",
-      "Appointment Date": row["Appointment Date"] || "", // Include Appointment Date
-      "Photo After": "", // Initialize Photo After for editing
+      "Appointment Date": row["Appointment Date"] || "",
+      "Photo After": "",
     });
   };
 
@@ -143,29 +130,24 @@ export default function GreaseOilCurrent() {
       return;
     }
 
-    setLoading(true);
+    setSaving(true); // ✅ start saving
     try {
       const token = localStorage.getItem("token");
       const updatePayload = {
         Status: editData.Status,
         "Handled By": editData["Handled By"],
-        "Appointment Date": editData["Appointment Date"], // Include Appointment Date
-        // "Photo After" is only sent if it was updated
+        "Appointment Date": editData["Appointment Date"],
         ...(editData["Photo After"] && { "Photo After": editData["Photo After"] }),
       };
 
-      // ✅ Auto-fill Completion Date if status is Completed or Rejected
-      if (
-        editData.Status === "Completed" ||
-        editData.Status === "Rejected"
-      ) {
+      if (editData.Status === "Completed" || editData.Status === "Rejected") {
         const today = new Date();
-        const formattedDate = today.toLocaleDateString("en-GB"); // DD/MM/YYYY
+        const formattedDate = today.toLocaleDateString("en-GB");
         updatePayload["Completion Date"] = formattedDate;
       }
 
       const res = await fetch(
-        `${CONFIG.BACKEND_URL}/api/edit/Grease_Oil_Requests/${editData.rowIndex}`, // Updated endpoint
+        `${CONFIG.BACKEND_URL}/api/edit/Grease_Oil_Requests/${editData.rowIndex}`,
         {
           method: "PUT",
           headers: {
@@ -192,8 +174,7 @@ export default function GreaseOilCurrent() {
             ...updatedRows[index],
             Status: updatePayload.Status,
             "Handled By": updatePayload["Handled By"],
-            "Appointment Date": updatePayload["Appointment Date"], // Update Appointment Date in view
-            // Update Photo After only if it was sent in the payload
+            "Appointment Date": updatePayload["Appointment Date"],
             ...(updatePayload["Photo After"] && { "Photo After": updatePayload["Photo After"] }),
           };
           setRows(updatedRows);
@@ -209,7 +190,7 @@ export default function GreaseOilCurrent() {
       console.error("Error saving grease/oil request:", err);
       alert("An error occurred while saving. Please check console for details.");
     } finally {
-      setLoading(false);
+      setSaving(false); // ✅ stop saving
     }
   };
 
@@ -296,7 +277,7 @@ export default function GreaseOilCurrent() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">
-              Current Grease/Oil Requests {/* Updated title */}
+              Current Grease/Oil Requests
             </h1>
             <p className="text-gray-400 text-sm mt-1">
               View and manage pending requests
@@ -321,13 +302,13 @@ export default function GreaseOilCurrent() {
                     "Model / Type",
                     "Plate Number",
                     "Driver",
-                    "Request Type", // Changed field name
+                    "Request Type",
                     "Status",
                     "Handled By",
-                    "Appointment Date", // Added field
+                    "Appointment Date",
                     "Comments",
-                    "Odometer Photo - Before", // Changed field name
-                    "Odometer Photo - After", // Changed field name
+                    "Odometer Photo - Before",
+                    "Odometer Photo - After",
                   ].map((h) => (
                     <th
                       key={h}
@@ -353,13 +334,9 @@ export default function GreaseOilCurrent() {
                   >
                     <td className="p-4 text-sm">{r["Request Date"]}</td>
                     <td className="p-4 text-sm">{r["Model / Type"]}</td>
-                    <td className="p-4 text-sm font-mono">
-                      {r["Plate Number"]}
-                    </td>
+                    <td className="p-4 text-sm font-mono">{r["Plate Number"]}</td>
                     <td className="p-4 text-sm">{r["Driver"]}</td>
-                    <td className="p-4 text-sm max-w-xs truncate">
-                      {r["Request Type"]} {/* Changed field name */}
-                    </td>
+                    <td className="p-4 text-sm max-w-xs truncate">{r["Request Type"]}</td>
                     {editingRow === i ? (
                       <>
                         <td className="p-4">
@@ -399,7 +376,7 @@ export default function GreaseOilCurrent() {
                             ))}
                           </select>
                         </td>
-                        <td className="p-4"> {/* Appointment Date field during edit */}
+                        <td className="p-4">
                           <input
                             type="datetime-local"
                             value={editData["Appointment Date"]}
@@ -417,45 +394,26 @@ export default function GreaseOilCurrent() {
                       <>
                         <td className="p-4">{getStatusBadge(r["Status"])}</td>
                         <td className="p-4 text-sm">
-                          {r["Handled By"] || (
-                            <span className="text-gray-500">Unassigned</span>
-                          )}
+                          {r["Handled By"] || <span className="text-gray-500">Unassigned</span>}
                         </td>
-                        <td className="p-4 text-sm"> {/* Display Appointment Date - FORMATTED */}
-                          {r["Appointment Date"] ? formatAppointmentDate(r["Appointment Date"]) : (
-                            <span className="text-gray-500">—</span>
-                          )}
+                        <td className="p-4 text-sm">
+                          {r["Appointment Date"] ? formatAppointmentDate(r["Appointment Date"]) : <span className="text-gray-500">—</span>}
                         </td>
                       </>
                     )}
-                    <td className="p-4 text-sm max-w-xs truncate">
-                      {r["Comments"] || (
-                        <span className="text-gray-500">—</span>
-                      )}
-                    </td>
-                    <td className="p-4"> {/* Photo Before column -> Odometer Photo - Before */}
-                      {r["Photo Before"] ? ( // Accessing internal field name
-                        <a
-                          href={r["Photo Before"]} // Accessing internal field name
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="relative group block"
-                        >
-                          <img
-                            src={getThumbnailUrl(r["Photo Before"])} // Accessing internal field name
-                            alt="Odometer Photo - Before"
-                            className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
-                          />
+                    <td className="p-4 text-sm max-w-xs truncate">{r["Comments"] || <span className="text-gray-500">—</span>}</td>
+                    <td className="p-4">
+                      {r["Photo Before"] ? (
+                        <a href={r["Photo Before"]} target="_blank" rel="noopener noreferrer" className="relative group block">
+                          <img src={getThumbnailUrl(r["Photo Before"])} alt="Odometer Photo - Before" className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"/>
                           <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
                             <ExternalLink className="w-6 h-6 text-cyan-400" />
                           </div>
                         </a>
-                      ) : (
-                        <span className="text-gray-500 text-sm">No Photo</span>
-                      )}
+                      ) : <span className="text-gray-500 text-sm">No Photo</span>}
                     </td>
-                    <td className="p-4"> {/* Photo After column -> Odometer Photo - After */}
-                      {editingRow === i ? ( // Show upload/camera during edit
+                    <td className="p-4">
+                      {editingRow === i ? (
                         <div className="flex flex-col gap-2">
                           <div className="flex gap-2">
                             <label className="flex-1 flex items-center justify-center gap-1 cursor-pointer bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white px-2 py-1 rounded-lg transition-all text-xs">
@@ -469,35 +427,18 @@ export default function GreaseOilCurrent() {
                               <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Photo After")} />
                             </label>
                           </div>
-                          {editData["Photo After"] && ( // Accessing internal field name
-                            <img
-                              src={editData["Photo After"]} // Accessing internal field name
-                              alt="Preview After"
-                              className="h-16 w-16 object-cover rounded-lg border border-gray-600 mx-auto"
-                            />
+                          {editData["Photo After"] && (
+                            <img src={editData["Photo After"]} alt="Preview After" className="h-16 w-16 object-cover rounded-lg border border-gray-600 mx-auto"/>
                           )}
                         </div>
-                      ) : (
-                        r["Photo After"] ? ( // Accessing internal field name - Show existing photo after if not editing
-                          <a
-                            href={r["Photo After"]} // Accessing internal field name
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="relative group block"
-                          >
-                            <img
-                              src={getThumbnailUrl(r["Photo After"])} // Accessing internal field name
-                              alt="Odometer Photo - After"
-                              className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
-                            />
-                            <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                              <ExternalLink className="w-6 h-6 text-cyan-400" />
-                            </div>
-                          </a>
-                        ) : (
-                          <span className="text-gray-500 text-sm">No Photo</span>
-                        )
-                      )}
+                      ) : r["Photo After"] ? (
+                        <a href={r["Photo After"]} target="_blank" rel="noopener noreferrer" className="relative group block">
+                          <img src={getThumbnailUrl(r["Photo After"])} alt="Odometer Photo - After" className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"/>
+                          <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                            <ExternalLink className="w-6 h-6 text-cyan-400" />
+                          </div>
+                        </a>
+                      ) : <span className="text-gray-500 text-sm">No Photo</span>}
                     </td>
                     {canEdit && (
                       <td className="p-4">
@@ -505,13 +446,15 @@ export default function GreaseOilCurrent() {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleSaveClick(i)}
-                              className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg text-sm font-medium transition-all shadow-lg shadow-green-500/30"
+                              disabled={saving}
+                              className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg text-sm font-medium transition-all shadow-lg shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              Save
+                              {saving ? "Saving..." : "Save"}
                             </button>
                             <button
                               onClick={handleCancelClick}
-                              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-all"
+                              disabled={saving}
+                              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Cancel
                             </button>
