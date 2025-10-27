@@ -85,6 +85,16 @@ export default function GreaseOilHistory() {
     });
   }, [rows, filters]);
 
+  // --- NEW LOGIC: Derive filter options from the loaded rows ---
+  const filterOptions = React.useMemo(() => {
+    const models = [...new Set(rows.map(r => r["Model / Type"]).filter(Boolean))].sort();
+    const plates = [...new Set(rows.map(r => r["Plate Number"]).filter(Boolean))].sort();
+    const drivers = [...new Set(rows.map(r => r["Driver"]).filter(Boolean))].sort();
+    const statuses = [...new Set(rows.map(r => r["Status"]).filter(Boolean))].sort(); // Get unique statuses from data too
+
+    return { models, plates, drivers, statuses };
+  }, [rows]);
+
   const resetFilters = () => setFilters({
     model: "",
     plate: "",
@@ -156,39 +166,49 @@ export default function GreaseOilHistory() {
         {/* Filters */}
         <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-4 mb-8 shadow-lg">
           <div className="grid md:grid-cols-6 sm:grid-cols-2 gap-4">
+            {/* Model Filter - Populated dynamically */}
             <select
               value={filters.model}
               onChange={(e) => setFilters((f) => ({ ...f, model: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
             >
               <option value="">All Models</option>
-              {/* Assuming models are available from cache or a similar source, you'd populate them here */}
-              {/* For now, leaving it empty or you can add options dynamically */}
+              {filterOptions.models.map(model => (
+                <option key={model} value={model}>{model}</option>
+              ))}
             </select>
+            {/* Plate Filter - Populated dynamically */}
             <select
               value={filters.plate}
               onChange={(e) => setFilters((f) => ({ ...f, plate: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
             >
               <option value="">All Plates</option>
-              {/* Populate dynamically */}
+              {filterOptions.plates.map(plate => (
+                <option key={plate} value={plate}>{plate}</option>
+              ))}
             </select>
+            {/* Driver Filter - Populated dynamically */}
             <select
               value={filters.driver}
               onChange={(e) => setFilters((f) => ({ ...f, driver: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
             >
               <option value="">All Drivers</option>
-              {/* Populate dynamically */}
+              {filterOptions.drivers.map(driver => (
+                <option key={driver} value={driver}>{driver}</option>
+              ))}
             </select>
+            {/* Status Filter - Populated dynamically from data */}
             <select
               value={filters.status}
               onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
             >
               <option value="">All Statuses</option>
-              <option value="Completed">Completed</option>
-              <option value="Rejected">Rejected</option>
+              {filterOptions.statuses.map(status => (
+                <option key={status} value={status}>{status}</option>
+              ))}
             </select>
             <input
               type="date"
