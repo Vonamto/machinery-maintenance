@@ -30,6 +30,7 @@ export default function PartsCurrentRequests() {
   const [loading, setLoading] = useState(false);
   const [editingRow, setEditingRow] = useState(null);
   const [editData, setEditData] = useState({});
+  const [savingIndex, setSavingIndex] = useState(null); // ✅ Added for loading button
   const navigate = useNavigate();
   const cache = useCache();
 
@@ -50,7 +51,6 @@ export default function PartsCurrentRequests() {
             ...row,
             __original_index: originalIndex,
           }));
-          // ✅ show only current requests (no completion date)
           const pendingRequests = dataWithIndex.filter((row) => {
             const completionDate = row["Completion Date"];
             return !completionDate || completionDate.trim() === "";
@@ -89,9 +89,7 @@ export default function PartsCurrentRequests() {
       (editData.Status === "Completed" || editData.Status === "Rejected") &&
       !editData["Handled By"]
     ) {
-      alert(
-        "For 'Completed' or 'Rejected' status, please select 'Handled By'."
-      );
+      alert("For 'Completed' or 'Rejected' status, please select 'Handled By'.");
       return;
     }
 
@@ -100,6 +98,7 @@ export default function PartsCurrentRequests() {
       return;
     }
 
+    setSavingIndex(index); // ✅ Start saving state
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
@@ -108,13 +107,12 @@ export default function PartsCurrentRequests() {
         "Handled By": editData["Handled By"],
       };
 
-      // ✅ Auto-fill Completion Date if status is Completed or Rejected
       if (
         editData.Status === "Completed" ||
         editData.Status === "Rejected"
       ) {
         const today = new Date();
-        const formattedDate = today.toLocaleDateString("en-GB"); // DD/MM/YYYY
+        const formattedDate = today.toLocaleDateString("en-GB");
         updatePayload["Completion Date"] = formattedDate;
       }
 
@@ -161,6 +159,7 @@ export default function PartsCurrentRequests() {
       alert("An error occurred while saving. Please check console for details.");
     } finally {
       setLoading(false);
+      setSavingIndex(null); // ✅ End saving state
     }
   };
 
@@ -296,129 +295,4 @@ export default function PartsCurrentRequests() {
                 {rows.map((r, i) => (
                   <tr
                     key={r.__original_index}
-                    className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
-                      i % 2 === 0 ? "bg-white/[0.02]" : ""
-                    }`}
-                  >
-                    <td className="p-4 text-sm">{r["Request Date"]}</td>
-                    <td className="p-4 text-sm">{r["Model / Type"]}</td>
-                    <td className="p-4 text-sm font-mono">
-                      {r["Plate Number"]}
-                    </td>
-                    <td className="p-4 text-sm">{r["Driver"]}</td>
-                    <td className="p-4 text-sm max-w-xs truncate">
-                      {r["Requested Parts"]}
-                    </td>
-                    {editingRow === i ? (
-                      <>
-                        <td className="p-4">
-                          <select
-                            value={editData.Status}
-                            onChange={(e) =>
-                              setEditData({
-                                ...editData,
-                                Status: e.target.value,
-                              })
-                            }
-                            className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
-                          >
-                            <option value="">Select Status</option>
-                            <option value="Pending">Pending</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Rejected">Rejected</option>
-                          </select>
-                        </td>
-                        <td className="p-4">
-                          <select
-                            value={editData["Handled By"]}
-                            onChange={(e) =>
-                              setEditData({
-                                ...editData,
-                                "Handled By": e.target.value,
-                              })
-                            }
-                            className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
-                          >
-                            <option value="">Select Handler</option>
-                            {mechanicSupervisorOptions.map((name) => (
-                              <option key={name} value={name}>
-                                {name}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td className="p-4">{getStatusBadge(r["Status"])}</td>
-                        <td className="p-4 text-sm">
-                          {r["Handled By"] || (
-                            <span className="text-gray-500">Unassigned</span>
-                          )}
-                        </td>
-                      </>
-                    )}
-                    <td className="p-4 text-sm max-w-xs truncate">
-                      {r["Comments"] || (
-                        <span className="text-gray-500">—</span>
-                      )}
-                    </td>
-                    <td className="p-4">
-                      {r["Attachment Photo"] ? (
-                        <a
-                          href={r["Attachment Photo"]}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="relative group block"
-                        >
-                          <img
-                            src={getThumbnailUrl(r["Attachment Photo"])}
-                            alt="Attachment"
-                            className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
-                          />
-                          <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                            <ExternalLink className="w-6 h-6 text-cyan-400" />
-                          </div>
-                        </a>
-                      ) : (
-                        <span className="text-gray-500 text-sm">No Photo</span>
-                      )}
-                    </td>
-                    {canEdit && (
-                      <td className="p-4">
-                        {editingRow === i ? (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleSaveClick(i)}
-                              className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg text-sm font-medium transition-all shadow-lg shadow-green-500/30"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={handleCancelClick}
-                              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-all"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => handleEditClick(i, r)}
-                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-500/30"
-                          >
-                            Edit
-                          </button>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+                    className={`border-
