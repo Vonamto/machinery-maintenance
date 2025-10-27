@@ -8,7 +8,7 @@ import { useCache } from "../../../context/CacheContext"; // Adjusted path
 import { fetchWithAuth } from "../../../api/api"; // Adjusted path
 
 export default function GreaseOilForm() {
-  const { user } = useAuth(); // User info is still needed for potential 'Performed By' default or context
+  const { user } = useAuth();
   const navigate = useNavigate();
   const cache = useCache();
   const todayDate = new Date().toISOString().split("T")[0]; // Auto-fill date
@@ -21,7 +21,7 @@ export default function GreaseOilForm() {
     Driver: "",
     "Request Type": "", // New field
     Comments: "",
-    "Photo Before": "", // Renamed field
+    "Photo Before": "", // Renamed field (internal)
   });
 
   // State for dynamic dropdown options
@@ -92,7 +92,7 @@ export default function GreaseOilForm() {
     setForm((p) => ({ ...p, [name]: value }));
   };
 
-  // Handle file uploads (Photo Before)
+  // Handle file uploads (Photo Before -> Odometer Photo - Before)
   const handleFile = (file, field) => {
     if (!file) return;
     const reader = new FileReader();
@@ -250,9 +250,9 @@ export default function GreaseOilForm() {
             />
           </div>
 
-          {/* Photo Before Upload */}
+          {/* Photo Before Upload -> Odometer Photo - Before (Optional) */}
           <div className="group">
-            <label className="block text-sm font-medium text-gray-300 mb-3">Photo Before (Optional)</label>
+            <label className="block text-sm font-medium text-gray-300 mb-3">Odometer Photo - Before (Optional)</label>
             <div className="flex gap-3">
               <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white px-4 py-3 rounded-xl transition-all shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50"> {/* Changed button color */}
                 <Upload size={18} />
@@ -269,7 +269,7 @@ export default function GreaseOilForm() {
               <div className="mt-4 p-2 bg-gray-800/30 rounded-xl border border-gray-700">
                 <img
                   src={form["Photo Before"]}
-                  alt="Photo Before Preview"
+                  alt="Odometer Photo - Before Preview"
                   className="max-h-64 mx-auto rounded-lg object-contain"
                 />
               </div>
