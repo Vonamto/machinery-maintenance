@@ -1,4 +1,5 @@
-// frontend/src/pages/Maintenance/History.jsx
+// frontend/src/pages/Maintenance/History.jsx (UPDATED - Replace your existing one)
+
 import React, { useEffect, useState, useMemo } from "react";
 import {
   ArrowLeft,
@@ -55,6 +56,21 @@ export default function MaintenanceHistory() {
       }
     }
     load();
+  }, []);
+
+  // ✅ Check for filter from Equipment List (via sessionStorage)
+  useEffect(() => {
+    const savedFilter = sessionStorage.getItem("maintenanceFilter");
+    if (savedFilter) {
+      try {
+        const parsed = JSON.parse(savedFilter);
+        setFilters((f) => ({ ...f, ...parsed }));
+        // Clear it after applying so it doesn't persist on refresh
+        sessionStorage.removeItem("maintenanceFilter");
+      } catch (err) {
+        console.error("Error parsing saved filter:", err);
+      }
+    }
   }, []);
 
   // derive dropdown options dynamically
@@ -120,17 +136,19 @@ export default function MaintenanceHistory() {
         icon: <XCircle size={14} />,
       },
     };
+
     const style = styles[lower] || {
       bg: "bg-gray-500/20",
       text: "text-gray-300",
       icon: <HistoryIcon size={14} />,
     };
+
     return (
       <span
         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}
       >
         {style.icon}
-        {status || "—"}
+        {status || "---"}
       </span>
     );
   };
@@ -219,6 +237,7 @@ export default function MaintenanceHistory() {
               onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
             />
+
             <input
               type="date"
               value={filters.to}
@@ -226,7 +245,6 @@ export default function MaintenanceHistory() {
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
             />
           </div>
-
           <div className="flex justify-end mt-4">
             <button
               onClick={resetFilters}
@@ -289,24 +307,20 @@ export default function MaintenanceHistory() {
                     <td className="p-4 text-sm">{r["Performed By"]}</td>
                     <td className="p-4 text-sm max-w-xs truncate">
                       {r["Description of Work"] || (
-                        <span className="text-gray-500">—</span>
+                        <span className="text-gray-500">---</span>
                       )}
                     </td>
-
                     <td className="p-4 text-sm">
                       {r["Completion Date"] || (
-                        <span className="text-gray-500">—</span>
+                        <span className="text-gray-500">---</span>
                       )}
                     </td>
-
                     <td className="p-4">{getStatusBadge(r["Status"])}</td>
-
                     <td className="p-4 text-sm max-w-xs truncate">
                       {r["Comments"] || (
-                        <span className="text-gray-500">—</span>
+                        <span className="text-gray-500">---</span>
                       )}
                     </td>
-
                     {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
                       (field) => (
                         <td key={field} className="p-4">
@@ -331,7 +345,7 @@ export default function MaintenanceHistory() {
                               </div>
                             </a>
                           ) : (
-                            <span className="text-gray-500 text-sm">—</span>
+                            <span className="text-gray-500 text-sm">---</span>
                           )}
                         </td>
                       )
