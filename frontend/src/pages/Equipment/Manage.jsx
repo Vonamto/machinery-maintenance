@@ -12,11 +12,10 @@ export default function EquipmentManage() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingRow, setEditingRow] = useState(null); // { index, data, rowIndexInSheet }
+  const [editingRow, setEditingRow] = useState(null);
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
-  // New equipment form
   const [newEquipment, setNewEquipment] = useState({
     "Model / Type": "",
     "Plate Number": "",
@@ -26,7 +25,6 @@ export default function EquipmentManage() {
     Notes: "",
   });
 
-  // Check if user is Supervisor
   if (user?.role !== "Supervisor") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
@@ -161,9 +159,9 @@ export default function EquipmentManage() {
 
   const handleEditClick = (row, index) => {
     setEditingRow({
-      index, // index in `rows` array
+      index,
       rowIndexInSheet: row.__row_index,
-      data: {
+       {
         "Model / Type": row["Model / Type"] || "",
         "Plate Number": row["Plate Number"] || "",
         "Driver 1": row["Driver 1"] || "",
@@ -178,7 +176,7 @@ export default function EquipmentManage() {
     if (editingRow) {
       setEditingRow({
         ...editingRow,
-        data: {
+         {
           ...editingRow.data,
           [field]: value,
         },
@@ -244,7 +242,7 @@ export default function EquipmentManage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6">
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
@@ -253,13 +251,13 @@ export default function EquipmentManage() {
           Back
         </button>
 
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-gradient-to-br from-red-600 to-orange-500 shadow-lg shadow-red-500/40">
               <Truck className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-500">
+              <h1 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-500">
                 Manage Equipment
               </h1>
               <p className="text-gray-400 text-sm mt-1">
@@ -268,11 +266,16 @@ export default function EquipmentManage() {
             </div>
           </div>
 
+          {/* Smaller, responsive Add button */}
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 rounded-xl font-semibold shadow-lg shadow-green-500/30 transition-all"
+            className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm sm:text-base rounded-xl font-semibold shadow-lg transition-all whitespace-nowrap ${
+              showAddForm
+                ? "bg-gray-700 hover:bg-gray-600 text-white"
+                : "bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white shadow-green-500/30"
+            }`}
           >
-            <Plus size={20} />
+            <Plus size={18} />
             {showAddForm ? "Cancel" : "Add Equipment"}
           </button>
         </div>
@@ -282,7 +285,7 @@ export default function EquipmentManage() {
           <div className="mb-8 bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-orange-400">Add New Equipment</h2>
             <form onSubmit={handleAddEquipment} className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Model / Type *
@@ -382,12 +385,12 @@ export default function EquipmentManage() {
           </div>
         )}
 
-        {/* Edit Form (if editing) */}
+        {/* Edit Form */}
         {editingRow && (
           <div className="mb-8 bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-blue-400">Edit Equipment</h2>
             <form onSubmit={handleSaveEdit} className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Model / Type *
@@ -468,7 +471,7 @@ export default function EquipmentManage() {
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   type="submit"
                   disabled={saving}
@@ -528,7 +531,7 @@ export default function EquipmentManage() {
                     {r["Notes"] || <span className="text-gray-500">---</span>}
                   </td>
                   <td className="p-4">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => handleEditClick(r, i)}
                         disabled={saving}
