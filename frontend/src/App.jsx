@@ -1,4 +1,5 @@
-// frontend/src/App.jsx
+// frontend/src/App.jsx (UPDATED - Replace your current one)
+
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
@@ -28,10 +29,14 @@ import CleaningMenu from "./pages/Cleaning/index";
 import CleaningForm from "./pages/Cleaning/CleaningForm";
 import CleaningHistory from "./pages/Cleaning/CleaningHistory";
 
+// Equipment pages
+import EquipmentMenu from "./pages/Equipment/index";
+import EquipmentList from "./pages/Equipment/List";
+import EquipmentManage from "./pages/Equipment/Manage";
+
 export default function App() {
   return (
     <BrowserRouter>
-      {/* Apply the main background theme color class here */}
       <div className="min-h-screen bg-theme-background-primary text-theme-text-primary">
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -164,7 +169,6 @@ export default function App() {
             }
           />
 
-          {/* --- NEW ROUTES FOR CLEANING --- */}
           {/* Cleaning menu */}
           <Route
             path="/cleaning"
@@ -194,7 +198,38 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          {/* --- END CLEANING ROUTES --- */}
+
+          {/* --- NEW ROUTES FOR EQUIPMENT --- */}
+          {/* Equipment menu */}
+          <Route
+            path="/equipment"
+            element={
+              <ProtectedRoute>
+                <EquipmentMenu />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Equipment List (View) */}
+          <Route
+            path="/equipment/list"
+            element={
+              <ProtectedRoute>
+                <EquipmentList />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Equipment Manage (Add/Remove - Supervisor only) */}
+          <Route
+            path="/equipment/manage"
+            element={
+              <ProtectedRoute>
+                <EquipmentManage />
+              </ProtectedRoute>
+            }
+          />
+          {/* --- END EQUIPMENT ROUTES --- */}
 
           {/* fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
