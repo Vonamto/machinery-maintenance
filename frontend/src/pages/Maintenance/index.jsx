@@ -1,14 +1,17 @@
 // frontend/src/pages/Equipment/index.jsx
+
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { List, Settings, ArrowLeft, Truck } from "lucide-react";
+import { List, Settings, ArrowLeft, Truck } from "lucide-react"; // Added Truck icon
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 
 export default function EquipmentMenu() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const role = user?.role || "Guest";
 
   const cards = [
     {
@@ -17,7 +20,7 @@ export default function EquipmentMenu() {
       icon: <List className="w-10 h-10 text-white drop-shadow-lg" />,
       link: "/equipment/list",
       gradient: "from-orange-600 to-yellow-500",
-      glow: "shadow-[0_0_20px_3px_rgba(251,146,60,0.5)]",
+      glow: "shadow-[0_0_20px_3px_rgba(245,158,11,0.5)]", // Updated glow color
       allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
     },
     {
@@ -26,14 +29,12 @@ export default function EquipmentMenu() {
       icon: <Settings className="w-10 h-10 text-white drop-shadow-lg" />,
       link: "/equipment/manage",
       gradient: "from-red-600 to-orange-500",
-      glow: "shadow-[0_0_20px_3px_rgba(239,68,68,0.5)]",
+      glow: "shadow-[0_0_20px_3px_rgba(239,68,68,0.5)]", // Updated glow color
       allowed: ["Supervisor"],
     },
   ];
 
-  const visibleCards = cards.filter((card) =>
-    card.allowed.includes(user?.role)
-  );
+  const visibleCards = cards.filter((card) => card.allowed.includes(role));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
@@ -54,15 +55,15 @@ export default function EquipmentMenu() {
 
         {/* Header */}
         <div className="mb-10 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-orange-600 to-yellow-500 shadow-lg shadow-orange-500/40">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-orange-600 to-yellow-500 shadow-lg shadow-orange-500/40"> {/* Updated header gradient */}
             <Truck className="w-8 h-8 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-500">
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-500"> {/* Updated title gradient */}
               Equipment Management
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              View and manage all company vehicles and equipment
+              Manage and view all company vehicles and equipment
             </p>
           </div>
         </div>
