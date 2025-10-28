@@ -152,7 +152,7 @@ export default function EquipmentList() {
                     <td className="p-4 text-sm">
                       <button
                         onClick={() => handleFilterClick("model", r["Model / Type"])}
-                        className="flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors group"
+                        className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors group"
                       >
                         {r["Model / Type"]}
                         <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -163,7 +163,7 @@ export default function EquipmentList() {
                     <td className="p-4 text-sm font-mono">
                       <button
                         onClick={() => handleFilterClick("plate", r["Plate Number"])}
-                        className="flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors group"
+                        className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors group"
                       >
                         {r["Plate Number"]}
                         <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -175,7 +175,7 @@ export default function EquipmentList() {
                       {r["Driver 1"] ? (
                         <button
                           onClick={() => handleFilterClick("driver", r["Driver 1"])}
-                          className="flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors group"
+                          className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors group"
                         >
                           {r["Driver 1"]}
                           <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -190,7 +190,7 @@ export default function EquipmentList() {
                       {r["Driver 2"] ? (
                         <button
                           onClick={() => handleFilterClick("driver", r["Driver 2"])}
-                          className="flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors group"
+                          className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors group"
                         >
                           {r["Driver 2"]}
                           <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
