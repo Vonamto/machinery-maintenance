@@ -17,8 +17,8 @@ export default function EquipmentMenu() {
       description: "Browse all vehicles and equipment",
       icon: <List className="w-10 h-10 text-white drop-shadow-md" />,
       link: "/equipment/list",
-      gradient: "from-orange-600 to-yellow-500",
-      glow: "shadow-[0_0_15px_2px_rgba(251,146,60,0.6)]",
+      gradient: "from-slate-600 to-gray-500",
+      glow: "shadow-[0_0_15px_2px_rgba(100,116,139,0.4)]",
       allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
     },
     {
@@ -26,8 +26,8 @@ export default function EquipmentMenu() {
       description: "Add or remove equipment entries",
       icon: <Settings className="w-10 h-10 text-white drop-shadow-md" />,
       link: "/equipment/manage",
-      gradient: "from-red-600 to-orange-500",
-      glow: "shadow-[0_0_15px_2px_rgba(239,68,68,0.6)]",
+      gradient: "from-gray-600 to-slate-500",
+      glow: "shadow-[0_0_15px_2px_rgba(75,85,99,0.4)]",
       allowed: ["Supervisor"],
     },
   ];
@@ -49,7 +49,7 @@ export default function EquipmentMenu() {
         </button>
 
         {/* Page Header */}
-        <h1 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-500">
+        <h1 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-slate-300 to-gray-400">
           Equipment List
         </h1>
 
