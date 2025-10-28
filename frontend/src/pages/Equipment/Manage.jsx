@@ -157,11 +157,12 @@ export default function EquipmentManage() {
     }
   };
 
+  // ✅ FIXED: Added "data:" property name
   const handleEditClick = (row, index) => {
     setEditingRow({
       index,
       rowIndexInSheet: row.__row_index,
-       {
+      data: {
         "Model / Type": row["Model / Type"] || "",
         "Plate Number": row["Plate Number"] || "",
         "Driver 1": row["Driver 1"] || "",
@@ -176,7 +177,7 @@ export default function EquipmentManage() {
     if (editingRow) {
       setEditingRow({
         ...editingRow,
-         {
+        data: {
           ...editingRow.data,
           [field]: value,
         },
@@ -266,7 +267,6 @@ export default function EquipmentManage() {
             </div>
           </div>
 
-          {/* Smaller, responsive Add button */}
           <button
             onClick={() => setShowAddForm(!showAddForm)}
             className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm sm:text-base rounded-xl font-semibold shadow-lg transition-all whitespace-nowrap ${
@@ -280,7 +280,6 @@ export default function EquipmentManage() {
           </button>
         </div>
 
-        {/* Add Equipment Form */}
         {showAddForm && (
           <div className="mb-8 bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-orange-400">Add New Equipment</h2>
@@ -385,7 +384,6 @@ export default function EquipmentManage() {
           </div>
         )}
 
-        {/* Edit Form */}
         {editingRow && (
           <div className="mb-8 bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-blue-400">Edit Equipment</h2>
@@ -492,7 +490,6 @@ export default function EquipmentManage() {
           </div>
         )}
 
-        {/* Equipment List */}
         <div className="overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
           <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
             <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
