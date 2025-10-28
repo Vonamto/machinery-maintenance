@@ -1,7 +1,7 @@
 // frontend/src/pages/Equipment/Manage.jsx
 
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, Truck, Plus, Trash2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Truck, Plus, Trash2, AlertCircle, Pencil } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +12,7 @@ export default function EquipmentManage() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingRow, setEditingRow] = useState(null); // { index, data, rowIndexInSheet }
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
@@ -57,10 +58,9 @@ export default function EquipmentManage() {
       });
       const data = await res.json();
       if (Array.isArray(data)) {
-        // Add row indices for deletion
         const dataWithIndex = data.map((row, index) => ({
           ...row,
-          __row_index: index + 2, // +2 because row 1 is header
+          __row_index: index + 2,
         }));
         setRows(dataWithIndex);
       }
@@ -73,7 +73,7 @@ export default function EquipmentManage() {
 
   const handleAddEquipment = async (e) => {
     e.preventDefault();
-    
+
     if (!newEquipment["Model / Type"] || !newEquipment["Plate Number"]) {
       alert("Please fill in Model/Type and Plate Number.");
       return;
@@ -91,7 +91,7 @@ export default function EquipmentManage() {
         body: JSON.stringify(newEquipment),
       });
       const data = await res.json();
-      
+
       if (data.status === "success") {
         alert("✅ Equipment added successfully!");
         setShowAddForm(false);
@@ -103,7 +103,7 @@ export default function EquipmentManage() {
           Status: "Active",
           Notes: "",
         });
-        loadEquipment(); // Reload list
+        loadEquipment();
       } else {
         alert("❌ Error: " + (data.message || "Unknown error"));
       }
@@ -119,13 +119,12 @@ export default function EquipmentManage() {
     const confirmed = window.confirm(
       `Are you sure you want to delete equipment "${plateNumber}"?\n\nThis action cannot be undone.`
     );
-    
+
     if (!confirmed) return;
 
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
-      // Delete by setting all fields to empty (you could also implement a DELETE endpoint)
       const res = await fetch(
         `${CONFIG.BACKEND_URL}/api/edit/Equipment_List/${rowIndex}`,
         {
@@ -145,7 +144,7 @@ export default function EquipmentManage() {
         }
       );
       const data = await res.json();
-      
+
       if (data.status === "success") {
         alert("✅ Equipment deleted successfully!");
         loadEquipment();
@@ -158,6 +157,77 @@ export default function EquipmentManage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleEditClick = (row, index) => {
+    setEditingRow({
+      index, // index in `rows` array
+      rowIndexInSheet: row.__row_index,
+      data: {
+        "Model / Type": row["Model / Type"] || "",
+        "Plate Number": row["Plate Number"] || "",
+        "Driver 1": row["Driver 1"] || "",
+        "Driver 2": row["Driver 2"] || "",
+        Status: row["Status"] || "Active",
+        Notes: row["Notes"] || "",
+      },
+    });
+  };
+
+  const handleEditChange = (field, value) => {
+    if (editingRow) {
+      setEditingRow({
+        ...editingRow,
+        data: {
+          ...editingRow.data,
+          [field]: value,
+        },
+      });
+    }
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    const { rowIndexInSheet, data } = editingRow;
+
+    if (!data["Model / Type"] || !data["Plate Number"]) {
+      alert("Please fill in Model/Type and Plate Number.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `${CONFIG.BACKEND_URL}/api/edit/Equipment_List/${rowIndexInSheet}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(data),
+        }
+      );
+      const result = await res.json();
+
+      if (result.status === "success") {
+        alert("✅ Equipment updated successfully!");
+        setEditingRow(null);
+        loadEquipment();
+      } else {
+        alert("❌ Error: " + (result.message || "Failed to update equipment."));
+      }
+    } catch (err) {
+      console.error("Edit equipment error:", err);
+      alert("Network error updating equipment.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingRow(null);
   };
 
   if (loading && rows.length === 0) {
@@ -193,7 +263,7 @@ export default function EquipmentManage() {
                 Manage Equipment
               </h1>
               <p className="text-gray-400 text-sm mt-1">
-                Add or remove equipment entries
+                Add, edit, or remove equipment entries
               </p>
             </div>
           </div>
@@ -220,7 +290,9 @@ export default function EquipmentManage() {
                   <input
                     type="text"
                     value={newEquipment["Model / Type"]}
-                    onChange={(e) => setNewEquipment({ ...newEquipment, "Model / Type": e.target.value })}
+                    onChange={(e) =>
+                      setNewEquipment({ ...newEquipment, "Model / Type": e.target.value })
+                    }
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                     placeholder="e.g., Mercedes, MAN, Toyota"
                     required
@@ -234,7 +306,9 @@ export default function EquipmentManage() {
                   <input
                     type="text"
                     value={newEquipment["Plate Number"]}
-                    onChange={(e) => setNewEquipment({ ...newEquipment, "Plate Number": e.target.value })}
+                    onChange={(e) =>
+                      setNewEquipment({ ...newEquipment, "Plate Number": e.target.value })
+                    }
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                     placeholder="e.g., ABC-123"
                     required
@@ -248,7 +322,9 @@ export default function EquipmentManage() {
                   <input
                     type="text"
                     value={newEquipment["Driver 1"]}
-                    onChange={(e) => setNewEquipment({ ...newEquipment, "Driver 1": e.target.value })}
+                    onChange={(e) =>
+                      setNewEquipment({ ...newEquipment, "Driver 1": e.target.value })
+                    }
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                   />
                 </div>
@@ -260,7 +336,9 @@ export default function EquipmentManage() {
                   <input
                     type="text"
                     value={newEquipment["Driver 2"]}
-                    onChange={(e) => setNewEquipment({ ...newEquipment, "Driver 2": e.target.value })}
+                    onChange={(e) =>
+                      setNewEquipment({ ...newEquipment, "Driver 2": e.target.value })
+                    }
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                   />
                 </div>
@@ -304,6 +382,113 @@ export default function EquipmentManage() {
           </div>
         )}
 
+        {/* Edit Form (if editing) */}
+        {editingRow && (
+          <div className="mb-8 bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 shadow-lg">
+            <h2 className="text-xl font-semibold mb-4 text-blue-400">Edit Equipment</h2>
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Model / Type *
+                  </label>
+                  <input
+                    type="text"
+                    value={editingRow.data["Model / Type"]}
+                    onChange={(e) => handleEditChange("Model / Type", e.target.value)}
+                    className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    placeholder="e.g., Mercedes, MAN, Toyota"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Plate Number *
+                  </label>
+                  <input
+                    type="text"
+                    value={editingRow.data["Plate Number"]}
+                    onChange={(e) => handleEditChange("Plate Number", e.target.value)}
+                    className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    placeholder="e.g., ABC-123"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Driver 1
+                  </label>
+                  <input
+                    type="text"
+                    value={editingRow.data["Driver 1"]}
+                    onChange={(e) => handleEditChange("Driver 1", e.target.value)}
+                    className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Driver 2
+                  </label>
+                  <input
+                    type="text"
+                    value={editingRow.data["Driver 2"]}
+                    onChange={(e) => handleEditChange("Driver 2", e.target.value)}
+                    className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={editingRow.data.Status}
+                    onChange={(e) => handleEditChange("Status", e.target.value)}
+                    className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                    <option value="Maintenance">Maintenance</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Notes
+                  </label>
+                  <input
+                    type="text"
+                    value={editingRow.data.Notes}
+                    onChange={(e) => handleEditChange("Notes", e.target.value)}
+                    className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 text-white font-semibold shadow-lg shadow-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving ? "Saving..." : "Save Changes"}
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  disabled={saving}
+                  className="px-6 py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-semibold transition-all disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {/* Equipment List */}
         <div className="overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
           <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
@@ -343,14 +528,24 @@ export default function EquipmentManage() {
                     {r["Notes"] || <span className="text-gray-500">---</span>}
                   </td>
                   <td className="p-4">
-                    <button
-                      onClick={() => handleDeleteEquipment(r.__row_index, r["Plate Number"])}
-                      disabled={saving}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg text-sm font-medium transition-all shadow-lg shadow-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Trash2 size={16} />
-                      Delete
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditClick(r, i)}
+                        disabled={saving}
+                        className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg text-sm font-medium text-white transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Pencil size={14} />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEquipment(r.__row_index, r["Plate Number"])}
+                        disabled={saving}
+                        className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg text-sm font-medium text-white transition-all shadow-lg shadow-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Trash2 size={14} />
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
