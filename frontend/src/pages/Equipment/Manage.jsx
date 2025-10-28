@@ -275,8 +275,7 @@ export default function EquipmentManage() {
                 : "bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white shadow-green-500/30"
             }`}
           >
-            <Plus size={18} />
-            {showAddForm ? "Cancel" : "Add Equipment"}
+            {showAddForm ? "Cancel" : <><Plus size={18} /> Add Equipment</>}
           </button>
         </div>
 
