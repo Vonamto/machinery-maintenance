@@ -1,33 +1,39 @@
-// frontend/src/pages/Maintenance/index.jsx
+// frontend/src/pages/Equipment/index.jsx
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { ClipboardPlus, History, ArrowLeft, Wrench } from "lucide-react";
+import { List, Settings, ArrowLeft, Truck } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 
-export default function Maintenance() {
+export default function EquipmentMenu() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const cards = [
     {
-      title: "Add Maintenance Log",
-      description: "Fill in a new maintenance record for your equipment",
-      icon: <ClipboardPlus className="w-10 h-10 text-white drop-shadow-lg" />,
-      link: "/maintenance/form",
-      gradient: "from-blue-600 to-cyan-500",
-      glow: "shadow-[0_0_20px_3px_rgba(59,130,246,0.5)]",
+      title: "View Equipment List",
+      description: "Browse all vehicles and equipment",
+      icon: <List className="w-10 h-10 text-white drop-shadow-lg" />,
+      link: "/equipment/list",
+      gradient: "from-orange-600 to-yellow-500",
+      glow: "shadow-[0_0_20px_3px_rgba(251,146,60,0.5)]",
+      allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
     },
     {
-      title: "Maintenance History",
-      description: "View all past maintenance operations and reports",
-      icon: <History className="w-10 h-10 text-white drop-shadow-lg" />,
-      link: "/maintenance/history",
-      gradient: "from-emerald-600 to-green-500",
-      glow: "shadow-[0_0_20px_3px_rgba(34,197,94,0.5)]",
+      title: "Manage Equipment",
+      description: "Add or remove equipment entries",
+      icon: <Settings className="w-10 h-10 text-white drop-shadow-lg" />,
+      link: "/equipment/manage",
+      gradient: "from-red-600 to-orange-500",
+      glow: "shadow-[0_0_20px_3px_rgba(239,68,68,0.5)]",
+      allowed: ["Supervisor"],
     },
   ];
+
+  const visibleCards = cards.filter((card) =>
+    card.allowed.includes(user?.role)
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
@@ -48,22 +54,22 @@ export default function Maintenance() {
 
         {/* Header */}
         <div className="mb-10 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-500 shadow-lg shadow-cyan-500/40">
-            <Wrench className="w-8 h-8 text-white" />
+          <div className="p-3 rounded-xl bg-gradient-to-br from-orange-600 to-yellow-500 shadow-lg shadow-orange-500/40">
+            <Truck className="w-8 h-8 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-              Maintenance Management
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-500">
+              Equipment Management
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              Manage and track all equipment maintenance operations
+              View and manage all company vehicles and equipment
             </p>
           </div>
         </div>
 
         {/* Cards */}
         <div className="grid gap-8 sm:grid-cols-2">
-          {cards.map((card) => (
+          {visibleCards.map((card) => (
             <Link to={card.link} key={card.title}>
               <Card
                 className={`rounded-2xl bg-gradient-to-br ${card.gradient} ${card.glow} hover:scale-[1.04] hover:brightness-110 transition-all duration-300 border border-white/10 backdrop-blur-md`}
