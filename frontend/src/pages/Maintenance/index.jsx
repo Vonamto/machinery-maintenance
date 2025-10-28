@@ -19,8 +19,8 @@ export default function EquipmentMenu() {
       description: "Browse all vehicles and equipment",
       icon: <List className="w-10 h-10 text-white drop-shadow-lg" />,
       link: "/equipment/list",
-      gradient: "from-orange-600 to-yellow-500",
-      glow: "shadow-[0_0_20px_3px_rgba(245,158,11,0.5)]", // Updated glow color
+      gradient: "from-orange-500 to-yellow-400", // Updated gradient
+      glow: "shadow-[0_0_20px_3px_rgba(245,158,11,0.4)]", // Updated glow color, slightly less intense
       allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
     },
     {
@@ -28,8 +28,8 @@ export default function EquipmentMenu() {
       description: "Add or remove equipment entries",
       icon: <Settings className="w-10 h-10 text-white drop-shadow-lg" />,
       link: "/equipment/manage",
-      gradient: "from-red-600 to-orange-500",
-      glow: "shadow-[0_0_20px_3px_rgba(239,68,68,0.5)]", // Updated glow color
+      gradient: "from-red-500 to-orange-400", // Updated gradient for manage card
+      glow: "shadow-[0_0_20px_3px_rgba(239,68,68,0.4)]", // Updated glow color for manage card, slightly less intense
       allowed: ["Supervisor"],
     },
   ];
@@ -55,11 +55,11 @@ export default function EquipmentMenu() {
 
         {/* Header */}
         <div className="mb-10 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-orange-600 to-yellow-500 shadow-lg shadow-orange-500/40"> {/* Updated header gradient */}
+          <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500 to-yellow-400 shadow-lg shadow-orange-500/30"> {/* Updated header gradient and glow */}
             <Truck className="w-8 h-8 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-500"> {/* Updated title gradient */}
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-500"> {/* Title gradient remains the same or slightly adjusted */}
               Equipment Management
             </h1>
             <p className="text-gray-400 text-sm mt-1">
