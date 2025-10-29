@@ -12,8 +12,8 @@ export default function PartsRequestsMenu() {
 
   const cards = [
     {
-      title: "Request Parts",
-      description: "Submit a new parts request",
+      title: "Make a Request",
+      description: "Submit a new request",
       icon: <ClipboardPlus className="w-10 h-10 text-white drop-shadow-md" />,
       link: "/requests/parts/form",
       gradient: "from-blue-600 to-cyan-500",
