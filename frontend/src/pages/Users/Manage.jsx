@@ -15,11 +15,12 @@ export default function UsersManage() {
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
+  // ✅ use the real header name from Google Sheet
   const [newUser, setNewUser] = useState({
     Username: "",
     Password: "",
     Role: "Driver",
-    Name: "",
+    "Full Name": "",
   });
 
   // Only Supervisors can access
@@ -69,8 +70,8 @@ export default function UsersManage() {
 
   const handleAddUser = async (e) => {
     e.preventDefault();
-    if (!newUser.Username || !newUser.Password || !newUser.Name) {
-      alert("Please fill in Username, Password, and Name.");
+    if (!newUser.Username || !newUser.Password || !newUser["Full Name"]) {
+      alert("Please fill in Username, Password, and Full Name.");
       return;
     }
 
@@ -94,7 +95,7 @@ export default function UsersManage() {
           Username: "",
           Password: "",
           Role: "Driver",
-          Name: "",
+          "Full Name": "",
         });
         loadUsers();
       } else {
@@ -183,7 +184,11 @@ export default function UsersManage() {
                 : "bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white shadow-green-500/30"
             }`}
           >
-            {showAddForm ? "Cancel" : (<><Plus size={18} /> Add User</>)}
+            {showAddForm ? "Cancel" : (
+              <>
+                <Plus size={18} /> Add User
+              </>
+            )}
           </button>
         </div>
 
@@ -199,7 +204,9 @@ export default function UsersManage() {
                   <input
                     type="text"
                     value={newUser.Username}
-                    onChange={(e) => setNewUser({ ...newUser, Username: e.target.value })}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, Username: e.target.value })
+                    }
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
                     required
                   />
@@ -212,7 +219,9 @@ export default function UsersManage() {
                   <input
                     type="password"
                     value={newUser.Password}
-                    onChange={(e) => setNewUser({ ...newUser, Password: e.target.value })}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, Password: e.target.value })
+                    }
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
                     required
                   />
@@ -220,12 +229,14 @@ export default function UsersManage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Name *
+                    Full Name *
                   </label>
                   <input
                     type="text"
-                    value={newUser.Name}
-                    onChange={(e) => setNewUser({ ...newUser, Name: e.target.value })}
+                    value={newUser["Full Name"]}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, "Full Name": e.target.value })
+                    }
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
                     required
                   />
@@ -237,7 +248,9 @@ export default function UsersManage() {
                   </label>
                   <select
                     value={newUser.Role}
-                    onChange={(e) => setNewUser({ ...newUser, Role: e.target.value })}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, Role: e.target.value })
+                    }
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
                   >
                     <option value="Supervisor">Supervisor</option>
@@ -263,8 +276,11 @@ export default function UsersManage() {
           <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
             <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
               <tr>
-                {["#", "Username", "Name", "Role", "Actions"].map((h) => (
-                  <th key={h} className="p-4 text-left text-sm font-semibold text-gray-300">
+                {["#", "Username", "Full Name", "Role", "Actions"].map((h) => (
+                  <th
+                    key={h}
+                    className="p-4 text-left text-sm font-semibold text-gray-300"
+                  >
                     {h}
                   </th>
                 ))}
@@ -280,7 +296,7 @@ export default function UsersManage() {
                 >
                   <td className="p-4 text-sm text-gray-400">{i + 1}</td>
                   <td className="p-4 text-sm">{r.Username}</td>
-                  <td className="p-4 text-sm">{r.Name}</td>
+                  <td className="p-4 text-sm">{r["Full Name"]}</td>
                   <td className="p-4 text-sm">{r.Role}</td>
                   <td className="p-4">
                     <button
