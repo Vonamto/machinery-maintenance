@@ -27,6 +27,7 @@ creds = None
 if os.path.exists("token.pickle"):
     with open("token.pickle", "rb") as token:
         creds = pickle.load(token)
+
 if creds and creds.expired and creds.refresh_token:
     creds.refresh(Request())
 
@@ -55,14 +56,12 @@ client = gspread.authorize(sheet_creds)
 SPREADSHEET_ID = "1j5PbpbLeQFVxofnO69BlluIw851-LZtOCV5HM4NhNOM"
 FOLDER_A_ID = "1LXuX4GDaIPsnc0F5yizlL5znfMl22RnD"  # Main photo folder
 
-
 # =====================================================
 # ✅ Utility: Current Algeria Time
 # =====================================================
 def get_current_time():
     algeria_tz = pytz.timezone("Africa/Algiers")
     return datetime.now(algeria_tz).strftime("%Y-%m-%d %H:%M:%S")
-
 
 # =====================================================
 # ✅ Utility: Upload Base64 image to Google Drive
@@ -86,10 +85,8 @@ def save_image_to_drive(base64_string, filename, subfolder_name):
         # Decode image and upload
         img_data = base64.b64decode(base64_string.split(",")[-1])
         file_stream = io.BytesIO(img_data)
-
         file_metadata = {"name": filename, "parents": [subfolder_id]}
         media = MediaIoBaseUpload(file_stream, mimetype="image/jpeg", resumable=True)
-
         uploaded_file = drive_service.files().create(
             body=file_metadata,
             media_body=media,
@@ -103,10 +100,8 @@ def save_image_to_drive(base64_string, filename, subfolder_name):
         ).execute()
 
         return f"https://drive.google.com/uc?id={uploaded_file['id']}"
-
     except Exception as e:
         return f"ERROR_UPLOAD: {str(e)}"
-
 
 # =====================================================
 # ✅ Copy to Maintenance_Log
@@ -118,7 +113,6 @@ def copy_to_maintenance_log(source_sheet, data):
         current_time = get_current_time()
 
         new_row = {}
-
         if source_sheet == "Cleaning_Log":
             new_row = {
                 "Date": data.get("Date", current_time),
@@ -131,7 +125,6 @@ def copy_to_maintenance_log(source_sheet, data):
                 "Photo Before": data.get("Photo Before", ""),
                 "Photo After": data.get("Photo After", "")
             }
-
         elif source_sheet == "Grease_Oil_Requests":
             new_row = {
                 "Date": data.get("Request Date", current_time),
@@ -150,10 +143,8 @@ def copy_to_maintenance_log(source_sheet, data):
         row_to_add = [new_row.get(h, "") for h in headers]
         maintenance.append_row(row_to_add)
         return {"status": "success", "copied_to": "Maintenance_Log"}
-
     except Exception as e:
         return {"status": "error", "message": f"Failed to copy to Maintenance_Log: {e}"}
-
 
 # =====================================================
 # ✅ Get Sheet Data
@@ -165,7 +156,6 @@ def get_sheet_data(sheet_name):
         return jsonify(rows)
     except Exception as e:
         return jsonify({"error": str(e)})
-
 
 # =====================================================
 # ✅ Append Row (Add)
@@ -197,10 +187,8 @@ def append_row(sheet_name, new_row):
             copy_to_maintenance_log("Cleaning_Log", new_row)
 
         return {"status": "success", "added": new_row, "timestamp": current_time}
-
     except Exception as e:
         return {"status": "error", "message": str(e)}
-
 
 # =====================================================
 # ✅ Update Row (Edit)
@@ -233,6 +221,29 @@ def update_row(sheet_name, row_index, updated_data):
         sheet.update(f"A{row_index}:Z{row_index}", [updated_row])
 
         return {"status": "success", "updated": current_row}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
+# =====================================================
+# ✅ NEW: Delete Row (Completely Remove)
+# =====================================================
+def delete_row(sheet_name, row_index):
+    """
+    Completely deletes a row from the Google Sheet.
+    
+    Args:
+        sheet_name: Name of the sheet tab
+        row_index: Row number to delete (1-based index, where 1 is header)
+    
+    Returns:
+        dict: Status response
+    """
+    try:
+        sheet = client.open_by_key(SPREADSHEET_ID).worksheet(sheet_name)
+        
+        # Delete the row (gspread uses 1-based indexing)
+        sheet.delete_rows(row_index)
+        
+        return {"status": "success", "message": f"Row {row_index} deleted successfully"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
