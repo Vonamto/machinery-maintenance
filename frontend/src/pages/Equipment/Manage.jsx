@@ -113,49 +113,45 @@ export default function EquipmentManage() {
     }
   };
 
-  const handleDeleteEquipment = async (rowIndex, plateNumber) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete equipment "${plateNumber}"?\n\nThis action cannot be undone.`
-    );
+  // adding handleDeleteEquipment function in Manage.jsx with this:
 
-    if (!confirmed) return;
+const handleDeleteEquipment = async (rowIndex, plateNumber) => {
+  const confirmed = window.confirm(
+    `Are you sure you want to PERMANENTLY DELETE equipment "${plateNumber}"?\n\nThis will completely remove the row from the Google Sheet.\n\nThis action cannot be undone.`
+  );
 
-    setSaving(true);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(
-        `${CONFIG.BACKEND_URL}/api/edit/Equipment_List/${rowIndex}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            "Model / Type": "",
-            "Plate Number": "",
-            "Driver 1": "",
-            "Driver 2": "",
-            Status: "",
-            Notes: "DELETED",
-          }),
-        }
-      );
-      const data = await res.json();
+  if (!confirmed) return;
 
-      if (data.status === "success") {
-        alert("✅ Equipment deleted successfully!");
-        loadEquipment();
-      } else {
-        alert("❌ Error: " + (data.message || "Unknown error"));
+  setSaving(true);
+  try {
+    const token = localStorage.getItem("token");
+    
+    // ✅ NEW: Use DELETE method to completely remove the row
+    const res = await fetch(
+      `${CONFIG.BACKEND_URL}/api/delete/Equipment_List/${rowIndex}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    } catch (err) {
-      console.error("Delete equipment error:", err);
-      alert("Network error deleting equipment.");
-    } finally {
-      setSaving(false);
+    );
+    
+    const data = await res.json();
+
+    if (data.status === "success") {
+      alert("✅ Equipment deleted successfully!");
+      loadEquipment(); // Reload the list
+    } else {
+      alert("❌ Error: " + (data.message || "Unknown error"));
     }
-  };
+  } catch (err) {
+    console.error("Delete equipment error:", err);
+    alert("Network error deleting equipment.");
+  } finally {
+    setSaving(false);
+  }
+};
 
   // ✅ FIXED: Added "data:" property name
   const handleEditClick = (row, index) => {
