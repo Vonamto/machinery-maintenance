@@ -117,7 +117,7 @@ export default function EquipmentManage() {
 
 const handleDeleteEquipment = async (rowIndex, plateNumber) => {
   const confirmed = window.confirm(
-    `Are you sure you want to PERMANENTLY DELETE equipment "${plateNumber}"?\n\nThis will completely remove the row from the Google Sheet.\n\nThis action cannot be undone.`
+    `Are you sure you want to PERMANENTLY DELETE equipment "${plateNumber}"?\n\nThis action cannot be undone.`
   );
 
   if (!confirmed) return;
