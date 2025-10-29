@@ -185,6 +185,32 @@ def edit_row(sheet_name, row_index):
 
 
 # =====================================================
+# ✅ DELETE (DELETE) - Add this route to your app.py
+# =====================================================
+@app.route("/api/delete/<sheet_name>/<int:row_index>", methods=["DELETE"])
+@require_token
+def delete_row_api(sheet_name, row_index):
+    """
+    Completely deletes a row from the specified sheet.
+    Only Supervisor can delete from Equipment_List.
+    """
+    from sheets_service import delete_row
+    
+    # Check permissions (only Supervisor can delete equipment)
+    if sheet_name == "Equipment_List":
+        if request.user.get("role") != "Supervisor":
+            return jsonify({
+                "status": "error",
+                "message": "Only Supervisors can delete equipment"
+            }), 403
+    
+    try:
+        result = delete_row(sheet_name, row_index)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# =====================================================
 # ✅ Run App
 # =====================================================
 if __name__ == "__main__":
