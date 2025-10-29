@@ -1,4 +1,4 @@
-// frontend/src/App.jsx (UPDATED - Replace your current one)
+// frontend/src/App.jsx (FINAL with Users route)
 
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -34,14 +34,18 @@ import EquipmentMenu from "./pages/Equipment/index";
 import EquipmentList from "./pages/Equipment/List";
 import EquipmentManage from "./pages/Equipment/Manage";
 
+// ✅ NEW: Users page
+import UsersManage from "./pages/Users/Manage";
+
 export default function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-theme-background-primary text-theme-text-primary">
         <Routes>
+          {/* Login */}
           <Route path="/login" element={<Login />} />
 
-          {/* Dashboard (home) */}
+          {/* Dashboard */}
           <Route
             path="/"
             element={
@@ -51,7 +55,7 @@ export default function App() {
             }
           />
 
-          {/* Maintenance menu */}
+          {/* --- Maintenance --- */}
           <Route
             path="/maintenance"
             element={
@@ -60,8 +64,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Maintenance subpages */}
           <Route
             path="/maintenance/form"
             element={
@@ -79,7 +81,7 @@ export default function App() {
             }
           />
 
-          {/* Requests menu */}
+          {/* --- Requests --- */}
           <Route
             path="/requests"
             element={
@@ -89,7 +91,7 @@ export default function App() {
             }
           />
 
-          {/* Parts Requests submenu */}
+          {/* Parts Requests */}
           <Route
             path="/requests/parts"
             element={
@@ -98,8 +100,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Parts Request Form */}
           <Route
             path="/requests/parts/form"
             element={
@@ -108,8 +108,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Parts Current Requests */}
           <Route
             path="/requests/parts/current"
             element={
@@ -118,8 +116,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Parts Requests History */}
           <Route
             path="/requests/parts/history"
             element={
@@ -129,7 +125,7 @@ export default function App() {
             }
           />
 
-          {/* Grease/Oil Requests submenu */}
+          {/* Grease/Oil Requests */}
           <Route
             path="/requests/grease-oil"
             element={
@@ -138,8 +134,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Grease/Oil Request Form */}
           <Route
             path="/requests/grease-oil/form"
             element={
@@ -148,8 +142,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Grease/Oil Current Requests */}
           <Route
             path="/requests/grease-oil/current"
             element={
@@ -158,8 +150,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Grease/Oil Requests History */}
           <Route
             path="/requests/grease-oil/history"
             element={
@@ -169,7 +159,7 @@ export default function App() {
             }
           />
 
-          {/* Cleaning menu */}
+          {/* --- Cleaning --- */}
           <Route
             path="/cleaning"
             element={
@@ -178,8 +168,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Cleaning Form */}
           <Route
             path="/cleaning/form"
             element={
@@ -188,8 +176,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Cleaning History */}
           <Route
             path="/cleaning/history"
             element={
@@ -199,8 +185,7 @@ export default function App() {
             }
           />
 
-          {/* --- NEW ROUTES FOR EQUIPMENT --- */}
-          {/* Equipment menu */}
+          {/* --- Equipment --- */}
           <Route
             path="/equipment"
             element={
@@ -209,8 +194,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Equipment List (View) */}
           <Route
             path="/equipment/list"
             element={
@@ -219,8 +202,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Equipment Manage (Add/Remove - Supervisor only) */}
           <Route
             path="/equipment/manage"
             element={
@@ -229,9 +210,18 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          {/* --- END EQUIPMENT ROUTES --- */}
 
-          {/* fallback */}
+          {/* --- Users (Supervisor only) --- */}
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute>
+                <UsersManage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* --- Fallback --- */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
