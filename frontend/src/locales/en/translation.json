@@ -238,6 +238,27 @@
         "save": "Save",
         "edit": "Edit",
         "noPhoto": "No Photo"
+      },
+
+      "history": {
+        "title": "Parts Requests History",
+        "subtitle": "View completed and rejected requests",
+        "loadingPage": "Loading requests history...",
+        "loadingInline": "Loading history...",
+        "empty": "No completed or rejected requests found.",
+        "table": {
+          "requestDate": "Request Date",
+          "model": "Model / Type",
+          "plate": "Plate Number",
+          "driver": "Driver",
+          "requestedParts": "Requested Parts",
+          "status": "Status",
+          "handledBy": "Handled By",
+          "completionDate": "Completion Date",
+          "comments": "Comments",
+          "photo": "Photo"
+        },
+        "noPhoto": "No Photo"
       }
     }
   }
