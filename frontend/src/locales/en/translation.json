@@ -8,7 +8,10 @@
     "yes": "Yes",
     "no": "No",
     "upload": "Upload",
-    "camera": "Camera"
+    "camera": "Camera",
+    "save": "Save",
+    "saving": "Saving...",
+    "edit": "Edit"
   },
 
   "auth": {
@@ -222,6 +225,34 @@
           "error": "❌ Error",
           "networkError": "Network error submitting form."
         }
+      },
+
+      "current": {
+        "title": "Current Spare Parts Requests",
+        "subtitle": "View and manage pending spare parts requests",
+        "loading": "Loading current requests...",
+        "empty": "No pending or in-progress requests found.",
+        "updated": "Request updated successfully.",
+        "updateFailed": "Update failed.",
+        "saveFailed": "Save failed.",
+        "selectStatus": "Select Status",
+        "selectHandler": "Select Handler",
+        "noPhoto": "No Photo",
+        "handledByRequired": "Handled By is required.",
+        "statusRequired": "Please select a status."
+      },
+
+      "table": {
+        "requestDate": "Request Date",
+        "model": "Model / Type",
+        "plate": "Plate Number",
+        "driver": "Driver",
+        "requestedParts": "Requested Parts",
+        "status": "Status",
+        "handledBy": "Handled By",
+        "comments": "Comments",
+        "attachment": "Attachment",
+        "actions": "Actions"
       }
     }
   }
