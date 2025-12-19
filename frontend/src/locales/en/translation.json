@@ -260,6 +260,31 @@
         },
         "noPhoto": "No Photo"
       }
+    },
+
+    "grease": {
+      "menu": {
+        "accessDenied": {
+          "title": "Access Denied",
+          "message": "You do not have permission to access this page."
+        },
+        "back": "Back",
+        "title": "Grease & Oil Requests",
+        "cards": {
+          "make": {
+            "title": "Request Grease/Oil Service",
+            "description": "Submit a new grease or oil service request"
+          },
+          "current": {
+            "title": "Current Grease/Oil Requests",
+            "description": "View and manage pending requests"
+          },
+          "history": {
+            "title": "Grease/Oil Requests History",
+            "description": "View completed or rejected requests"
+          }
+        }
+      }
     }
   }
 }
