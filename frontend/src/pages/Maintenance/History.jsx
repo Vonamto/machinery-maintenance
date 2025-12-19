@@ -57,9 +57,7 @@ export default function MaintenanceHistory() {
           }
         );
         const data = await res.json();
-        if (Array.isArray(data)) {
-          setRows(data.reverse());
-        }
+        if (Array.isArray(data)) setRows(data.reverse());
       } catch (err) {
         console.error("Error loading maintenance history:", err);
       } finally {
@@ -135,16 +133,22 @@ export default function MaintenanceHistory() {
     setFilters({ model: "", plate: "", driver: "", from: "", to: "" });
   };
 
-  /* ---------------- Translation helpers ---------------- */
+  /* ---------------- ✅ FIXED TRANSLATION LOGIC ---------------- */
 
   const translateDescription = (value) => {
     if (!value) return "---";
 
-    const cleaning = t(`cleaningTypes.${value}`, { defaultValue: null });
-    if (cleaning) return cleaning;
+    const cleaningKey = `cleaningTypes.${value}`;
+    const cleaningTranslated = t(cleaningKey);
+    if (cleaningTranslated !== cleaningKey) {
+      return cleaningTranslated;
+    }
 
-    const request = t(`requestTypes.${value}`, { defaultValue: null });
-    if (request) return request;
+    const requestKey = `requestTypes.${value}`;
+    const requestTranslated = t(requestKey);
+    if (requestTranslated !== requestKey) {
+      return requestTranslated;
+    }
 
     return value;
   };
@@ -208,7 +212,6 @@ export default function MaintenanceHistory() {
       <Navbar user={user} />
 
       <div className="max-w-7xl mx-auto p-6">
-        {/* Back */}
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition"
@@ -217,7 +220,6 @@ export default function MaintenanceHistory() {
           {t("common.back")}
         </button>
 
-        {/* Header */}
         <div className="mb-8 flex items-center gap-4">
           <div className="p-3 rounded-xl bg-gradient-to-br from-green-600 to-emerald-500 shadow-lg">
             <Wrench className="w-8 h-8 text-white" />
@@ -232,149 +234,57 @@ export default function MaintenanceHistory() {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-gray-800/40 border border-gray-700 rounded-2xl p-4 mb-8">
-          <div className="grid md:grid-cols-5 sm:grid-cols-2 gap-4">
-            <select
-              value={filters.model}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, model: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            >
-              <option value="">
-                {t("maintenance.history.filters.model")}
-              </option>
-              {modelOptions.map((m) => (
-                <option key={m}>{m}</option>
-              ))}
-            </select>
+        {/* ---- TABLE ---- */}
+        <div className="overflow-x-auto rounded-2xl border border-gray-700">
+          <table className="min-w-full bg-gray-800/50">
+            <thead>
+              <tr>
+                {[
+                  "index",
+                  "date",
+                  "model",
+                  "plate",
+                  "driver",
+                  "performedBy",
+                  "description",
+                  "completionDate",
+                  "status",
+                  "comments",
+                  "photoBefore",
+                  "photoAfter",
+                  "photoProblem",
+                ].map((h) => (
+                  <th key={h} className="p-4 text-left text-sm text-gray-300">
+                    {t(`maintenance.history.table.${h}`)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
 
-            <select
-              value={filters.plate}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, plate: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            >
-              <option value="">
-                {t("maintenance.history.filters.plate")}
-              </option>
-              {plateOptions.map((p) => (
-                <option key={p}>{p}</option>
-              ))}
-            </select>
+            <tbody>
+              {filteredRows.map((r, i) => (
+                <tr key={i} className="border-t border-gray-700">
+                  <td className="p-4 text-sm text-gray-400">{i + 1}</td>
+                  <td className="p-4 text-sm">{r["Date"]}</td>
+                  <td className="p-4 text-sm">{r["Model / Type"]}</td>
+                  <td className="p-4 text-sm">{r["Plate Number"]}</td>
+                  <td className="p-4 text-sm">{r["Driver"]}</td>
+                  <td className="p-4 text-sm">{r["Performed By"]}</td>
+                  <td className="p-4 text-sm">
+                    {translateDescription(r["Description of Work"])}
+                  </td>
+                  <td className="p-4 text-sm">
+                    {r["Completion Date"] || "---"}
+                  </td>
+                  <td className="p-4">
+                    {getStatusBadge(r["Status"])}
+                  </td>
+                  <td className="p-4 text-sm">
+                    {r["Comments"] || "---"}
+                  </td>
 
-            <select
-              value={filters.driver}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, driver: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            >
-              <option value="">
-                {t("maintenance.history.filters.driver")}
-              </option>
-              {driverOptions.map((d) => (
-                <option key={d}>{d}</option>
-              ))}
-            </select>
-
-            <input
-              type="date"
-              value={filters.from}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, from: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            />
-
-            <input
-              type="date"
-              value={filters.to}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, to: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            />
-          </div>
-
-          <div className="flex justify-end mt-4">
-            <button
-              onClick={resetFilters}
-              className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400"
-            >
-              <XCircle size={14} />
-              {t("maintenance.history.filters.reset")}
-            </button>
-          </div>
-        </div>
-
-        {/* Table */}
-        {filteredRows.length === 0 ? (
-          <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
-            <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">
-              {t("maintenance.history.noResults")}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto rounded-2xl border border-gray-700">
-            <table className="min-w-full bg-gray-800/50">
-              <thead>
-                <tr>
-                  {[
-                    "index",
-                    "date",
-                    "model",
-                    "plate",
-                    "driver",
-                    "performedBy",
-                    "description",
-                    "completionDate",
-                    "status",
-                    "comments",
-                    "photoBefore",
-                    "photoAfter",
-                    "photoProblem",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="p-4 text-left text-sm text-gray-300"
-                    >
-                      {t(`maintenance.history.table.${h}`)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {filteredRows.map((r, i) => (
-                  <tr key={i} className="border-t border-gray-700">
-                    <td className="p-4 text-sm text-gray-400">{i + 1}</td>
-                    <td className="p-4 text-sm">{r["Date"]}</td>
-                    <td className="p-4 text-sm">{r["Model / Type"]}</td>
-                    <td className="p-4 text-sm">{r["Plate Number"]}</td>
-                    <td className="p-4 text-sm">{r["Driver"]}</td>
-                    <td className="p-4 text-sm">{r["Performed By"]}</td>
-                    <td className="p-4 text-sm">
-                      {translateDescription(r["Description of Work"])}
-                    </td>
-                    <td className="p-4 text-sm">
-                      {r["Completion Date"] || "---"}
-                    </td>
-                    <td className="p-4">
-                      {getStatusBadge(r["Status"])}
-                    </td>
-                    <td className="p-4 text-sm">
-                      {r["Comments"] || "---"}
-                    </td>
-
-                    {[
-                      "Photo Before",
-                      "Photo After",
-                      "Photo Repair/Problem",
-                    ].map((field) => (
+                  {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
+                    (field) => (
                       <td key={field} className="p-4">
                         {r[field] ? (
                           <a
@@ -392,13 +302,13 @@ export default function MaintenanceHistory() {
                           <span className="text-gray-500">---</span>
                         )}
                       </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                    )
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
