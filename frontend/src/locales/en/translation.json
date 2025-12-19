@@ -66,7 +66,32 @@
 
     "history": {
       "title": "Maintenance History",
-      "description": "View all past maintenance operations and reports"
+      "subtitle": "View and filter completed maintenance logs",
+      "loading": "Loading maintenance history...",
+      "noResults": "No records match your filters.",
+
+      "filters": {
+        "model": "Model",
+        "plate": "Plate",
+        "driver": "Driver",
+        "reset": "Reset Filters"
+      },
+
+      "table": {
+        "index": "#",
+        "date": "Date",
+        "model": "Model / Type",
+        "plate": "Plate Number",
+        "driver": "Driver",
+        "performedBy": "Performed By",
+        "description": "Description",
+        "completionDate": "Completion Date",
+        "status": "Status",
+        "comments": "Comments",
+        "photoBefore": "Photo Before",
+        "photoAfter": "Photo After",
+        "photoProblem": "Photo Repair / Problem"
+      }
     },
 
     "form": {
