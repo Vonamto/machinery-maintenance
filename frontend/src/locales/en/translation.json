@@ -142,5 +142,17 @@
     "In Progress": "In Progress",
     "Completed": "Completed",
     "Rejected": "Rejected"
+  },
+
+  "cleaningTypes": {
+    "Blow Cleaning": "Blow Cleaning",
+    "Water Wash": "Water Wash",
+    "Full Cleaning (Air & Water)": "Full Cleaning (Air & Water)"
+  },
+
+  "requestTypes": {
+    "Oil Service": "Oil Service",
+    "Grease Service": "Grease Service",
+    "Full Service (Oil + Greasing)": "Full Service (Oil + Greasing)"
   }
 }
