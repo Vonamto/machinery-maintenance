@@ -58,4 +58,10 @@
     "Completed": "مكتمل",
     "Rejected": "مرفوض"
   }
+    "navbar": {
+    "welcome": "مرحباً",
+    "dashboard": "لوحة التحكم",
+    "logout": "تسجيل الخروج"
+  }
+
 }
