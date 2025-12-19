@@ -57,6 +57,21 @@
     }
   },
 
+  "maintenance": {
+    "title": "Maintenance Management",
+    "description": "Manage and track all equipment maintenance operations",
+
+    "addLog": {
+      "title": "Add Maintenance Log",
+      "description": "Fill in a new maintenance record for your equipment"
+    },
+
+    "history": {
+      "title": "Maintenance History",
+      "description": "View all past maintenance operations and reports"
+    }
+  },
+
   "roles": {
     "Supervisor": "Supervisor",
     "Mechanic": "Mechanic",
