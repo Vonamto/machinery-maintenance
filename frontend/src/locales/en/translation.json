@@ -173,6 +173,25 @@
     },
 
     "parts": {
+      "menu": {
+        "back": "Back",
+        "title": "Spare Parts Requests",
+        "cards": {
+          "make": {
+            "title": "Make a Request",
+            "description": "Submit a new request"
+          },
+          "current": {
+            "title": "Current Requests",
+            "description": "View pending and in-progress requests"
+          },
+          "history": {
+            "title": "Requests History",
+            "description": "View completed and rejected requests"
+          }
+        }
+      },
+
       "form": {
         "back": "Back",
         "title": "Maintenance & Spare Parts Request",
