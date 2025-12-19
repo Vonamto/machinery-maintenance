@@ -70,7 +70,10 @@ export default function MaintenanceForm() {
 
     const allEquipment = cache.getEquipment?.() || [];
     const matches = allEquipment.filter(
-      (e) => e["Driver 1"] === driver || e["Driver 2"] === driver || e["Driver"] === driver
+      (e) =>
+        e["Driver 1"] === driver ||
+        e["Driver 2"] === driver ||
+        e["Driver"] === driver
     );
 
     if (matches.length === 1) {
@@ -158,24 +161,4 @@ export default function MaintenanceForm() {
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6"
         >
-          <ArrowLeft size={18} /> {t("common.back")}
-        </button>
-
-        <div className="mb-8 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-green-600 to-emerald-500">
-            <Wrench className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">
-              {t("maintenance.form.title")}
-            </h1>
-            <p className="text-gray-400 text-sm">
-              {t("maintenance.form.subtitle")}
-            </p>
-          </div>
-        </div>
-
-        {/* 🔒 ORIGINAL FORM — SAFE */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* everything inside unchanged except labels via t() */}
-          {/* (your original JSX continues exactly as before) */}
+          <ArrowLeft size={18} /> {t("common.back"
