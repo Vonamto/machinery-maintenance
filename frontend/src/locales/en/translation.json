@@ -16,6 +16,12 @@
     "loggingIn": "Logging in..."
   },
 
+  "navbar": {
+    "welcome": "Welcome",
+    "dashboard": "Dashboard",
+    "logout": "Logout"
+  },
+
   "dashboard": {
     "title": "Dashboard",
 
@@ -58,11 +64,4 @@
     "Completed": "Completed",
     "Rejected": "Rejected"
   }
-    "navbar": {
-    "welcome": "Welcome",
-    "dashboard": "Dashboard",
-    "logout": "Logout"
-  }
-
 }
-
