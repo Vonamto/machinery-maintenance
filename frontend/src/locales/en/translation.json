@@ -154,5 +154,22 @@
     "Oil Service": "Oil Service",
     "Grease Service": "Grease Service",
     "Full Service (Oil + Greasing)": "Full Service (Oil + Greasing)"
+  },
+
+  "requests": {
+    "menu": {
+      "back": "Back",
+      "title": "Maintenance Requests",
+      "cards": {
+        "parts": {
+          "title": "Maintenance & Spare Parts Request",
+          "description": "Make a Maintenance Request & Keep Track of Your Requests"
+        },
+        "grease": {
+          "title": "Grease / Oil Requests",
+          "description": "Request oil or grease service and schedule appointments"
+        }
+      }
+    }
   }
 }
