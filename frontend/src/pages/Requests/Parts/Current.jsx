@@ -13,6 +13,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Navbar from "../../../components/Navbar";
 import { useAuth } from "../../../context/AuthContext";
 import { useCache } from "../../../context/CacheContext";
@@ -31,6 +32,7 @@ export default function PartsCurrent() {
   const { user } = useAuth();
   const cache = useCache();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +61,6 @@ export default function PartsCurrent() {
             __rowIndex: i + 2,
           }));
 
-          // ⬇️ CHANGE #1: exclude Rejected as well
           const currentOnly = withIndex.filter(
             (r) => r.Status !== "Completed" && r.Status !== "Rejected"
           );
@@ -103,7 +104,7 @@ export default function PartsCurrent() {
 
   const saveEdit = async (i) => {
     if (!editData.Status) {
-      alert("Please select a status.");
+      alert(t("requests.parts.current.selectStatus"));
       return;
     }
 
@@ -112,7 +113,7 @@ export default function PartsCurrent() {
         editData.Status === "Rejected") &&
       !editData["Handled By"]
     ) {
-      alert("Handled By is required.");
+      alert(t("requests.parts.current.selectHandler"));
       return;
     }
 
@@ -150,7 +151,6 @@ export default function PartsCurrent() {
       const result = await res.json();
 
       if (result.status === "success") {
-        // ⬇️ CHANGE #2: remove row when Rejected too
         if (
           editData.Status === "Completed" ||
           editData.Status === "Rejected"
@@ -169,13 +169,13 @@ export default function PartsCurrent() {
 
         setEditingRow(null);
         setEditData({});
-        alert("Request updated successfully.");
+        alert(t("requests.parts.current.updatedSuccess"));
       } else {
-        alert(result.message || "Update failed.");
+        alert(result.message || t("requests.parts.current.updateFailed"));
       }
     } catch (e) {
       console.error(e);
-      alert("Save failed.");
+      alert(t("requests.parts.current.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -206,7 +206,7 @@ export default function PartsCurrent() {
         className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs ${v.c}`}
       >
         {v.i}
-        {s || "Pending"}
+        {t(`status.${s || "Pending"}`)}
       </span>
     );
   };
@@ -216,7 +216,7 @@ export default function PartsCurrent() {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500 mb-4"></div>
-          <p className="text-lg">Loading current requests...</p>
+          <p className="text-lg">{t("requests.parts.current.loading")}</p>
         </div>
       </div>
     );
@@ -232,7 +232,7 @@ export default function PartsCurrent() {
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-          Back
+          {t("common.back")}
         </button>
 
         <div className="mb-8 flex items-center gap-4">
@@ -241,10 +241,10 @@ export default function PartsCurrent() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">
-              Current Spare Parts Requests
+              {t("requests.parts.current.title")}
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              View and manage pending spare parts requests
+              {t("requests.parts.current.subtitle")}
             </p>
           </div>
         </div>
@@ -253,7 +253,7 @@ export default function PartsCurrent() {
           <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
             <AlertCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400 text-lg">
-              No pending or in-progress requests found.
+              {t("requests.parts.current.empty")}
             </p>
           </div>
         ) : (
@@ -306,7 +306,9 @@ export default function PartsCurrent() {
                             }
                             className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600 text-white text-sm"
                           >
-                            <option value="">Select Status</option>
+                            <option value="">
+                              {t("requests.parts.current.selectStatus")}
+                            </option>
                             <option value="Pending">Pending</option>
                             <option value="In Progress">In Progress</option>
                             <option value="Completed">Completed</option>
@@ -325,7 +327,9 @@ export default function PartsCurrent() {
                             }
                             className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600 text-white text-sm"
                           >
-                            <option value="">Select Handler</option>
+                            <option value="">
+                              {t("requests.parts.current.selectHandler")}
+                            </option>
                             {mechanicSupervisorOptions.map((n) => (
                               <option key={n} value={n}>{n}</option>
                             ))}
@@ -375,13 +379,15 @@ export default function PartsCurrent() {
                             disabled={saving}
                             className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm mr-2 disabled:opacity-50"
                           >
-                            {saving ? "Saving..." : "Save"}
+                            {saving
+                              ? t("requests.parts.current.saving")
+                              : t("requests.parts.current.save")}
                           </button>
                           <button
                             onClick={() => setEditingRow(null)}
                             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm"
                           >
-                            Cancel
+                            {t("common.cancel")}
                           </button>
                         </td>
                       </>
@@ -407,7 +413,9 @@ export default function PartsCurrent() {
                               </div>
                             </a>
                           ) : (
-                            <span className="text-gray-500 text-sm">No Photo</span>
+                            <span className="text-gray-500 text-sm">
+                              {t("requests.parts.current.noPhoto")}
+                            </span>
                           )}
                         </td>
                         <td className="p-4">
@@ -416,7 +424,7 @@ export default function PartsCurrent() {
                               onClick={() => startEdit(i, r)}
                               className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-lg text-sm font-medium"
                             >
-                              Edit
+                              {t("requests.parts.current.edit")}
                             </button>
                           )}
                         </td>
