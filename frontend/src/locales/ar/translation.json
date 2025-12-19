@@ -1,11 +1,14 @@
 {
   "common": {
     "submit": "إرسال",
+    "submitting": "جاري الإرسال...",
     "cancel": "إلغاء",
     "back": "رجوع",
     "loading": "جارٍ التحميل...",
     "yes": "نعم",
-    "no": "لا"
+    "no": "لا",
+    "upload": "رفع",
+    "camera": "الكاميرا"
   },
 
   "auth": {
@@ -30,27 +33,22 @@
 
   "dashboard": {
     "title": "لوحة التحكم",
-
     "maintenanceLog": {
       "title": "سجل الصيانة",
       "description": "إدخال أو عرض عمليات الصيانة"
     },
-
     "maintenanceRequests": {
       "title": "طلبات الصيانة",
       "description": "إدارة طلبات قطع الغيار والزيوت والشحوم"
     },
-
     "cleaningLog": {
       "title": "سجل التنظيف",
       "description": "تسجيل وعرض عمليات التنظيف"
     },
-
     "equipmentList": {
       "title": "قائمة المعدات",
       "description": "عرض وإدارة جميع المركبات والمعدات"
     },
-
     "users": {
       "title": "المستخدمون",
       "description": "إدارة حسابات المستخدمين والصلاحيات"
@@ -69,6 +67,41 @@
     "history": {
       "title": "سجل الصيانة",
       "description": "عرض جميع عمليات وتقارير الصيانة السابقة"
+    },
+
+    "form": {
+      "title": "سجل أعمال الصيانة",
+      "subtitle": "تسجيل أعمال الصيانة أو الإصلاح المنجزة",
+
+      "date": "التاريخ",
+      "model": "الطراز / النوع",
+      "plate": "رقم اللوحة",
+      "driver": "السائق",
+      "description": "وصف العمل",
+      "performedBy": "تم التنفيذ بواسطة",
+      "comments": "ملاحظات",
+
+      "chooseModel": "--- اختر الطراز ---",
+      "choosePlate": "--- اختر رقم اللوحة ---",
+      "chooseDriver": "--- اختر السائق ---",
+      "choosePerformer": "--- اختر المنفذ ---",
+
+      "descriptionPlaceholder": "صف أعمال الصيانة المنجزة...",
+
+      "photoBefore": "صورة قبل",
+      "photoAfter": "صورة بعد",
+      "photoProblem": "صورة العطل / المشكلة",
+
+      "submit": "إرسال سجل الصيانة",
+
+      "alerts": {
+        "missingAsset": "يرجى اختيار الطراز أو رقم اللوحة أو السائق.",
+        "missingDescription": "يرجى إدخال وصف العمل.",
+        "missingPerformer": "يرجى اختيار من قام بالعمل.",
+        "success": "تمت إضافة سجل الصيانة بنجاح.",
+        "error": "خطأ",
+        "networkError": "خطأ في الشبكة أثناء إرسال النموذج."
+      }
     }
   },
 
