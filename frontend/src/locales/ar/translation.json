@@ -16,6 +16,12 @@
     "loggingIn": "جاري تسجيل الدخول..."
   },
 
+  "navbar": {
+    "welcome": "مرحباً",
+    "dashboard": "لوحة التحكم",
+    "logout": "تسجيل الخروج"
+  },
+
   "dashboard": {
     "title": "لوحة التحكم",
 
@@ -58,10 +64,4 @@
     "Completed": "مكتمل",
     "Rejected": "مرفوض"
   }
-    "navbar": {
-    "welcome": "مرحباً",
-    "dashboard": "لوحة التحكم",
-    "logout": "تسجيل الخروج"
-  }
-
 }
