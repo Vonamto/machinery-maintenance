@@ -222,6 +222,22 @@
           "error": "❌ Error",
           "networkError": "Network error submitting form."
         }
+      },
+
+      "current": {
+        "title": "Current Spare Parts Requests",
+        "subtitle": "View and manage pending spare parts requests",
+        "empty": "No pending or in-progress requests found.",
+        "loading": "Loading current requests...",
+        "updatedSuccess": "Request updated successfully.",
+        "updateFailed": "Update failed.",
+        "saveFailed": "Save failed.",
+        "selectStatus": "Select Status",
+        "selectHandler": "Select Handler",
+        "saving": "Saving...",
+        "save": "Save",
+        "edit": "Edit",
+        "noPhoto": "No Photo"
       }
     }
   }
