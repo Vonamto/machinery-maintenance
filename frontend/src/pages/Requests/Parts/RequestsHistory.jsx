@@ -10,6 +10,7 @@ import {
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import CONFIG from "@/config";
 
 const getThumbnailUrl = (url) => {
@@ -27,6 +28,7 @@ export default function PartsRequestsHistory() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   useEffect(() => {
     async function load() {
@@ -38,7 +40,6 @@ export default function PartsRequestsHistory() {
         });
         const data = await res.json();
         if (Array.isArray(data)) {
-          // ✅ Include Completed (with date) and Rejected (even without date)
           const historyRequests = data.filter((row) => {
             const status = (row["Status"] || "").trim().toLowerCase();
             const completionDate = (row["Completion Date"] || "").trim();
@@ -82,7 +83,7 @@ export default function PartsRequestsHistory() {
         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}
       >
         {style.icon}
-        {status}
+        {t(`status.${status}`)}
       </span>
     );
   };
@@ -92,7 +93,9 @@ export default function PartsRequestsHistory() {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mb-4"></div>
-          <p className="text-lg">Loading requests history...</p>
+          <p className="text-lg">
+            {t("requests.parts.history.loadingPage")}
+          </p>
         </div>
       </div>
     );
@@ -110,7 +113,7 @@ export default function PartsRequestsHistory() {
             size={18}
             className="group-hover:-translate-x-1 transition-transform"
           />
-          Back
+          {t("common.back")}
         </button>
 
         <div className="mb-8 flex items-center gap-4">
@@ -119,17 +122,19 @@ export default function PartsRequestsHistory() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-500">
-              Parts Requests History
+              {t("requests.parts.history.title")}
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              View completed and rejected requests
+              {t("requests.parts.history.subtitle")}
             </p>
           </div>
         </div>
 
         {loading && (
           <div className="text-center py-4 mb-4">
-            <p className="text-cyan-400">Loading history...</p>
+            <p className="text-cyan-400">
+              {t("requests.parts.history.loadingInline")}
+            </p>
           </div>
         )}
 
@@ -137,7 +142,7 @@ export default function PartsRequestsHistory() {
           <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
             <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400 text-lg">
-              No completed or rejected requests found.
+              {t("requests.parts.history.empty")}
             </p>
           </div>
         ) : (
@@ -146,22 +151,22 @@ export default function PartsRequestsHistory() {
               <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
                 <tr>
                   {[
-                    "Request Date",
-                    "Model / Type",
-                    "Plate Number",
-                    "Driver",
-                    "Requested Parts",
-                    "Status",
-                    "Handled By",
-                    "Completion Date",
-                    "Comments",
-                    "Photo",
-                  ].map((h) => (
+                    "requestDate",
+                    "model",
+                    "plate",
+                    "driver",
+                    "requestedParts",
+                    "status",
+                    "handledBy",
+                    "completionDate",
+                    "comments",
+                    "photo",
+                  ].map((k) => (
                     <th
-                      key={h}
+                      key={k}
                       className="p-4 text-left text-sm font-semibold text-gray-300"
                     >
-                      {h}
+                      {t(`requests.parts.history.table.${k}`)}
                     </th>
                   ))}
                 </tr>
@@ -183,13 +188,17 @@ export default function PartsRequestsHistory() {
                     <td className="p-4 text-sm max-w-xs truncate">
                       {r["Requested Parts"]}
                     </td>
-                    <td className="p-4">{getStatusBadge(r["Status"])}</td>
+                    <td className="p-4">
+                      {getStatusBadge(r["Status"])}
+                    </td>
                     <td className="p-4 text-sm">
                       {r["Handled By"] || (
                         <span className="text-gray-500">—</span>
                       )}
                     </td>
-                    <td className="p-4 text-sm">{r["Completion Date"]}</td>
+                    <td className="p-4 text-sm">
+                      {r["Completion Date"]}
+                    </td>
                     <td className="p-4 text-sm max-w-xs truncate">
                       {r["Comments"] || (
                         <span className="text-gray-500">—</span>
@@ -206,18 +215,16 @@ export default function PartsRequestsHistory() {
                           <img
                             src={getThumbnailUrl(r["Attachment Photo"])}
                             alt="Attachment"
-                            className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
-                            onError={(e) => {
-                              e.target.style.display = "none";
-                              e.target.nextSibling.style.display = "flex";
-                            }}
+                            className="h-16 w-16 object-cover rounded-lg border border-gray-600"
                           />
                           <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
                             <ExternalLink className="w-6 h-6 text-cyan-400" />
                           </div>
                         </a>
                       ) : (
-                        <span className="text-gray-500 text-sm">No Photo</span>
+                        <span className="text-gray-500 text-sm">
+                          {t("requests.parts.history.noPhoto")}
+                        </span>
                       )}
                     </td>
                   </tr>
