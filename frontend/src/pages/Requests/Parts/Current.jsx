@@ -58,14 +58,9 @@ export default function PartsCurrent() {
             ...r,
             __rowIndex: i + 2,
           }));
-
-          // ✅ ONLY hide Completed & Rejected
           const currentOnly = withIndex.filter(
-            (r) =>
-              r.Status !== "Completed" &&
-              r.Status !== "Rejected"
+            (r) => r.Status !== "Completed"
           );
-
           setRows(currentOnly.reverse());
         }
       } catch (e) {
@@ -152,10 +147,7 @@ export default function PartsCurrent() {
       const result = await res.json();
 
       if (result.status === "success") {
-        if (
-          editData.Status === "Completed" ||
-          editData.Status === "Rejected"
-        ) {
+        if (editData.Status === "Completed") {
           const copy = [...rows];
           copy.splice(i, 1);
           setRows(copy);
@@ -167,7 +159,6 @@ export default function PartsCurrent() {
           };
           setRows(copy);
         }
-
         setEditingRow(null);
         setEditData({});
         alert("Request updated successfully.");
@@ -203,7 +194,9 @@ export default function PartsCurrent() {
     };
     const v = map[s] || map.Pending;
     return (
-      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs ${v.c}`}>
+      <span
+        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs ${v.c}`}
+      >
         {v.i}
         {s || "Pending"}
       </span>
@@ -234,6 +227,7 @@ export default function PartsCurrent() {
           Back
         </button>
 
+        {/* ===== Title Section (Styled like Grease/Oil) ===== */}
         <div className="mb-8 flex items-center gap-4">
           <div className="p-3 rounded-xl bg-gradient-to-br from-amber-600 to-orange-500 shadow-lg shadow-amber-500/40">
             <Wrench className="w-8 h-8 text-white" />
@@ -258,8 +252,172 @@ export default function PartsCurrent() {
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
             <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
-              {/* TABLE CONTENT — UNCHANGED */}
-              {/* (exactly as in your original file) */}
+              <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
+                <tr>
+                  {[
+                    "Request Date",
+                    "Model / Type",
+                    "Plate Number",
+                    "Driver",
+                    "Requested Parts",
+                    "Status",
+                    "Handled By",
+                    "Comments",
+                    "Attachment",
+                    "Actions",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="p-4 text-left text-sm font-semibold text-gray-300"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r, i) => (
+                  <tr
+                    key={r.__rowIndex}
+                    className="border-t border-gray-700 hover:bg-white/5 transition-colors"
+                  >
+                    <td className="p-4 text-sm">{r["Request Date"]}</td>
+                    <td className="p-4 text-sm">{r["Model / Type"]}</td>
+                    <td className="p-4 text-sm font-mono">{r["Plate Number"]}</td>
+                    <td className="p-4 text-sm">{r.Driver}</td>
+                    <td className="p-4 text-sm max-w-xs truncate">
+                      {r["Requested Parts"]}
+                    </td>
+
+                    {editingRow === i ? (
+                      <>
+                        <td className="p-4">
+                          <select
+                            value={editData.Status}
+                            onChange={(e) =>
+                              setEditData({ ...editData, Status: e.target.value })
+                            }
+                            className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600 text-white text-sm"
+                          >
+                            <option value="">Select Status</option>
+                            <option value="Pending">Pending</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Rejected">Rejected</option>
+                          </select>
+                        </td>
+
+                        <td className="p-4">
+                          <select
+                            value={editData["Handled By"]}
+                            onChange={(e) =>
+                              setEditData({
+                                ...editData,
+                                "Handled By": e.target.value,
+                              })
+                            }
+                            className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600 text-white text-sm"
+                          >
+                            <option value="">Select Handler</option>
+                            {mechanicSupervisorOptions.map((n) => (
+                              <option key={n} value={n}>{n}</option>
+                            ))}
+                          </select>
+                        </td>
+
+                        <td className="p-4">
+                          <textarea
+                            value={editData.Comments}
+                            onChange={(e) =>
+                              setEditData({
+                                ...editData,
+                                Comments: e.target.value,
+                              })
+                            }
+                            className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600 text-white text-sm"
+                          />
+                        </td>
+
+                        <td className="p-4">
+                          <div className="flex gap-2">
+                            <label className="cursor-pointer text-amber-400">
+                              <Upload size={18} />
+                              <input
+                                type="file"
+                                hidden
+                                accept="image/*"
+                                onChange={(e) => handleFile(e.target.files?.[0])}
+                              />
+                            </label>
+                            <label className="cursor-pointer text-orange-400">
+                              <Camera size={18} />
+                              <input
+                                type="file"
+                                hidden
+                                accept="image/*"
+                                capture="environment"
+                                onChange={(e) => handleFile(e.target.files?.[0])}
+                              />
+                            </label>
+                          </div>
+                        </td>
+
+                        <td className="p-4">
+                          <button
+                            onClick={() => saveEdit(i)}
+                            disabled={saving}
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm mr-2 disabled:opacity-50"
+                          >
+                            {saving ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            onClick={() => setEditingRow(null)}
+                            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="p-4">{statusBadge(r.Status)}</td>
+                        <td className="p-4 text-sm">{r["Handled By"] || "—"}</td>
+                        <td className="p-4 text-sm">{r.Comments || "—"}</td>
+                        <td className="p-4">
+                          {r["Attachment Photo"] ? (
+                            <a
+                              href={r["Attachment Photo"]}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="relative group block"
+                            >
+                              <img
+                                src={getThumbnailUrl(r["Attachment Photo"])}
+                                className="h-16 w-16 object-cover rounded-lg border border-gray-600"
+                              />
+                              <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                                <ExternalLink className="w-6 h-6 text-cyan-400" />
+                              </div>
+                            </a>
+                          ) : (
+                            <span className="text-gray-500 text-sm">No Photo</span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          {canEdit && (
+                            <button
+                              onClick={() => startEdit(i, r)}
+                              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-lg text-sm font-medium"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         )}
