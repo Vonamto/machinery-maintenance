@@ -1,5 +1,4 @@
 // frontend/src/pages/Maintenance/History.jsx
-
 import React, { useEffect, useState, useMemo } from "react";
 import {
   ArrowLeft,
@@ -31,7 +30,6 @@ export default function MaintenanceHistory() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
   const [filters, setFilters] = useState({
     model: "",
     plate: "",
@@ -100,15 +98,12 @@ export default function MaintenanceHistory() {
       const model = r["Model / Type"] || "";
       const plate = r["Plate Number"] || "";
       const driver = r["Driver"] || "";
-
       const matchModel = !filters.model || model === filters.model;
       const matchPlate = !filters.plate || plate === filters.plate;
       const matchDriver = !filters.driver || driver === filters.driver;
-
       let matchDate = true;
       if (filters.from && date < filters.from) matchDate = false;
       if (filters.to && date > filters.to) matchDate = false;
-
       return matchModel && matchPlate && matchDriver && matchDate;
     });
   }, [rows, filters]);
@@ -118,10 +113,17 @@ export default function MaintenanceHistory() {
 
   const translateDescription = (value) => {
     if (!value) return "---";
-    return (
-      t(`cleaningTypes.${value}`, value) ||
-      t(`requestTypes.${value}`, value)
-    );
+    
+    // Try cleaning types first
+    const cleaningTranslation = t(`cleaningTypes.${value}`, { defaultValue: null });
+    if (cleaningTranslation) return cleaningTranslation;
+    
+    // Then try request types
+    const requestTranslation = t(`requestTypes.${value}`, { defaultValue: null });
+    if (requestTranslation) return requestTranslation;
+    
+    // If no translation found, return the original value
+    return value;
   };
 
   const getStatusBadge = (status) => {
@@ -143,13 +145,11 @@ export default function MaintenanceHistory() {
         icon: <XCircle size={14} />,
       },
     };
-
     const style = styles[lower] || {
       bg: "bg-gray-500/20",
       text: "text-gray-300",
       icon: <HistoryIcon size={14} />,
     };
-
     return (
       <span
         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}
@@ -185,7 +185,6 @@ export default function MaintenanceHistory() {
           />
           {t("common.back")}
         </button>
-
         <div className="mb-8 flex items-center gap-4">
           <div className="p-3 rounded-xl bg-gradient-to-br from-green-600 to-emerald-500 shadow-lg shadow-green-500/40">
             <Wrench className="w-8 h-8 text-white" />
@@ -199,7 +198,6 @@ export default function MaintenanceHistory() {
             </p>
           </div>
         </div>
-
         <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-4 mb-8 shadow-lg">
           <div className="grid md:grid-cols-5 sm:grid-cols-2 gap-4">
             <select
@@ -216,7 +214,6 @@ export default function MaintenanceHistory() {
                 <option key={m}>{m}</option>
               ))}
             </select>
-
             <select
               value={filters.plate}
               onChange={(e) =>
@@ -231,7 +228,6 @@ export default function MaintenanceHistory() {
                 <option key={p}>{p}</option>
               ))}
             </select>
-
             <select
               value={filters.driver}
               onChange={(e) =>
@@ -246,7 +242,6 @@ export default function MaintenanceHistory() {
                 <option key={d}>{d}</option>
               ))}
             </select>
-
             <input
               type="date"
               value={filters.from}
@@ -255,7 +250,6 @@ export default function MaintenanceHistory() {
               }
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
             />
-
             <input
               type="date"
               value={filters.to}
@@ -265,7 +259,6 @@ export default function MaintenanceHistory() {
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
             />
           </div>
-
           <div className="flex justify-end mt-4">
             <button
               onClick={resetFilters}
@@ -276,7 +269,6 @@ export default function MaintenanceHistory() {
             </button>
           </div>
         </div>
-
         {filteredRows.length === 0 ? (
           <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
             <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
@@ -331,7 +323,7 @@ export default function MaintenanceHistory() {
                       (field) => (
                         <td key={field} className="p-4">
                           {r[field] ? (
-                            <a
+                            
                               href={r[field]}
                               target="_blank"
                               rel="noreferrer"
