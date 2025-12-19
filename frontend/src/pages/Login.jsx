@@ -1,8 +1,11 @@
 // frontend/src/pages/Login.jsx
 import React, { useState } from "react";
 import { login } from "../api/api";
+import { useTranslation } from "react-i18next";
 
 export default function Login() {
+  const { t } = useTranslation();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState("");
@@ -18,14 +21,17 @@ export default function Login() {
         localStorage.setItem("token", result.token);
         localStorage.setItem("user", JSON.stringify(result.user || {}));
 
-        const fullName = result.user?.full_name || result.user?.username || "User";
-        setStatus(`✅ Logged in as ${fullName}`);
-        setTimeout(() => window.location.href = "/dashboard", 1200);
+        const fullName =
+          result.user?.full_name || result.user?.username || "User";
+
+        setStatus(`✅ ${t("auth.loginSuccess", { name: fullName })}`);
+
+        setTimeout(() => (window.location.href = "/dashboard"), 1200);
       } else {
-        setStatus(result.message || "❌ Invalid username or password");
+        setStatus(`❌ ${t("auth.loginError")}`);
       }
     } catch (err) {
-      setStatus("⚠️ Connection error: " + String(err));
+      setStatus(`⚠️ ${t("auth.connectionError")}: ${String(err)}`);
     } finally {
       setLoading(false);
     }
@@ -35,7 +41,7 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md">
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
-          Machinery Maintenance Login
+          {t("auth.loginTitle")}
         </h2>
 
         {status && (
@@ -55,28 +61,28 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-gray-600 font-medium mb-1">
-              Username
+              {t("auth.username")}
             </label>
             <input
               type="text"
               className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter username"
+              placeholder={t("auth.placeholderUsername")}
               required
             />
           </div>
 
           <div>
             <label className="block text-gray-600 font-medium mb-1">
-              Password
+              {t("auth.password")}
             </label>
             <input
               type="password"
               className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
+              placeholder={t("auth.placeholderPassword")}
               required
             />
           </div>
@@ -86,12 +92,12 @@ export default function Login() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-60"
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading ? t("auth.loggingIn") : t("auth.login")}
           </button>
         </form>
 
         <p className="text-center text-gray-500 text-sm mt-4">
-          English / العربية (coming soon)
+          {t("auth.languageHint")}
         </p>
       </div>
     </div>
