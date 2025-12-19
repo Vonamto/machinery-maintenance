@@ -58,4 +58,11 @@
     "Completed": "Completed",
     "Rejected": "Rejected"
   }
+    "navbar": {
+    "welcome": "Welcome",
+    "dashboard": "Dashboard",
+    "logout": "Logout"
+  }
+
 }
+
