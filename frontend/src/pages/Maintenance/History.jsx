@@ -324,7 +324,7 @@ export default function MaintenanceHistory() {
                         <td key={field} className="p-4">
                           {r[field] ? (
                             
-                              href={r[field]}
+                              <href={r[field]}
                               target="_blank"
                               rel="noreferrer"
                             >
