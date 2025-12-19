@@ -1,3 +1,61 @@
 {
-  "hello": "مرحباً"
+  "common": {
+    "submit": "إرسال",
+    "cancel": "إلغاء",
+    "back": "رجوع",
+    "loading": "جارٍ التحميل...",
+    "yes": "نعم",
+    "no": "لا"
+  },
+
+  "auth": {
+    "loginTitle": "تسجيل الدخول إلى نظام الصيانة",
+    "username": "اسم المستخدم",
+    "password": "كلمة المرور",
+    "login": "دخول",
+    "loggingIn": "جاري تسجيل الدخول..."
+  },
+
+  "dashboard": {
+    "title": "لوحة التحكم",
+
+    "maintenanceLog": {
+      "title": "سجل الصيانة",
+      "description": "إدخال أو عرض عمليات الصيانة"
+    },
+
+    "maintenanceRequests": {
+      "title": "طلبات الصيانة",
+      "description": "إدارة طلبات قطع الغيار والزيوت والشحوم"
+    },
+
+    "cleaningLog": {
+      "title": "سجل التنظيف",
+      "description": "تسجيل وعرض عمليات التنظيف"
+    },
+
+    "equipmentList": {
+      "title": "قائمة المعدات",
+      "description": "عرض وإدارة جميع المركبات والمعدات"
+    },
+
+    "users": {
+      "title": "المستخدمون",
+      "description": "إدارة حسابات المستخدمين والصلاحيات"
+    }
+  },
+
+  "roles": {
+    "Supervisor": "مشرف",
+    "Mechanic": "ميكانيكي",
+    "Driver": "سائق",
+    "Cleaning Guy": "عامل نظافة"
+  },
+
+  "status": {
+    "Pending": "قيد الانتظار",
+    "In Progress": "قيد التنفيذ",
+    "Completed": "مكتمل",
+    "Rejected": "مرفوض"
+  }
 }
