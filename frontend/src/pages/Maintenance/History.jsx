@@ -116,11 +116,26 @@ export default function MaintenanceHistory() {
   const resetFilters = () =>
     setFilters({ model: "", plate: "", driver: "", from: "", to: "" });
 
+  // ✅ FIX: normalize request & cleaning descriptions before translating
   const translateDescription = (value) => {
     if (!value) return "---";
+
+    const normalized = value.trim().replace(/\s+/g, " ");
+
+    const requestAliases = {
+      "Oil service": "Oil Service",
+      "Grease service": "Grease Service",
+      "Grease Serviec": "Grease Service",
+      "Full Service": "Full Service (Oil + Greasing)",
+      "Full Service (Oil + Grease)": "Full Service (Oil + Greasing)",
+      "Oil / Grease": "Full Service (Oil + Greasing)",
+    };
+
+    const finalKey = requestAliases[normalized] || normalized;
+
     return (
-      t(`cleaningTypes.${value}`, value) ||
-      t(`requestTypes.${value}`, value)
+      t(`cleaningTypes.${finalKey}`, null) ||
+      t(`requestTypes.${finalKey}`, finalKey)
     );
   };
 
