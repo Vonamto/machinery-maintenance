@@ -309,10 +309,18 @@ export default function PartsCurrent() {
                             <option value="">
                               {t("requests.parts.current.selectStatus")}
                             </option>
-                            <option value="Pending">Pending</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Rejected">Rejected</option>
+                            <option value="Pending">
+                              {t("status.Pending")}
+                            </option>
+                            <option value="In Progress">
+                              {t("status.In Progress")}
+                            </option>
+                            <option value="Completed">
+                              {t("status.Completed")}
+                            </option>
+                            <option value="Rejected">
+                              {t("status.Rejected")}
+                            </option>
                           </select>
                         </td>
 
