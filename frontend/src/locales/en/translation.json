@@ -170,6 +170,40 @@
           "description": "Request oil or grease service and schedule appointments"
         }
       }
+    },
+
+    "parts": {
+      "form": {
+        "back": "Back",
+        "title": "Maintenance & Spare Parts Request",
+        "subtitle": "Fill in the details below to submit your request",
+
+        "requestDate": "Request Date",
+        "model": "Model / Type",
+        "plate": "Plate Number",
+        "driver": "Driver",
+        "requestedParts": "Describe Your Request",
+        "comments": "Comments (Optional)",
+        "attachmentPhoto": "Attachment Photo",
+
+        "chooseModel": "--- Choose Model ---",
+        "choosePlate": "--- Choose Plate ---",
+        "chooseDriver": "--- Choose Driver ---",
+
+        "requestedPartsPlaceholder": "Describe the problem or needed part",
+        "commentsPlaceholder": "Additional notes...",
+
+        "submit": "Submit Request",
+        "submitting": "Submitting...",
+
+        "alerts": {
+          "missingAsset": "Please choose at least Model, Plate Number, or Driver.",
+          "missingParts": "Please enter the requested parts.",
+          "success": "✅ Parts request submitted successfully.",
+          "error": "❌ Error",
+          "networkError": "Network error submitting form."
+        }
+      }
     }
   }
 }
