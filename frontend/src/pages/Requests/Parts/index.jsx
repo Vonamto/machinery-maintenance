@@ -5,31 +5,33 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ClipboardPlus, Clock, History, ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 export default function PartsRequestsMenu() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const cards = [
     {
-      title: "Make a Request",
-      description: "Submit a new request",
+      title: t("requests.parts.menu.cards.make.title"),
+      description: t("requests.parts.menu.cards.make.description"),
       icon: <ClipboardPlus className="w-10 h-10 text-white drop-shadow-md" />,
       link: "/requests/parts/form",
       gradient: "from-blue-600 to-cyan-500",
       glow: "shadow-[0_0_15px_2px_rgba(59,130,246,0.6)]",
     },
     {
-      title: "Current Requests",
-      description: "View pending and in-progress requests",
+      title: t("requests.parts.menu.cards.current.title"),
+      description: t("requests.parts.menu.cards.current.description"),
       icon: <Clock className="w-10 h-10 text-white drop-shadow-md" />,
       link: "/requests/parts/current",
       gradient: "from-amber-600 to-orange-500",
       glow: "shadow-[0_0_15px_2px_rgba(251,146,60,0.6)]",
     },
     {
-      title: "Requests History",
-      description: "View completed and rejected requests",
+      title: t("requests.parts.menu.cards.history.title"),
+      description: t("requests.parts.menu.cards.history.description"),
       icon: <History className="w-10 h-10 text-white drop-shadow-md" />,
       link: "/requests/parts/history",
       gradient: "from-emerald-600 to-green-500",
@@ -45,11 +47,14 @@ export default function PartsRequestsMenu() {
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition"
         >
-          <ArrowLeft size={18} /> Back
+          <ArrowLeft size={18} />
+          {t("requests.parts.menu.back")}
         </button>
+
         <h1 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-          Spare Parts Requests
+          {t("requests.parts.menu.title")}
         </h1>
+
         <div className="grid gap-8 sm:grid-cols-3">
           {cards.map((card) => (
             <Link to={card.link} key={card.title}>
@@ -63,7 +68,9 @@ export default function PartsRequestsMenu() {
                   <h2 className="text-xl font-semibold text-white drop-shadow-md">
                     {card.title}
                   </h2>
-                  <p className="text-gray-100/90 text-sm">{card.description}</p>
+                  <p className="text-gray-100/90 text-sm">
+                    {card.description}
+                  </p>
                 </CardContent>
               </Card>
             </Link>
