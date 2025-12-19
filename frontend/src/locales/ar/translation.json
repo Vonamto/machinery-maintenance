@@ -13,7 +13,13 @@
     "username": "اسم المستخدم",
     "password": "كلمة المرور",
     "login": "دخول",
-    "loggingIn": "جاري تسجيل الدخول..."
+    "loggingIn": "جاري تسجيل الدخول...",
+    "placeholderUsername": "أدخل اسم المستخدم",
+    "placeholderPassword": "أدخل كلمة المرور",
+    "loginSuccess": "تم تسجيل الدخول باسم {{name}}",
+    "loginError": "اسم المستخدم أو كلمة المرور غير صحيحة",
+    "connectionError": "خطأ في الاتصال",
+    "languageHint": "English / العربية (قريباً)"
   },
 
   "navbar": {
