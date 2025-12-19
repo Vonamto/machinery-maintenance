@@ -161,4 +161,4 @@ export default function MaintenanceForm() {
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6"
         >
-          <ArrowLeft size={18} /> {t("common.back"
+          <ArrowLeft size={18} /> {t("common.back")}
