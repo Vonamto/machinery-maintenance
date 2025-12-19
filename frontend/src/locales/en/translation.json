@@ -1,3 +1,61 @@
 {
-  "hello": "Hello"
+  "common": {
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "back": "Back",
+    "loading": "Loading...",
+    "yes": "Yes",
+    "no": "No"
+  },
+
+  "auth": {
+    "loginTitle": "Machinery Maintenance Login",
+    "username": "Username",
+    "password": "Password",
+    "login": "Login",
+    "loggingIn": "Logging in..."
+  },
+
+  "dashboard": {
+    "title": "Dashboard",
+
+    "maintenanceLog": {
+      "title": "Maintenance Log",
+      "description": "Fill or view maintenance operations"
+    },
+
+    "maintenanceRequests": {
+      "title": "Maintenance Requests",
+      "description": "Manage Spare Parts and Oil/Grease requests"
+    },
+
+    "cleaningLog": {
+      "title": "Cleaning Log",
+      "description": "Record and view cleaning activities"
+    },
+
+    "equipmentList": {
+      "title": "Equipment List",
+      "description": "View and manage all vehicles/equipment"
+    },
+
+    "users": {
+      "title": "Users",
+      "description": "Manage user accounts and roles"
+    }
+  },
+
+  "roles": {
+    "Supervisor": "Supervisor",
+    "Mechanic": "Mechanic",
+    "Driver": "Driver",
+    "Cleaning Guy": "Cleaning Guy"
+  },
+
+  "status": {
+    "Pending": "Pending",
+    "In Progress": "In Progress",
+    "Completed": "Completed",
+    "Rejected": "Rejected"
+  }
 }
