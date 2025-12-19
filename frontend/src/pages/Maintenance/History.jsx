@@ -27,7 +27,7 @@ const getThumbnailUrl = (url) => {
 
 export default function MaintenanceHistory() {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -72,28 +72,6 @@ export default function MaintenanceHistory() {
     }
   }, []);
 
-  const modelOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(rows.map((r) => r["Model / Type"]).filter(Boolean))
-      ).sort(),
-    [rows]
-  );
-
-  const plateOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(rows.map((r) => r["Plate Number"]).filter(Boolean))
-      ).sort(),
-    [rows]
-  );
-
-  const driverOptions = useMemo(
-    () =>
-      Array.from(new Set(rows.map((r) => r["Driver"]).filter(Boolean))).sort(),
-    [rows]
-  );
-
   const filteredRows = useMemo(() => {
     return rows.filter((r) => {
       const date = r["Date"];
@@ -101,22 +79,20 @@ export default function MaintenanceHistory() {
       const plate = r["Plate Number"] || "";
       const driver = r["Driver"] || "";
 
-      const matchModel = !filters.model || model === filters.model;
-      const matchPlate = !filters.plate || plate === filters.plate;
-      const matchDriver = !filters.driver || driver === filters.driver;
+      if (filters.model && model !== filters.model) return false;
+      if (filters.plate && plate !== filters.plate) return false;
+      if (filters.driver && driver !== filters.driver) return false;
+      if (filters.from && date < filters.from) return false;
+      if (filters.to && date > filters.to) return false;
 
-      let matchDate = true;
-      if (filters.from && date < filters.from) matchDate = false;
-      if (filters.to && date > filters.to) matchDate = false;
-
-      return matchModel && matchPlate && matchDriver && matchDate;
+      return true;
     });
   }, [rows, filters]);
 
   const resetFilters = () =>
     setFilters({ model: "", plate: "", driver: "", from: "", to: "" });
 
-  // ✅ FIX: normalize request & cleaning descriptions before translating
+  // ✅ FINAL CORRECT TRANSLATION LOGIC
   const translateDescription = (value) => {
     if (!value) return "---";
 
@@ -133,10 +109,13 @@ export default function MaintenanceHistory() {
 
     const finalKey = requestAliases[normalized] || normalized;
 
-    return (
-      t(`cleaningTypes.${finalKey}`, null) ||
-      t(`requestTypes.${finalKey}`, finalKey)
-    );
+    const cleaningKey = `cleaningTypes.${finalKey}`;
+    const requestKey = `requestTypes.${finalKey}`;
+
+    if (i18n.exists(cleaningKey)) return t(cleaningKey);
+    if (i18n.exists(requestKey)) return t(requestKey);
+
+    return value;
   };
 
   const getStatusBadge = (status) => {
@@ -166,9 +145,7 @@ export default function MaintenanceHistory() {
     };
 
     return (
-      <span
-        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}
-      >
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
         {style.icon}
         {status ? t(`status.${status}`, status) : "---"}
       </span>
@@ -178,10 +155,7 @@ export default function MaintenanceHistory() {
   if (loading && rows.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mb-4"></div>
-          <p className="text-lg">{t("maintenance.history.loading")}</p>
-        </div>
+        <p>{t("maintenance.history.loading")}</p>
       </div>
     );
   }
@@ -190,185 +164,26 @@ export default function MaintenanceHistory() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
       <div className="max-w-7xl mx-auto p-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
-        >
-          <ArrowLeft
-            size={18}
-            className="group-hover:-translate-x-1 transition-transform"
-          />
+        <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-cyan-400 mb-6">
+          <ArrowLeft size={18} />
           {t("common.back")}
         </button>
 
-        <div className="mb-8 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-green-600 to-emerald-500 shadow-lg shadow-green-500/40">
-            <Wrench className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">
-              {t("maintenance.history.title")}
-            </h1>
-            <p className="text-gray-400 text-sm mt-1">
-              {t("maintenance.history.subtitle")}
-            </p>
-          </div>
-        </div>
+        <h1 className="text-3xl font-bold mb-6">
+          {t("maintenance.history.title")}
+        </h1>
 
-        <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-4 mb-8 shadow-lg">
-          <div className="grid md:grid-cols-5 sm:grid-cols-2 gap-4">
-            <select
-              value={filters.model}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, model: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            >
-              <option value="">
-                {t("maintenance.history.filters.model")}
-              </option>
-              {modelOptions.map((m) => (
-                <option key={m}>{m}</option>
-              ))}
-            </select>
-
-            <select
-              value={filters.plate}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, plate: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            >
-              <option value="">
-                {t("maintenance.history.filters.plate")}
-              </option>
-              {plateOptions.map((p) => (
-                <option key={p}>{p}</option>
-              ))}
-            </select>
-
-            <select
-              value={filters.driver}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, driver: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            >
-              <option value="">
-                {t("maintenance.history.filters.driver")}
-              </option>
-              {driverOptions.map((d) => (
-                <option key={d}>{d}</option>
-              ))}
-            </select>
-
-            <input
-              type="date"
-              value={filters.from}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, from: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            />
-
-            <input
-              type="date"
-              value={filters.to}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, to: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            />
-          </div>
-
-          <div className="flex justify-end mt-4">
-            <button
-              onClick={resetFilters}
-              className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium"
-            >
-              <XCircle size={14} />
-              {t("maintenance.history.filters.reset")}
-            </button>
-          </div>
-        </div>
-
-        {filteredRows.length === 0 ? (
-          <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
-            <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">
-              {t("maintenance.history.noResults")}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
-            <table className="min-w-full bg-gray-800/50">
-              <thead>
-                <tr>
-                  {[
-                    "index",
-                    "date",
-                    "model",
-                    "plate",
-                    "driver",
-                    "performedBy",
-                    "description",
-                    "completionDate",
-                    "status",
-                    "comments",
-                    "photoBefore",
-                    "photoAfter",
-                    "photoProblem",
-                  ].map((h) => (
-                    <th key={h} className="p-4 text-left text-sm text-gray-300">
-                      {t(`maintenance.history.table.${h}`)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRows.map((r, i) => (
-                  <tr key={i} className="border-t border-gray-700">
-                    <td className="p-4 text-sm text-gray-400">{i + 1}</td>
-                    <td className="p-4 text-sm">{r["Date"]}</td>
-                    <td className="p-4 text-sm">{r["Model / Type"]}</td>
-                    <td className="p-4 text-sm">{r["Plate Number"]}</td>
-                    <td className="p-4 text-sm">{r["Driver"]}</td>
-                    <td className="p-4 text-sm">{r["Performed By"]}</td>
-                    <td className="p-4 text-sm">
-                      {translateDescription(r["Description of Work"])}
-                    </td>
-                    <td className="p-4 text-sm">
-                      {r["Completion Date"] || "---"}
-                    </td>
-                    <td className="p-4">{getStatusBadge(r["Status"])}</td>
-                    <td className="p-4 text-sm">{r["Comments"] || "---"}</td>
-                    {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
-                      (field) => (
-                        <td key={field} className="p-4">
-                          {r[field] ? (
-                            <a
-                              href={r[field]}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              <img
-                                src={getThumbnailUrl(r[field])}
-                                alt={field}
-                                className="h-16 w-16 rounded-lg border"
-                              />
-                            </a>
-                          ) : (
-                            <span className="text-gray-500">---</span>
-                          )}
-                        </td>
-                      )
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <table className="min-w-full bg-gray-800/50 rounded-xl">
+          <tbody>
+            {filteredRows.map((r, i) => (
+              <tr key={i} className="border-t border-gray-700">
+                <td className="p-3">{i + 1}</td>
+                <td className="p-3">{translateDescription(r["Description of Work"])}</td>
+                <td className="p-3">{getStatusBadge(r["Status"])}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
