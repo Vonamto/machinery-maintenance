@@ -5,23 +5,25 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ClipboardPlus, History, ArrowLeft, Wrench } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 export default function Maintenance() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const cards = [
     {
-      title: "Add Maintenance Log",
-      description: "Fill in a new maintenance record for your equipment",
+      title: t("maintenance.addLog.title"),
+      description: t("maintenance.addLog.description"),
       icon: <ClipboardPlus className="w-10 h-10 text-white drop-shadow-lg" />,
       link: "/maintenance/form",
       gradient: "from-blue-600 to-cyan-500",
       glow: "shadow-[0_0_20px_3px_rgba(59,130,246,0.5)]",
     },
     {
-      title: "Maintenance History",
-      description: "View all past maintenance operations and reports",
+      title: t("maintenance.history.title"),
+      description: t("maintenance.history.description"),
       icon: <History className="w-10 h-10 text-white drop-shadow-lg" />,
       link: "/maintenance/history",
       gradient: "from-emerald-600 to-green-500",
@@ -34,7 +36,6 @@ export default function Maintenance() {
       <Navbar user={user} />
 
       <div className="max-w-5xl mx-auto p-6">
-        {/* Back button */}
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-8 transition group"
@@ -43,28 +44,26 @@ export default function Maintenance() {
             size={18}
             className="group-hover:-translate-x-1 transition-transform"
           />
-          Back
+          {t("common.back")}
         </button>
 
-        {/* Header */}
         <div className="mb-10 flex items-center gap-4">
           <div className="p-3 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-500 shadow-lg shadow-cyan-500/40">
             <Wrench className="w-8 h-8 text-white" />
           </div>
           <div>
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-              Maintenance Management
+              {t("maintenance.title")}
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              Manage and track all equipment maintenance operations
+              {t("maintenance.description")}
             </p>
           </div>
         </div>
 
-        {/* Cards */}
         <div className="grid gap-8 sm:grid-cols-2">
           {cards.map((card) => (
-            <Link to={card.link} key={card.title}>
+            <Link to={card.link} key={card.link}>
               <Card
                 className={`rounded-2xl bg-gradient-to-br ${card.gradient} ${card.glow} hover:scale-[1.04] hover:brightness-110 transition-all duration-300 border border-white/10 backdrop-blur-md`}
               >
