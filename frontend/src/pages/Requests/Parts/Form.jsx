@@ -6,11 +6,13 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
+import { useTranslation } from "react-i18next";
 
 export default function PartsRequestForm() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const cache = useCache();
+  const { t } = useTranslation();
   const todayDate = new Date().toISOString().split("T")[0];
 
   const [form, setForm] = useState({
@@ -95,11 +97,11 @@ export default function PartsRequestForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form["Model / Type"] && !form["Plate Number"] && !form.Driver) {
-      alert("Please choose at least Model, Plate Number, or Driver.");
+      alert(t("requests.parts.form.alerts.missingAsset"));
       return;
     }
     if (!form["Requested Parts"]) {
-      alert("Please enter the requested parts.");
+      alert(t("requests.parts.form.alerts.missingParts"));
       return;
     }
     setSubmitting(true);
@@ -112,14 +114,14 @@ export default function PartsRequestForm() {
       });
       const data = await res.json();
       if (data.status === "success") {
-        alert("✅ Parts request submitted successfully.");
+        alert(t("requests.parts.form.alerts.success"));
         navigate("/requests/parts");
       } else {
-        alert("❌ Error: " + (data.message || "Unknown error"));
+        alert(t("requests.parts.form.alerts.error") + ": " + (data.message || "Unknown error"));
       }
     } catch (err) {
       console.error("Submit error:", err);
-      alert("Network error submitting form.");
+      alert(t("requests.parts.form.alerts.networkError"));
     } finally {
       setSubmitting(false);
     }
@@ -133,7 +135,8 @@ export default function PartsRequestForm() {
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+          {t("requests.parts.form.back")}
         </button>
 
         <div className="mb-8 flex items-center gap-4">
@@ -142,105 +145,132 @@ export default function PartsRequestForm() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-              Maintenance & Spare Parts Request
+              {t("requests.parts.form.title")}
             </h1>
-            <p className="text-gray-400 text-sm mt-1">Fill in the details below to submit your request</p>
+            <p className="text-gray-400 text-sm mt-1">
+              {t("requests.parts.form.subtitle")}
+            </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
-            <div className="group">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Request Date</label>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                {t("requests.parts.form.requestDate")}
+              </label>
               <input
                 type="date"
                 value={form["Request Date"]}
                 onChange={(e) => handleChange("Request Date", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white"
               />
             </div>
 
-            <div className="group">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Model / Type</label>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                {t("requests.parts.form.model")}
+              </label>
               <select
                 value={form["Model / Type"]}
                 onChange={(e) => handleChange("Model / Type", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white"
               >
-                <option value="">--- Choose Model ---</option>
+                <option value="">{t("requests.parts.form.chooseModel")}</option>
                 {modelOptions.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
             </div>
 
-            <div className="group">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Plate Number</label>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                {t("requests.parts.form.plate")}
+              </label>
               <select
                 value={form["Plate Number"]}
                 onChange={(e) => handleChange("Plate Number", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white"
               >
-                <option value="">--- Choose Plate ---</option>
-                {plateOptions.length
-                  ? plateOptions.map((p) => (<option key={p} value={p}>{p}</option>))
-                  : cache.getEquipment
-                  ? (cache.getEquipment() || []).map((e) => (<option key={e["Plate Number"]} value={e["Plate Number"]}>{e["Plate Number"]}</option>))
-                  : null}
+                <option value="">{t("requests.parts.form.choosePlate")}</option>
+                {(plateOptions.length ? plateOptions : (cache.getEquipment ? cache.getEquipment() : [])).map(
+                  (p) =>
+                    typeof p === "string" ? (
+                      <option key={p} value={p}>{p}</option>
+                    ) : (
+                      <option key={p["Plate Number"]} value={p["Plate Number"]}>
+                        {p["Plate Number"]}
+                      </option>
+                    )
+                )}
               </select>
             </div>
 
-            <div className="group">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Driver</label>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                {t("requests.parts.form.driver")}
+              </label>
               <select
                 value={form.Driver}
                 onChange={(e) => handleChange("Driver", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white"
               >
-                <option value="">--- Choose Driver ---</option>
-                {driverOptions.length
-                  ? driverOptions.map((d) => (<option key={d} value={d}>{d}</option>))
-                  : Array.from(new Set((cache.getEquipment ? cache.getEquipment() : cache.equipment || []).flatMap((eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]]).filter(Boolean))).map((d) => (<option key={d} value={d}>{d}</option>))}
+                <option value="">{t("requests.parts.form.chooseDriver")}</option>
+                {(driverOptions.length
+                  ? driverOptions
+                  : Array.from(new Set((cache.getEquipment ? cache.getEquipment() : []).flatMap(
+                      (eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]]
+                    ).filter(Boolean)))
+                ).map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
               </select>
             </div>
           </div>
 
-          <div className="group">
-            <label className="block text-sm font-medium text-gray-300 mb-2">Describe Your Request</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              {t("requests.parts.form.requestedParts")}
+            </label>
             <textarea
               rows={4}
               value={form["Requested Parts"]}
               onChange={(e) => handleChange("Requested Parts", e.target.value)}
-              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all resize-none"
-              placeholder="Describe the Problem or Needed Part"
+              placeholder={t("requests.parts.form.requestedPartsPlaceholder")}
+              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white resize-none"
             />
           </div>
 
-          <div className="group">
-            <label className="block text-sm font-medium text-gray-300 mb-2">Comments (Optional)</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              {t("requests.parts.form.comments")}
+            </label>
             <textarea
               rows={3}
               value={form.Comments}
               onChange={(e) => handleChange("Comments", e.target.value)}
-              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all resize-none"
-              placeholder="Additional notes..."
+              placeholder={t("requests.parts.form.commentsPlaceholder")}
+              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white resize-none"
             />
           </div>
 
-          <div className="group">
-            <label className="block text-sm font-medium text-gray-300 mb-3">Attachment Photo</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-3">
+              {t("requests.parts.form.attachmentPhoto")}
+            </label>
             <div className="flex gap-3">
-              <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-3 rounded-xl transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50">
+              <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-xl">
                 <Upload size={18} />
-                <span className="font-medium">Upload</span>
+                <span>{t("common.upload")}</span>
                 <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Attachment Photo")} />
               </label>
-              <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white px-4 py-3 rounded-xl transition-all shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50">
+              <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-600 to-cyan-700 text-white px-4 py-3 rounded-xl">
                 <Camera size={18} />
-                <span className="font-medium">Camera</span>
+                <span>{t("common.camera")}</span>
                 <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Attachment Photo")} />
               </label>
             </div>
+
             {form["Attachment Photo"] && (
               <div className="mt-4 p-2 bg-gray-800/30 rounded-xl border border-gray-700">
                 <img
@@ -255,19 +285,9 @@ export default function PartsRequestForm() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-semibold text-lg shadow-lg shadow-blue-500/50 hover:shadow-blue-500/70 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold text-lg disabled:opacity-50"
           >
-            {submitting ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Submitting...
-              </span>
-            ) : (
-              "Submit Request"
-            )}
+            {submitting ? t("requests.parts.form.submitting") : t("requests.parts.form.submit")}
           </button>
         </form>
       </div>
