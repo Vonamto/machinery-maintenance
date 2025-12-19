@@ -82,7 +82,9 @@ export default function MaintenanceHistory() {
 
   const plateOptions = useMemo(
     () =>
-      Array.from(new Set(rows.map((r) => r["Plate Number"]).filter(Boolean))).sort(),
+      Array.from(
+        new Set(rows.map((r) => r["Plate Number"]).filter(Boolean))
+      ).sort(),
     [rows]
   );
 
@@ -113,6 +115,14 @@ export default function MaintenanceHistory() {
 
   const resetFilters = () =>
     setFilters({ model: "", plate: "", driver: "", from: "", to: "" });
+
+  const translateDescription = (value) => {
+    if (!value) return "---";
+    return (
+      t(`cleaningTypes.${value}`, value) ||
+      t(`requestTypes.${value}`, value)
+    );
+  };
 
   const getStatusBadge = (status) => {
     const lower = (status || "").toLowerCase();
@@ -183,141 +193,3 @@ export default function MaintenanceHistory() {
             </h1>
             <p className="text-gray-400 text-sm mt-1">
               {t("maintenance.history.subtitle")}
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-4 mb-8 shadow-lg">
-          <div className="grid md:grid-cols-5 sm:grid-cols-2 gap-4">
-            <select
-              value={filters.model}
-              onChange={(e) => setFilters((f) => ({ ...f, model: e.target.value }))}
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            >
-              <option value="">{t("maintenance.history.filters.model")}</option>
-              {modelOptions.map((m) => (
-                <option key={m}>{m}</option>
-              ))}
-            </select>
-
-            <select
-              value={filters.plate}
-              onChange={(e) => setFilters((f) => ({ ...f, plate: e.target.value }))}
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            >
-              <option value="">{t("maintenance.history.filters.plate")}</option>
-              {plateOptions.map((p) => (
-                <option key={p}>{p}</option>
-              ))}
-            </select>
-
-            <select
-              value={filters.driver}
-              onChange={(e) => setFilters((f) => ({ ...f, driver: e.target.value }))}
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            >
-              <option value="">{t("maintenance.history.filters.driver")}</option>
-              {driverOptions.map((d) => (
-                <option key={d}>{d}</option>
-              ))}
-            </select>
-
-            <input
-              type="date"
-              value={filters.from}
-              onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            />
-
-            <input
-              type="date"
-              value={filters.to}
-              onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            />
-          </div>
-
-          <div className="flex justify-end mt-4">
-            <button
-              onClick={resetFilters}
-              className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium"
-            >
-              <XCircle size={14} />
-              {t("maintenance.history.filters.reset")}
-            </button>
-          </div>
-        </div>
-
-        {filteredRows.length === 0 ? (
-          <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
-            <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">
-              {t("maintenance.history.noResults")}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
-            <table className="min-w-full bg-gray-800/50">
-              <thead>
-                <tr>
-                  {[
-                    "index",
-                    "date",
-                    "model",
-                    "plate",
-                    "driver",
-                    "performedBy",
-                    "description",
-                    "completionDate",
-                    "status",
-                    "comments",
-                    "photoBefore",
-                    "photoAfter",
-                    "photoProblem",
-                  ].map((h) => (
-                    <th key={h} className="p-4 text-left text-sm text-gray-300">
-                      {t(`maintenance.history.table.${h}`)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRows.map((r, i) => (
-                  <tr key={i} className="border-t border-gray-700">
-                    <td className="p-4 text-sm text-gray-400">{i + 1}</td>
-                    <td className="p-4 text-sm">{r["Date"]}</td>
-                    <td className="p-4 text-sm">{r["Model / Type"]}</td>
-                    <td className="p-4 text-sm">{r["Plate Number"]}</td>
-                    <td className="p-4 text-sm">{r["Driver"]}</td>
-                    <td className="p-4 text-sm">{r["Performed By"]}</td>
-                    <td className="p-4 text-sm">{r["Description of Work"] || "---"}</td>
-                    <td className="p-4 text-sm">{r["Completion Date"] || "---"}</td>
-                    <td className="p-4">{getStatusBadge(r["Status"])}</td>
-                    <td className="p-4 text-sm">{r["Comments"] || "---"}</td>
-                    {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
-                      (field) => (
-                        <td key={field} className="p-4">
-                          {r[field] ? (
-                            <a href={r[field]} target="_blank" rel="noreferrer">
-                              <img
-                                src={getThumbnailUrl(r[field])}
-                                alt={field}
-                                className="h-16 w-16 rounded-lg border"
-                              />
-                            </a>
-                          ) : (
-                            <span className="text-gray-500">---</span>
-                          )}
-                        </td>
-                      )
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
