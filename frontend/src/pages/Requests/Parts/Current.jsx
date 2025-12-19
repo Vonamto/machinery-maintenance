@@ -58,9 +58,12 @@ export default function PartsCurrent() {
             ...r,
             __rowIndex: i + 2,
           }));
+
+          // ⬇️ CHANGE #1: exclude Rejected as well
           const currentOnly = withIndex.filter(
-            (r) => r.Status !== "Completed"
+            (r) => r.Status !== "Completed" && r.Status !== "Rejected"
           );
+
           setRows(currentOnly.reverse());
         }
       } catch (e) {
@@ -147,7 +150,11 @@ export default function PartsCurrent() {
       const result = await res.json();
 
       if (result.status === "success") {
-        if (editData.Status === "Completed") {
+        // ⬇️ CHANGE #2: remove row when Rejected too
+        if (
+          editData.Status === "Completed" ||
+          editData.Status === "Rejected"
+        ) {
           const copy = [...rows];
           copy.splice(i, 1);
           setRows(copy);
@@ -159,6 +166,7 @@ export default function PartsCurrent() {
           };
           setRows(copy);
         }
+
         setEditingRow(null);
         setEditData({});
         alert("Request updated successfully.");
@@ -227,7 +235,6 @@ export default function PartsCurrent() {
           Back
         </button>
 
-        {/* ===== Title Section (Styled like Grease/Oil) ===== */}
         <div className="mb-8 flex items-center gap-4">
           <div className="p-3 rounded-xl bg-gradient-to-br from-amber-600 to-orange-500 shadow-lg shadow-amber-500/40">
             <Wrench className="w-8 h-8 text-white" />
