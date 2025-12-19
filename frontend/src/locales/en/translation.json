@@ -1,11 +1,14 @@
 {
   "common": {
     "submit": "Submit",
+    "submitting": "Submitting...",
     "cancel": "Cancel",
     "back": "Back",
     "loading": "Loading...",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "upload": "Upload",
+    "camera": "Camera"
   },
 
   "auth": {
@@ -30,27 +33,22 @@
 
   "dashboard": {
     "title": "Dashboard",
-
     "maintenanceLog": {
       "title": "Maintenance Log",
       "description": "Fill or view maintenance operations"
     },
-
     "maintenanceRequests": {
       "title": "Maintenance Requests",
       "description": "Manage Spare Parts and Oil/Grease requests"
     },
-
     "cleaningLog": {
       "title": "Cleaning Log",
       "description": "Record and view cleaning activities"
     },
-
     "equipmentList": {
       "title": "Equipment List",
       "description": "View and manage all vehicles/equipment"
     },
-
     "users": {
       "title": "Users",
       "description": "Manage user accounts and roles"
@@ -69,6 +67,41 @@
     "history": {
       "title": "Maintenance History",
       "description": "View all past maintenance operations and reports"
+    },
+
+    "form": {
+      "title": "Maintenance Work Log",
+      "subtitle": "Record completed maintenance or repairs",
+
+      "date": "Date",
+      "model": "Model / Type",
+      "plate": "Plate Number",
+      "driver": "Driver",
+      "description": "Description of Work",
+      "performedBy": "Performed By",
+      "comments": "Comments",
+
+      "chooseModel": "--- Choose Model ---",
+      "choosePlate": "--- Choose Plate ---",
+      "chooseDriver": "--- Choose Driver ---",
+      "choosePerformer": "--- Select Performer ---",
+
+      "descriptionPlaceholder": "Describe the maintenance performed...",
+
+      "photoBefore": "Photo Before",
+      "photoAfter": "Photo After",
+      "photoProblem": "Photo Repair / Problem",
+
+      "submit": "Submit Maintenance Log",
+
+      "alerts": {
+        "missingAsset": "Please choose at least Model, Plate Number, or Driver.",
+        "missingDescription": "Please enter a description of work.",
+        "missingPerformer": "Please select who performed the work.",
+        "success": "Maintenance log added successfully.",
+        "error": "Error",
+        "networkError": "Network error submitting form."
+      }
     }
   },
 
