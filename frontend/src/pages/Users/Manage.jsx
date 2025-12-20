@@ -353,7 +353,7 @@ function UserInputs({ user, setUser }) {
       {["Username", "Password", "Full Name"].map((field) => (
         <div key={field}>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            {t(`users.manage.addForm.${field.toLowerCase().replace(" ", "")}`)} *
+            {t(`users.manage.addForm.${field.toLowerCase().replace(" ", "")}`)}
           </label>
           <input
             type={field === "Password" ? "password" : "text"}
