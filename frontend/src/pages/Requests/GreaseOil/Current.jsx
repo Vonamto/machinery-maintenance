@@ -242,7 +242,7 @@ export default function GreaseOilCurrent() {
         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}
       >
         {style.icon}
-        {status || "Pending"}
+        {t(`status.${status}`) || status} {/* Translate the displayed status text */}
       </span>
     );
   };
