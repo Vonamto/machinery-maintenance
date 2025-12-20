@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
+import { useTranslation } from "react-i18next";
 
 export default function EquipmentManage() {
   const { user } = useAuth();
@@ -15,6 +16,7 @@ export default function EquipmentManage() {
   const [editingRow, setEditingRow] = useState(null);
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [newEquipment, setNewEquipment] = useState({
     "Model / Type": "",
@@ -30,13 +32,13 @@ export default function EquipmentManage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-red-400 mb-2">Access Denied</h1>
-          <p className="text-gray-300">Only Supervisors can manage equipment.</p>
+          <h1 className="text-2xl font-bold text-red-400 mb-2">{t("requests.grease.menu.accessDenied.title")}</h1>
+          <p className="text-gray-300">{t("requests.grease.menu.accessDenied.message")}</p>
           <button
             onClick={() => navigate(-1)}
             className="mt-6 px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition"
           >
-            Go Back
+            {t("common.back")}
           </button>
         </div>
       </div>
@@ -73,7 +75,7 @@ export default function EquipmentManage() {
     e.preventDefault();
 
     if (!newEquipment["Model / Type"] || !newEquipment["Plate Number"]) {
-      alert("Please fill in Model/Type and Plate Number.");
+      alert(t("equipment.manage.alerts.missingFields"));
       return;
     }
 
@@ -91,7 +93,7 @@ export default function EquipmentManage() {
       const data = await res.json();
 
       if (data.status === "success") {
-        alert("✅ Equipment added successfully!");
+        alert(t("equipment.manage.alerts.addSuccess"));
         setShowAddForm(false);
         setNewEquipment({
           "Model / Type": "",
@@ -103,11 +105,11 @@ export default function EquipmentManage() {
         });
         loadEquipment();
       } else {
-        alert("❌ Error: " + (data.message || "Unknown error"));
+        alert(t("equipment.manage.alerts.error", { message: data.message || "Unknown error" }));
       }
     } catch (err) {
       console.error("Add equipment error:", err);
-      alert("Network error adding equipment.");
+      alert(t("equipment.manage.alerts.networkError") + " " + t("equipment.manage.alerts.adding"));
     } finally {
       setSaving(false);
     }
@@ -117,7 +119,7 @@ export default function EquipmentManage() {
 
 const handleDeleteEquipment = async (rowIndex, plateNumber) => {
   const confirmed = window.confirm(
-    `Are you sure you want to PERMANENTLY DELETE equipment "${plateNumber}"?\n\nThis action cannot be undone.`
+    t("equipment.manage.alerts.deleteConfirm", { plateNumber: plateNumber })
   );
 
   if (!confirmed) return;
@@ -140,14 +142,14 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
     const data = await res.json();
 
     if (data.status === "success") {
-      alert("✅ Equipment deleted successfully!");
+      alert(t("equipment.manage.alerts.deleteSuccess"));
       loadEquipment(); // Reload the list
     } else {
-      alert("❌ Error: " + (data.message || "Unknown error"));
+      alert(t("equipment.manage.alerts.error", { message: data.message || "Unknown error" }));
     }
   } catch (err) {
     console.error("Delete equipment error:", err);
-    alert("Network error deleting equipment.");
+    alert(t("equipment.manage.alerts.networkError") + " " + t("equipment.manage.alerts.deleting"));
   } finally {
     setSaving(false);
   }
@@ -186,7 +188,7 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
     const { rowIndexInSheet, data } = editingRow;
 
     if (!data["Model / Type"] || !data["Plate Number"]) {
-      alert("Please fill in Model/Type and Plate Number.");
+      alert(t("equipment.manage.alerts.missingFields"));
       return;
     }
 
@@ -207,15 +209,15 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
       const result = await res.json();
 
       if (result.status === "success") {
-        alert("✅ Equipment updated successfully!");
+        alert(t("equipment.manage.alerts.editSuccess"));
         setEditingRow(null);
         loadEquipment();
       } else {
-        alert("❌ Error: " + (result.message || "Failed to update equipment."));
+        alert(t("equipment.manage.alerts.error", { message: result.message || "Failed to update equipment." }));
       }
     } catch (err) {
       console.error("Edit equipment error:", err);
-      alert("Network error updating equipment.");
+      alert(t("equipment.manage.alerts.networkError") + " " + t("equipment.manage.alerts.updating"));
     } finally {
       setSaving(false);
     }
@@ -230,7 +232,7 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500 mb-4"></div>
-          <p className="text-lg">Loading equipment...</p>
+          <p className="text-lg">{t("equipment.manage.addForm.loading")}</p>
         </div>
       </div>
     );
@@ -245,7 +247,7 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-          Back
+          {t("common.back")}
         </button>
 
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -255,10 +257,10 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-500">
-                Manage Equipment
+                {t("equipment.manage.title")}
               </h1>
               <p className="text-gray-400 text-sm mt-1">
-                Add, edit, or remove equipment entries
+                {t("equipment.manage.subtitle")}
               </p>
             </div>
           </div>
@@ -271,18 +273,18 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
                 : "bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white shadow-green-500/30"
             }`}
           >
-            {showAddForm ? "Cancel" : <><Plus size={18} /> Add Equipment</>}
+            {showAddForm ? t("equipment.manage.cancelButton") : <><Plus size={18} /> {t("equipment.manage.addButton")}</>}
           </button>
         </div>
 
         {showAddForm && (
           <div className="mb-8 bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 shadow-lg">
-            <h2 className="text-xl font-semibold mb-4 text-orange-400">Add New Equipment</h2>
+            <h2 className="text-xl font-semibold mb-4 text-orange-400">{t("equipment.manage.addForm.title")}</h2>
             <form onSubmit={handleAddEquipment} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Model / Type *
+                    {t("equipment.manage.addForm.modelType")}
                   </label>
                   <input
                     type="text"
@@ -291,14 +293,14 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
                       setNewEquipment({ ...newEquipment, "Model / Type": e.target.value })
                     }
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
-                    placeholder="e.g., Mercedes, MAN, Toyota"
+                    placeholder={t("equipment.manage.addForm.placeholderModel")}
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Plate Number *
+                    {t("equipment.manage.addForm.plateNumber")}
                   </label>
                   <input
                     type="text"
@@ -307,14 +309,14 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
                       setNewEquipment({ ...newEquipment, "Plate Number": e.target.value })
                     }
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
-                    placeholder="e.g., ABC-123"
+                    placeholder={t("equipment.manage.addForm.placeholderPlate")}
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Driver 1
+                    {t("equipment.manage.addForm.driver1")}
                   </label>
                   <input
                     type="text"
@@ -328,7 +330,7 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Driver 2
+                    {t("equipment.manage.addForm.driver2")}
                   </label>
                   <input
                     type="text"
@@ -342,22 +344,22 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Status
+                    {t("equipment.manage.addForm.status")}
                   </label>
                   <select
                     value={newEquipment.Status}
                     onChange={(e) => setNewEquipment({ ...newEquipment, Status: e.target.value })}
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                   >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                    <option value="Maintenance">Maintenance</option>
+                    <option value="Active">{t("status.Active")}</option>
+                    <option value="Inactive">{t("status.Inactive")}</option>
+                    <option value="Maintenance">{t("status.Maintenance")}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Notes
+                    {t("equipment.manage.addForm.notes")}
                   </label>
                   <input
                     type="text"
@@ -373,7 +375,7 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
                 disabled={saving}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white font-semibold shadow-lg shadow-green-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {saving ? "Adding..." : "Add Equipment"}
+                {saving ? t("equipment.manage.addForm.adding") : t("equipment.manage.addForm.addEquipment")}
               </button>
             </form>
           </div>
@@ -381,40 +383,40 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
 
         {editingRow && (
           <div className="mb-8 bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 shadow-lg">
-            <h2 className="text-xl font-semibold mb-4 text-blue-400">Edit Equipment</h2>
+            <h2 className="text-xl font-semibold mb-4 text-blue-400">{t("equipment.manage.editForm.title")}</h2>
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Model / Type *
+                    {t("equipment.manage.addForm.modelType")}
                   </label>
                   <input
                     type="text"
                     value={editingRow.data["Model / Type"]}
                     onChange={(e) => handleEditChange("Model / Type", e.target.value)}
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                    placeholder="e.g., Mercedes, MAN, Toyota"
+                    placeholder={t("equipment.manage.addForm.placeholderModel")}
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Plate Number *
+                    {t("equipment.manage.addForm.plateNumber")}
                   </label>
                   <input
                     type="text"
                     value={editingRow.data["Plate Number"]}
                     onChange={(e) => handleEditChange("Plate Number", e.target.value)}
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                    placeholder="e.g., ABC-123"
+                    placeholder={t("equipment.manage.addForm.placeholderPlate")}
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Driver 1
+                    {t("equipment.manage.addForm.driver1")}
                   </label>
                   <input
                     type="text"
@@ -426,7 +428,7 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Driver 2
+                    {t("equipment.manage.addForm.driver2")}
                   </label>
                   <input
                     type="text"
@@ -438,22 +440,22 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Status
+                    {t("equipment.manage.addForm.status")}
                   </label>
                   <select
                     value={editingRow.data.Status}
                     onChange={(e) => handleEditChange("Status", e.target.value)}
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                   >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                    <option value="Maintenance">Maintenance</option>
+                    <option value="Active">{t("status.Active")}</option>
+                    <option value="Inactive">{t("status.Inactive")}</option>
+                    <option value="Maintenance">{t("status.Maintenance")}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Notes
+                    {t("equipment.manage.addForm.notes")}
                   </label>
                   <input
                     type="text"
@@ -470,7 +472,7 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
                   disabled={saving}
                   className="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 text-white font-semibold shadow-lg shadow-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {saving ? "Saving..." : "Save Changes"}
+                  {saving ? t("equipment.manage.editForm.saving") : t("equipment.manage.editForm.saveChanges")}
                 </button>
                 <button
                   type="button"
@@ -478,7 +480,7 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
                   disabled={saving}
                   className="px-6 py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-semibold transition-all disabled:opacity-50"
                 >
-                  Cancel
+                  {t("equipment.manage.editForm.cancel")}
                 </button>
               </div>
             </form>
@@ -490,14 +492,14 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
             <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
               <tr>
                 {[
-                  "#",
-                  "Model / Type",
-                  "Plate Number",
-                  "Driver 1",
-                  "Driver 2",
-                  "Status",
-                  "Notes",
-                  "Actions",
+                  t("equipment.manage.table.index"),
+                  t("equipment.manage.table.model"),
+                  t("equipment.manage.table.plate"),
+                  t("equipment.manage.table.driver1"),
+                  t("equipment.manage.table.driver2"),
+                  t("equipment.manage.table.status"),
+                  t("equipment.manage.table.notes"),
+                  t("equipment.manage.table.actions"),
                 ].map((h) => (
                   <th key={h} className="p-4 text-left text-sm font-semibold text-gray-300">
                     {h}
@@ -530,7 +532,7 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
                         className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg text-sm font-medium text-white transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Pencil size={14} />
-                        Edit
+                        {t("equipment.manage.actions.edit")}
                       </button>
                       <button
                         onClick={() => handleDeleteEquipment(r.__row_index, r["Plate Number"])}
@@ -538,7 +540,7 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
                         className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg text-sm font-medium text-white transition-all shadow-lg shadow-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Trash2 size={14} />
-                        Delete
+                        {t("equipment.manage.actions.delete")}
                       </button>
                     </div>
                   </td>
