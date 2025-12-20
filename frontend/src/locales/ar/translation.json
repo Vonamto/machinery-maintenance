@@ -125,8 +125,8 @@
     "In Progress": " قيد التنفيذ ",
     "Completed": " مكتمل ",
     "Rejected": " مرفوض ",
-    "Active": " نشط ",
-    "Inactive": " غير نشط ",
+    "Active": " في الخدمة ",
+    "Inactive": " خارج الخدمة ",
     "Maintenance": " تحت الصيانة "
   },
   "cleaningTypes": {
