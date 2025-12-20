@@ -12,22 +12,14 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
-
-const getThumbnailUrl = (url) => {
-  if (!url) return null;
-  const match = url.match(/id=([^&]+)/);
-  if (match) {
-    const fileId = match[1];
-    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w200`;
-  }
-  return url;
-};
+import { useTranslation } from "react-i18next"; // Added hook
 
 export default function GreaseOilHistory() {
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation(); // Added translation hook
 
   // Filters
   const [filters, setFilters] = useState({
@@ -146,7 +138,7 @@ export default function GreaseOilHistory() {
         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}
       >
         {style.icon}
-        {status}
+        {t(`status.${status}`) || status} {/* Translate the displayed status text */}
       </span>
     );
   };
@@ -156,7 +148,7 @@ export default function GreaseOilHistory() {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mb-4"></div>
-          <p className="text-lg">Loading grease/oil requests history...</p>
+          <p className="text-lg">{t("requests.grease.history.loading")}</p>
         </div>
       </div>
     );
@@ -175,7 +167,7 @@ export default function GreaseOilHistory() {
             size={18}
             className="group-hover:-translate-x-1 transition-transform"
           />
-          Back
+          {t("common.back")}
         </button>
 
         {/* Header */}
@@ -185,10 +177,10 @@ export default function GreaseOilHistory() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-              Grease / Oil Requests History
+              {t("requests.grease.history.title")}
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              View and filter completed or rejected requests
+              {t("requests.grease.history.subtitle")}
             </p>
           </div>
         </div>
@@ -201,7 +193,7 @@ export default function GreaseOilHistory() {
               onChange={(e) => setFilters((f) => ({ ...f, model: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
             >
-              <option value="">Model</option>
+              <option value="">{t("requests.grease.history.filters.model")}</option>
               {modelOptions.map((m) => (
                 <option key={m}>{m}</option>
               ))}
@@ -212,7 +204,7 @@ export default function GreaseOilHistory() {
               onChange={(e) => setFilters((f) => ({ ...f, plate: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
             >
-              <option value="">Plate</option>
+              <option value="">{t("requests.grease.history.filters.plate")}</option>
               {plateOptions.map((p) => (
                 <option key={p}>{p}</option>
               ))}
@@ -223,7 +215,7 @@ export default function GreaseOilHistory() {
               onChange={(e) => setFilters((f) => ({ ...f, driver: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
             >
-              <option value="">Driver</option>
+              <option value="">{t("requests.grease.history.filters.driver")}</option>
               {driverOptions.map((d) => (
                 <option key={d}>{d}</option>
               ))}
@@ -234,9 +226,9 @@ export default function GreaseOilHistory() {
               onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
             >
-              <option value="">Status</option>
-              <option value="Completed">Completed</option>
-              <option value="Rejected">Rejected</option>
+              <option value="">{t("requests.grease.history.filters.status")}</option>
+              <option value="Completed">{t("status.Completed")}</option>
+              <option value="Rejected">{t("status.Rejected")}</option>
             </select>
 
             <input
@@ -244,12 +236,14 @@ export default function GreaseOilHistory() {
               value={filters.from}
               onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+              placeholder={t("requests.grease.history.filters.from")}
             />
             <input
               type="date"
               value={filters.to}
               onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
               className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+              placeholder={t("requests.grease.history.filters.to")}
             />
           </div>
 
@@ -259,7 +253,7 @@ export default function GreaseOilHistory() {
               className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium transition-all"
             >
               <XCircle size={14} />
-              Reset Filters
+              {t("requests.grease.history.filters.reset")}
             </button>
           </div>
         </div>
@@ -269,7 +263,7 @@ export default function GreaseOilHistory() {
           <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
             <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400 text-lg">
-              No requests match your filters.
+              {t("requests.grease.history.noResults")}
             </p>
           </div>
         ) : (
@@ -278,17 +272,17 @@ export default function GreaseOilHistory() {
               <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
                 <tr>
                   {[
-                    "Request Date",
-                    "Model / Type",
-                    "Plate Number",
-                    "Driver",
-                    "Request Type",
-                    "Status",
-                    "Handled By",
-                    "Completion Date",
-                    "Comments",
-                    "Odometer Photo - Before",
-                    "Odometer Photo - After",
+                    t("requests.grease.history.table.requestDate"),
+                    t("requests.grease.history.table.model"),
+                    t("requests.grease.history.table.plate"),
+                    t("requests.grease.history.table.driver"),
+                    t("requests.grease.history.table.requestType"),
+                    t("requests.grease.history.table.status"),
+                    t("requests.grease.history.table.handledBy"),
+                    t("requests.grease.history.table.completionDate"),
+                    t("requests.grease.history.table.comments"),
+                    t("requests.grease.history.table.photoBefore"),
+                    t("requests.grease.history.table.photoAfter"),
                   ].map((h) => (
                     <th
                       key={h}
