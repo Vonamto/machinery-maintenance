@@ -143,7 +143,7 @@ export default function UsersManage() {
   const handleEditClick = (row) => {
     setEditingRow({
       ...row,
-      data: {
+       {
         Username: row.Username || "",
         Password: row.Password || "",
         Role: row.Role || "",
@@ -155,7 +155,7 @@ export default function UsersManage() {
   const handleEditChange = (field, value) => {
     setEditingRow({
       ...editingRow,
-      data: { ...editingRow.data, [field]: value },
+       { ...editingRow.data, [field]: value },
     });
   };
 
@@ -269,7 +269,7 @@ export default function UsersManage() {
             <h2 className="text-xl font-semibold mb-4 text-blue-400">{t("users.manage.editForm.title")}</h2>
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <UserInputs user={editingRow.data} setUser={(u) => setEditingRow({ ...editingRow, data: u })} />
+                <UserInputs user={editingRow.data} setUser={(u) => setEditingRow({ ...editingRow,  u })} />
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <SubmitButton saving={saving} text={t("users.manage.editForm.saveChanges")} />
@@ -348,12 +348,20 @@ export default function UsersManage() {
 // 🧩 Reusable subcomponents for cleaner JSX
 function UserInputs({ user, setUser }) {
   const { t } = useTranslation();
+  
+  // Mapping of field names to their correct translation keys
+  const fieldTranslationMap = {
+    "Username": "username",
+    "Password": "password",
+    "Full Name": "fullName"
+  };
+  
   return (
     <>
       {["Username", "Password", "Full Name"].map((field) => (
         <div key={field}>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            {t(`users.manage.addForm.${field.toLowerCase().replace(" ", "")}`)}
+            {t(`users.manage.addForm.${fieldTranslationMap[field]}`)}
           </label>
           <input
             type={field === "Password" ? "password" : "text"}
