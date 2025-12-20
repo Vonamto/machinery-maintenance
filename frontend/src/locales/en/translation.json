@@ -311,6 +311,41 @@
           "error": "❌ Error",
           "networkError": "Network error submitting form."
         }
+      },
+      "current": {
+        "title": "Current Grease/Oil Requests",
+        "subtitle": "View and manage pending requests",
+        "loading": "Loading current requests...",
+        "empty": "No pending or in-progress requests found.",
+        "selectStatus": "Select Status",
+        "selectHandler": "Select Handler",
+        "saving": "Saving...",
+        "save": "Save",
+        "cancel": "Cancel",
+        "edit": "Edit",
+        "noPhoto": "No Photo",
+        "table": {
+          "requestDate": "Request Date",
+          "model": "Model / Type",
+          "plate": "Plate Number",
+          "driver": "Driver",
+          "requestType": "Request Type",
+          "status": "Status",
+          "handledBy": "Handled By",
+          "appointmentDate": "Appointment Date",
+          "comments": "Comments",
+          "photoBefore": "Odometer Photo - Before",
+          "photoAfter": "Odometer Photo - After",
+          "actions": "Actions"
+        },
+        "alerts": {
+          "missingStatus": "Please select a status.",
+          "missingHandler": "For 'Completed' or 'Rejected' status, please select 'Handled By'.",
+          "missingRowIndex": "Cannot save: Row index is missing. Please refresh the page.",
+          "updateSuccess": "Request updated successfully!",
+          "updateError": "Error: {{message}}",
+          "saveError": "An error occurred while saving. Please check console for details."
+        }
       }
     }
   }
