@@ -6,11 +6,13 @@ import Navbar from "../../../components/Navbar"; // Adjusted path
 import { useAuth } from "../../../context/AuthContext"; // Adjusted path
 import { useCache } from "../../../context/CacheContext"; // Adjusted path
 import { fetchWithAuth } from "../../../api/api"; // Adjusted path
+import { useTranslation } from "react-i18next"; // Added hook
 
 export default function GreaseOilForm() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const cache = useCache();
+  const { t } = useTranslation(); // Added translation hook
   const todayDate = new Date().toISOString().split("T")[0]; // Auto-fill date
 
   // State for form fields
@@ -106,11 +108,11 @@ export default function GreaseOilForm() {
 
     // Basic validation
     if (!form["Model / Type"] && !form["Plate Number"] && !form.Driver) {
-      alert("Please choose at least Model, Plate Number, or Driver.");
+      alert(t("requests.grease.form.alerts.missingAsset"));
       return;
     }
     if (!form["Request Type"]) {
-      alert("Please select a request type.");
+      alert(t("requests.grease.form.alerts.missingRequestType"));
       return;
     }
 
@@ -128,14 +130,14 @@ export default function GreaseOilForm() {
       const data = await res.json();
 
       if (data.status === "success") {
-        alert("✅ Grease/Oil request submitted successfully.");
+        alert(` ✅ ${t("requests.grease.form.alerts.success")}`);
         navigate("/requests/grease-oil"); // Navigate back to the grease oil menu index
       } else {
-        alert("❌ Error: " + (data.message || "Unknown error"));
+        alert(` ❌ ${t("requests.grease.form.alerts.error")}: ${data.message || ""}`);
       }
     } catch (err) {
       console.error("Submit error:", err);
-      alert("Network error submitting form.");
+      alert(t("requests.grease.form.alerts.networkError"));
     } finally {
       setSubmitting(false);
     }
@@ -149,7 +151,7 @@ export default function GreaseOilForm() {
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> {t("requests.grease.form.back")}
         </button>
 
         {/* Header with Icon - Consistent style, using Droplets for oil/grease */}
@@ -159,9 +161,9 @@ export default function GreaseOilForm() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500"> {/* Changed gradient for title */}
-              Request Grease/Oil Service
+              {t("requests.grease.form.title")}
             </h1>
-            <p className="text-gray-400 text-sm mt-1">Fill in the details below to submit your service request</p>
+            <p className="text-gray-400 text-sm mt-1">{t("requests.grease.form.subtitle")}</p>
           </div>
         </div>
 
@@ -169,7 +171,7 @@ export default function GreaseOilForm() {
           {/* Grid for Date, Model, Plate, Driver */}
           <div className="grid md:grid-cols-2 gap-6">
             <div className="group">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Request Date</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">{t("requests.grease.form.requestDate")}</label>
               <input
                 type="date"
                 value={form["Request Date"]}
@@ -179,13 +181,13 @@ export default function GreaseOilForm() {
             </div>
 
             <div className="group">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Model / Type</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">{t("requests.grease.form.model")}</label>
               <select
                 value={form["Model / Type"]}
                 onChange={(e) => handleChange("Model / Type", e.target.value)}
                 className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all" // Changed focus color
               >
-                <option value="">--- Choose Model ---</option>
+                <option value="">{t("requests.grease.form.chooseModel")}</option>
                 {modelOptions.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
@@ -193,13 +195,13 @@ export default function GreaseOilForm() {
             </div>
 
             <div className="group">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Plate Number</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">{t("requests.grease.form.plate")}</label>
               <select
                 value={form["Plate Number"]}
                 onChange={(e) => handleChange("Plate Number", e.target.value)}
                 className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all" // Changed focus color
               >
-                <option value="">--- Choose Plate ---</option>
+                <option value="">{t("requests.grease.form.choosePlate")}</option>
                 {plateOptions.length
                   ? plateOptions.map((p) => (<option key={p} value={p}>{p}</option>))
                   : cache.getEquipment
@@ -209,13 +211,13 @@ export default function GreaseOilForm() {
             </div>
 
             <div className="group">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Driver</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">{t("requests.grease.form.driver")}</label>
               <select
                 value={form.Driver}
                 onChange={(e) => handleChange("Driver", e.target.value)}
                 className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all" // Changed focus color
               >
-                <option value="">--- Choose Driver ---</option>
+                <option value="">{t("requests.grease.form.chooseDriver")}</option>
                 {driverOptions.length
                   ? driverOptions.map((d) => (<option key={d} value={d}>{d}</option>))
                   : Array.from(new Set((cache.getEquipment ? cache.getEquipment() : cache.equipment || []).flatMap((eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]]).filter(Boolean))).map((d) => (<option key={d} value={d}>{d}</option>))}
@@ -225,43 +227,43 @@ export default function GreaseOilForm() {
 
           {/* Request Type Dropdown */}
           <div className="group">
-            <label className="block text-sm font-medium text-gray-300 mb-2">Request Type *</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">{t("requests.grease.form.requestType")} {t("requests.grease.form.requiredField")}</label>
             <select
               value={form["Request Type"]}
               onChange={(e) => handleChange("Request Type", e.target.value)}
               className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all" // Changed focus color
             >
-              <option value="">--- Select Request Type ---</option>
-              <option value="Oil Service">Oil Service</option>
-              <option value="Grease Service">Grease Service</option>
-              <option value="Full Service (Oil + Greasing)">Full Service (Oil + Greasing)</option>
+              <option value="">{t("requests.grease.form.selectRequestType")}</option>
+              <option value="Oil Service">{t("requestTypes.Oil Service")}</option>
+              <option value="Grease Service">{t("requestTypes.Grease Service")}</option>
+              <option value="Full Service (Oil + Greasing)">{t("requestTypes.Full Service (Oil + Greasing)")}</option>
             </select>
           </div>
 
           {/* Comments */}
           <div className="group">
-            <label className="block text-sm font-medium text-gray-300 mb-2">Comments (Optional)</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">{t("requests.grease.form.comments")}</label>
             <textarea
               rows={3}
               value={form.Comments}
               onChange={(e) => handleChange("Comments", e.target.value)}
               className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all resize-none"
-              placeholder="Additional notes..."
+              placeholder={t("requests.grease.form.commentsPlaceholder")}
             />
           </div>
 
           {/* Photo Before Upload -> Odometer Photo - Before (Optional) */}
           <div className="group">
-            <label className="block text-sm font-medium text-gray-300 mb-3">Odometer Photo - Before (Optional)</label>
+            <label className="block text-sm font-medium text-gray-300 mb-3">{t("requests.grease.form.photoBefore")}</label>
             <div className="flex gap-3">
               <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white px-4 py-3 rounded-xl transition-all shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50"> {/* Changed button color */}
                 <Upload size={18} />
-                <span className="font-medium">Upload</span>
+                <span className="font-medium">{t("common.upload")}</span>
                 <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Photo Before")} />
               </label>
               <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-4 py-3 rounded-xl transition-all shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50"> {/* Changed button color */}
                 <Camera size={18} />
-                <span className="font-medium">Camera</span>
+                <span className="font-medium">{t("common.camera")}</span>
                 <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Photo Before")} />
               </label>
             </div>
@@ -288,10 +290,10 @@ export default function GreaseOilForm() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                Submitting...
+                {t("requests.grease.form.submitting")}
               </span>
             ) : (
-              "Submit Grease/Oil Request"
+              t("requests.grease.form.submit")
             )}
           </button>
         </form>
