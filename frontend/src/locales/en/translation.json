@@ -284,6 +284,33 @@
             "description": "View completed or rejected requests"
           }
         }
+      },
+      "form": {
+        "back": "Back",
+        "title": "Request Grease/Oil Service",
+        "subtitle": "Fill in the details below to submit your service request",
+        "requestDate": "Request Date",
+        "model": "Model / Type",
+        "plate": "Plate Number",
+        "driver": "Driver",
+        "requestType": "Request Type",
+        "comments": "Comments (Optional)",
+        "photoBefore": "Odometer Photo - Before (Optional)",
+        "chooseModel": "--- Choose Model ---",
+        "choosePlate": "--- Choose Plate ---",
+        "chooseDriver": "--- Choose Driver ---",
+        "selectRequestType": "--- Select Request Type ---",
+        "commentsPlaceholder": "Additional notes...",
+        "submit": "Submit Grease/Oil Request",
+        "submitting": "Submitting...",
+        "requiredField": "*",
+        "alerts": {
+          "missingAsset": "Please choose at least Model, Plate Number, or Driver.",
+          "missingRequestType": "Please select a request type.",
+          "success": "✅ Grease/Oil request submitted successfully.",
+          "error": "❌ Error",
+          "networkError": "Network error submitting form."
+        }
       }
     }
   }
