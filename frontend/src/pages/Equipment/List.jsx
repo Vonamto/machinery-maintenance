@@ -6,12 +6,14 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
+import { useTranslation } from "react-i18next";
 
 export default function EquipmentList() {
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   useEffect(() => {
     async function load() {
@@ -62,7 +64,7 @@ export default function EquipmentList() {
       <span
         className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}
       >
-        {status || "Active"}
+        {t(`status.${status}`) || status || t("status.Pending")}
       </span>
     );
   };
@@ -72,7 +74,7 @@ export default function EquipmentList() {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500 mb-4"></div>
-          <p className="text-lg">Loading equipment list...</p>
+          <p className="text-lg">{t("equipment.list.loading")}</p>
         </div>
       </div>
     );
@@ -91,7 +93,7 @@ export default function EquipmentList() {
             size={18}
             className="group-hover:-translate-x-1 transition-transform"
           />
-          Back
+          {t("equipment.list.back")}
         </button>
 
         {/* header */}
@@ -101,10 +103,10 @@ export default function EquipmentList() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-500">
-              Equipment List
+              {t("equipment.list.title")}
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              Click on Model, Plate, or Driver to view maintenance history
+              {t("equipment.list.subtitle")}
             </p>
           </div>
         </div>
@@ -113,7 +115,7 @@ export default function EquipmentList() {
         {rows.length === 0 ? (
           <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
             <Truck className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">No equipment found.</p>
+            <p className="text-gray-400 text-lg">{t("equipment.list.noEquipment")}</p>
           </div>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
@@ -121,13 +123,13 @@ export default function EquipmentList() {
               <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
                 <tr>
                   {[
-                    "#",
-                    "Model / Type",
-                    "Plate Number",
-                    "Driver 1",
-                    "Driver 2",
-                    "Status",
-                    "Notes",
+                    t("equipment.list.table.index"),
+                    t("equipment.list.table.model"),
+                    t("equipment.list.table.plate"),
+                    t("equipment.list.table.driver1"),
+                    t("equipment.list.table.driver2"),
+                    t("equipment.list.table.status"),
+                    t("equipment.list.table.notes"),
                   ].map((h) => (
                     <th
                       key={h}
