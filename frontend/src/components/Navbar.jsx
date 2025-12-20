@@ -12,7 +12,7 @@ export default function Navbar({ user }) {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    navigate("/login");
+    window.location.replace("/login");
   };
 
   const goDashboard = () => navigate("/dashboard");
