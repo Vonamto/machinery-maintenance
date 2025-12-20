@@ -141,7 +141,10 @@
     "Pending": "قيد الانتظار",
     "In Progress": "قيد التنفيذ",
     "Completed": "مكتمل",
-    "Rejected": "مرفوض"
+    "Rejected": "مرفوض",
+    "Active": "نشط",
+    "Inactive": "غير نشط",
+    "Maintenance": "تحت الصيانة"
   },
 
   "cleaningTypes": {
