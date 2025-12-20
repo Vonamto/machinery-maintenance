@@ -202,17 +202,29 @@
       "current": {
         "title": "Current Spare Parts Requests",
         "subtitle": "View and manage pending spare parts requests",
-        "empty": "No pending or in-progress requests found.",
         "loading": "Loading current requests...",
-        "updatedSuccess": "Request updated successfully.",
-        "updateFailed": "Update failed.",
-        "saveFailed": "Save failed.",
+        "empty": "No pending or in-progress requests found.",
         "selectStatus": "Select Status",
         "selectHandler": "Select Handler",
         "saving": "Saving...",
         "save": "Save",
+        "updatedSuccess": "Request updated successfully.",
+        "updateFailed": "Update failed.",
+        "saveFailed": "Save failed.",
         "edit": "Edit",
-        "noPhoto": "No Photo"
+        "noPhoto": "No Photo",
+        "table": {
+          "requestDate": "Request Date",
+          "model": "Model / Type",
+          "plate": "Plate Number",
+          "driver": "Driver",
+          "requestedParts": "Requested Parts",
+          "status": "Status",
+          "handledBy": "Handled By",
+          "comments": "Comments",
+          "attachment": "Attachment",
+          "actions": "Actions"
+        }
       },
       "history": {
         "title": "Parts Requests History",
