@@ -125,8 +125,8 @@
     "In Progress": " قيد التنفيذ ",
     "Completed": " مكتمل ",
     "Rejected": " مرفوض ",
-    "Active": " في الخدمة ",
-    "Inactive": " خارج الخدمة ",
+    "Active": " نشط ",
+    "Inactive": " غير نشط ",
     "Maintenance": " تحت الصيانة "
   },
   "cleaningTypes": {
@@ -202,17 +202,29 @@
       "current": {
         "title": " طلبات قطع الغيار الحالية ",
         "subtitle": " عرض وإدارة طلبات قطع الغيار قيد الانتظار أو التنفيذ ",
-        "empty": " لا توجد طلبات قيد الانتظار أو التنفيذ .",
         "loading": " جارٍ تحميل الطلبات الحالية ...",
-        "updatedSuccess": " تم تحديث الطلب بنجاح .",
-        "updateFailed": " فشل التحديث .",
-        "saveFailed": " فشل الحفظ .",
+        "empty": " لا توجد طلبات قيد الانتظار أو التنفيذ .",
         "selectStatus": " اختر الحالة ",
         "selectHandler": " اختر المسؤول ",
         "saving": " جارٍ الحفظ ...",
         "save": " حفظ ",
+        "updatedSuccess": " تم تحديث الطلب بنجاح .",
+        "updateFailed": " فشل التحديث .",
+        "saveFailed": " فشل الحفظ .",
         "edit": " تعديل ",
-        "noPhoto": " لا توجد صورة "
+        "noPhoto": " لا توجد صورة ",
+        "table": {
+          "requestDate": " تاريخ الطلب ",
+          "model": " الطراز / النوع ",
+          "plate": " رقم اللوحة ",
+          "driver": " السائق ",
+          "requestedParts": " القطع المطلوبة ",
+          "status": " الحالة ",
+          "handledBy": " تمت المعالجة بواسطة ",
+          "comments": " ملاحظات ",
+          "attachment": " المرفق ",
+          "actions": " الإجراءات "
+        }
       },
       "history": {
         "title": " سجل طلبات قطع الغيار ",
