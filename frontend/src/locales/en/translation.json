@@ -141,7 +141,10 @@
     "Pending": "Pending",
     "In Progress": "In Progress",
     "Completed": "Completed",
-    "Rejected": "Rejected"
+    "Rejected": "Rejected",
+    "Active": "Active",
+    "Inactive": "Inactive",
+    "Maintenance": "Maintenance"
   },
 
   "cleaningTypes": {
