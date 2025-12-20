@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
+import { useTranslation } from "react-i18next";
 
 export default function UsersManage() {
   const { user } = useAuth();
@@ -15,6 +16,7 @@ export default function UsersManage() {
   const [editingRow, setEditingRow] = useState(null);
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [newUser, setNewUser] = useState({
     Username: "",
@@ -29,13 +31,13 @@ export default function UsersManage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-red-400 mb-2">Access Denied</h1>
-          <p className="text-gray-300">Only Supervisors can manage users.</p>
+          <h1 className="text-2xl font-bold text-red-400 mb-2">{t("requests.grease.menu.accessDenied.title")}</h1>
+          <p className="text-gray-300">{t("requests.grease.menu.accessDenied.message")}</p>
           <button
             onClick={() => navigate(-1)}
             className="mt-6 px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition"
           >
-            Go Back
+            {t("common.back")}
           </button>
         </div>
       </div>
@@ -71,7 +73,7 @@ export default function UsersManage() {
   const handleAddUser = async (e) => {
     e.preventDefault();
     if (!newUser.Username || !newUser.Password || !newUser["Full Name"]) {
-      alert("Please fill in Username, Password, and Full Name.");
+      alert(t("users.manage.alerts.missingFields"));
       return;
     }
 
@@ -89,7 +91,7 @@ export default function UsersManage() {
       const data = await res.json();
 
       if (data.status === "success") {
-        alert("✅ User added successfully!");
+        alert(t("users.manage.alerts.addSuccess"));
         setShowAddForm(false);
         setNewUser({
           Username: "",
@@ -99,11 +101,11 @@ export default function UsersManage() {
         });
         loadUsers();
       } else {
-        alert("❌ Error: " + (data.message || "Unknown error"));
+        alert(t("users.manage.alerts.error", { message: data.message || "Unknown error" }));
       }
     } catch (err) {
       console.error("Add user error:", err);
-      alert("Network error adding user.");
+      alert(t("users.manage.alerts.networkError") + " " + t("users.manage.addForm.adding"));
     } finally {
       setSaving(false);
     }
@@ -111,7 +113,7 @@ export default function UsersManage() {
 
   const handleDeleteUser = async (rowIndex, username) => {
     const confirmed = window.confirm(
-      `Are you sure you want to delete user "${username}"?\n\nThis action cannot be undone.`
+      t("users.manage.alerts.deleteConfirm", { username: username })
     );
     if (!confirmed) return;
 
@@ -125,14 +127,14 @@ export default function UsersManage() {
       const data = await res.json();
 
       if (data.status === "success") {
-        alert("✅ User deleted successfully!");
+        alert(t("users.manage.alerts.deleteSuccess"));
         loadUsers();
       } else {
-        alert("❌ Error: " + (data.message || "Unknown error"));
+        alert(t("users.manage.alerts.error", { message: data.message || "Unknown error" }));
       }
     } catch (err) {
       console.error("Delete user error:", err);
-      alert("Network error deleting user.");
+      alert(t("users.manage.alerts.networkError") + " " + t("users.manage.alerts.deleting"));
     } finally {
       setSaving(false);
     }
@@ -162,7 +164,7 @@ export default function UsersManage() {
     const { __row_index, data } = editingRow;
 
     if (!data.Username || !data.Password || !data["Full Name"]) {
-      alert("Please fill in Username, Password, and Full Name.");
+      alert(t("users.manage.alerts.missingFields"));
       return;
     }
 
@@ -180,15 +182,15 @@ export default function UsersManage() {
       const result = await res.json();
 
       if (result.status === "success") {
-        alert("✅ User updated successfully!");
+        alert(t("users.manage.alerts.editSuccess"));
         setEditingRow(null);
         loadUsers();
       } else {
-        alert("❌ Error: " + (result.message || "Failed to update user."));
+        alert(t("users.manage.alerts.error", { message: result.message || "Failed to update user." }));
       }
     } catch (err) {
       console.error("Edit user error:", err);
-      alert("Network error updating user.");
+      alert(t("users.manage.alerts.networkError") + " " + t("users.manage.alerts.updating"));
     } finally {
       setSaving(false);
     }
@@ -201,7 +203,7 @@ export default function UsersManage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500 mb-4"></div>
-          <p className="text-lg">Loading users...</p>
+          <p className="text-lg">{t("common.loading")}</p>
         </div>
       </div>
     );
@@ -216,7 +218,7 @@ export default function UsersManage() {
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-          Back
+          {t("common.back")}
         </button>
 
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -226,9 +228,9 @@ export default function UsersManage() {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">
-                Manage Users
+                {t("users.manage.title")}
               </h1>
-              <p className="text-gray-400 text-sm mt-1">Add, edit, or remove system users</p>
+              <p className="text-gray-400 text-sm mt-1">{t("users.manage.subtitle")}</p>
             </div>
           </div>
 
@@ -240,9 +242,9 @@ export default function UsersManage() {
                 : "bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white shadow-green-500/30"
             }`}
           >
-            {showAddForm ? "Cancel" : (
+            {showAddForm ? t("users.manage.cancelButton") : (
               <>
-                <Plus size={18} /> Add User
+                <Plus size={18} /> {t("users.manage.addButton")}
               </>
             )}
           </button>
@@ -251,12 +253,12 @@ export default function UsersManage() {
         {/* Add Form */}
         {showAddForm && (
           <div className="mb-8 bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 shadow-lg">
-            <h2 className="text-xl font-semibold mb-4 text-green-400">Add New User</h2>
+            <h2 className="text-xl font-semibold mb-4 text-green-400">{t("users.manage.addForm.title")}</h2>
             <form onSubmit={handleAddUser} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <UserInputs user={newUser} setUser={setNewUser} />
               </div>
-              <SubmitButton saving={saving} text="Add User" />
+              <SubmitButton saving={saving} text={t("users.manage.addForm.addUser")} />
             </form>
           </div>
         )}
@@ -264,19 +266,19 @@ export default function UsersManage() {
         {/* Edit Form */}
         {editingRow && (
           <div className="mb-8 bg-gray-800/40 border border-gray-700 rounded-2xl p-6 shadow-lg">
-            <h2 className="text-xl font-semibold mb-4 text-blue-400">Edit User</h2>
+            <h2 className="text-xl font-semibold mb-4 text-blue-400">{t("users.manage.editForm.title")}</h2>
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <UserInputs user={editingRow.data} setUser={(u) => setEditingRow({ ...editingRow, data: u })} />
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
-                <SubmitButton saving={saving} text="Save Changes" />
+                <SubmitButton saving={saving} text={t("users.manage.editForm.saveChanges")} />
                 <button
                   type="button"
                   onClick={cancelEdit}
                   className="px-6 py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-semibold transition-all disabled:opacity-50"
                 >
-                  Cancel
+                  {t("users.manage.editForm.cancel")}
                 </button>
               </div>
             </form>
@@ -288,7 +290,13 @@ export default function UsersManage() {
           <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
             <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
               <tr>
-                {["#", "Username", "Full Name", "Role", "Actions"].map((h) => (
+                {[
+                  t("users.manage.table.index"),
+                  t("users.manage.table.username"),
+                  t("users.manage.table.fullName"),
+                  t("users.manage.table.role"),
+                  t("users.manage.table.actions")
+                ].map((h) => (
                   <th key={h} className="p-4 text-left text-sm font-semibold text-gray-300">
                     {h}
                   </th>
@@ -306,7 +314,7 @@ export default function UsersManage() {
                   <td className="p-4 text-sm text-gray-400">{i + 1}</td>
                   <td className="p-4 text-sm">{r.Username}</td>
                   <td className="p-4 text-sm">{r["Full Name"]}</td>
-                  <td className="p-4 text-sm">{r.Role}</td>
+                  <td className="p-4 text-sm">{t(`roles.${r.Role}`)}</td>
                   <td className="p-4">
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -315,7 +323,7 @@ export default function UsersManage() {
                         className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg text-sm font-medium text-white transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50"
                       >
                         <Pencil size={14} />
-                        Edit
+                        {t("users.manage.actions.edit")}
                       </button>
                       <button
                         onClick={() => handleDeleteUser(r.__row_index, r.Username)}
@@ -323,7 +331,7 @@ export default function UsersManage() {
                         className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg text-sm font-medium text-white transition-all shadow-lg shadow-red-500/30 disabled:opacity-50"
                       >
                         <Trash2 size={14} />
-                        Delete
+                        {t("users.manage.actions.delete")}
                       </button>
                     </div>
                   </td>
@@ -339,12 +347,13 @@ export default function UsersManage() {
 
 // 🧩 Reusable subcomponents for cleaner JSX
 function UserInputs({ user, setUser }) {
+  const { t } = useTranslation();
   return (
     <>
       {["Username", "Password", "Full Name"].map((field) => (
         <div key={field}>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            {field} *
+            {t(`users.manage.addForm.${field.toLowerCase().replace(" ", "")}`)} *
           </label>
           <input
             type={field === "Password" ? "password" : "text"}
@@ -356,16 +365,16 @@ function UserInputs({ user, setUser }) {
         </div>
       ))}
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">Role</label>
+        <label className="block text-sm font-medium text-gray-300 mb-2">{t("users.manage.addForm.role")}</label>
         <select
           value={user.Role}
           onChange={(e) => setUser({ ...user, Role: e.target.value })}
           className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
         >
-          <option value="Supervisor">Supervisor</option>
-          <option value="Mechanic">Mechanic</option>
-          <option value="Driver">Driver</option>
-          <option value="Cleaning Guy">Cleaning Guy</option>
+          <option value="Supervisor">{t("roles.Supervisor")}</option>
+          <option value="Mechanic">{t("roles.Mechanic")}</option>
+          <option value="Driver">{t("roles.Driver")}</option>
+          <option value="Cleaning Guy">{t("roles.Cleaning Guy")}</option>
         </select>
       </div>
     </>
@@ -373,13 +382,14 @@ function UserInputs({ user, setUser }) {
 }
 
 function SubmitButton({ saving, text }) {
+  const { t } = useTranslation();
   return (
     <button
       type="submit"
       disabled={saving}
       className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white font-semibold shadow-lg shadow-green-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      {saving ? "Saving..." : text}
+      {saving ? t("users.manage.addForm.saving") : text}
     </button>
   );
 }
