@@ -376,5 +376,21 @@
         }
       }
     }
+  },
+  "cleaning": {
+    "menu": {
+      "back": "Back",
+      "title": "Cleaning Log",
+      "cards": {
+        "addLog": {
+          "title": "Add Cleaning Log",
+          "description": "Record a new cleaning activity"
+        },
+        "history": {
+          "title": "Cleaning History",
+          "description": "View all past cleaning records"
+        }
+      }
+    }
   }
 }
