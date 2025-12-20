@@ -420,6 +420,34 @@
         "error": "❌ Error",
         "networkError": "Network error submitting form."
       }
+    },
+    "history": {
+      "title": "Cleaning History",
+      "subtitle": "View and filter all cleaning records",
+      "loading": "Loading cleaning history...",
+      "noResults": "No records match your filters.",
+      "filters": {
+        "model": "Model",
+        "plate": "Plate",
+        "driver": "Driver",
+        "cleanedBy": "Cleaned By",
+        "cleaningType": "Cleaning Type",
+        "from": "From",
+        "to": "To",
+        "reset": "Reset Filters"
+      },
+      "table": {
+        "index": "#",
+        "date": "Date",
+        "model": "Model / Type",
+        "plate": "Plate Number",
+        "driver": "Driver",
+        "cleanedBy": "Cleaned By",
+        "cleaningType": "Cleaning Type",
+        "comments": "Comments",
+        "photoBefore": "Photo Before",
+        "photoAfter": "Photo After"
+      }
     }
   }
 }
