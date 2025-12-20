@@ -346,6 +346,34 @@
           "updateError": "Error: {{message}}",
           "saveError": "An error occurred while saving. Please check console for details."
         }
+      },
+      "history": {
+        "title": "Grease / Oil Requests History",
+        "subtitle": "View and filter completed or rejected requests",
+        "loading": "Loading grease/oil requests history...",
+        "noResults": "No requests match your filters.",
+        "filters": {
+          "model": "Model",
+          "plate": "Plate",
+          "driver": "Driver",
+          "status": "Status",
+          "from": "From",
+          "to": "To",
+          "reset": "Reset Filters"
+        },
+        "table": {
+          "requestDate": "Request Date",
+          "model": "Model / Type",
+          "plate": "Plate Number",
+          "driver": "Driver",
+          "requestType": "Request Type",
+          "status": "Status",
+          "handledBy": "Handled By",
+          "completionDate": "Completion Date",
+          "comments": "Comments",
+          "photoBefore": "Odometer Photo - Before",
+          "photoAfter": "Odometer Photo - After"
+        }
       }
     }
   }
