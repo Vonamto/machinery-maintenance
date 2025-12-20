@@ -470,6 +470,7 @@
       }
     },
     "list": {
+      "back": "Back",
       "title": "Equipment List",
       "subtitle": "Click on Model, Plate, or Driver to view maintenance history",
       "loading": "Loading equipment list...",
