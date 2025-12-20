@@ -449,5 +449,22 @@
         "photoAfter": "Photo After"
       }
     }
+  },
+  "equipment": {
+    "menu": {
+      "back": "Back",
+      "title": "Equipment Management",
+      "subtitle": "View and manage all company vehicles and equipment",
+      "cards": {
+        "list": {
+          "title": "View Equipment List",
+          "description": "Browse all vehicles and equipment"
+        },
+        "manage": {
+          "title": "Manage Equipment",
+          "description": "Add or remove equipment entries"
+        }
+      }
+    }
   }
 }
