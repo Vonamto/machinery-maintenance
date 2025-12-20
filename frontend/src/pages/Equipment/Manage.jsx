@@ -232,7 +232,7 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500 mb-4"></div>
-          <p className="text-lg">{t("equipment.manage.addForm.loading")}</p>
+          <p className="text-lg">{t("common.loading")}</p>
         </div>
       </div>
     );
@@ -520,7 +520,7 @@ const handleDeleteEquipment = async (rowIndex, plateNumber) => {
                   <td className="p-4 text-sm font-mono">{r["Plate Number"]}</td>
                   <td className="p-4 text-sm">{r["Driver 1"] || <span className="text-gray-500">---</span>}</td>
                   <td className="p-4 text-sm">{r["Driver 2"] || <span className="text-gray-500">---</span>}</td>
-                  <td className="p-4 text-sm">{r["Status"]}</td>
+                  <td className="p-4 text-sm">{t(`status.${r["Status"]}`)}</td>
                   <td className="p-4 text-sm max-w-xs truncate">
                     {r["Notes"] || <span className="text-gray-500">---</span>}
                   </td>
