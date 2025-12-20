@@ -485,62 +485,6 @@
         "status": "الحالة",
         "notes": "ملاحظات"
       }
-    },
-    "manage": {
-      "title": "إدارة المعدات",
-      "subtitle": "إضافة أو تعديل أو إزالة مدخلات المعدات",
-      "accessDenied": {
-        "title": "تم رفض الوصول",
-        "message": "فقط المشرفين يمكنهم إدارة المعدات.",
-        "goBack": "العودة"
-      },
-      "addButton": "إضافة معدات",
-      "cancelButton": "إلغاء",
-      "addForm": {
-        "title": "إضافة معدات جديدة",
-        "modelType": "الطراز / النوع *",
-        "plateNumber": "رقم اللوحة *",
-        "driver1": "السائق 1",
-        "driver2": "السائق 2",
-        "status": "الحالة",
-        "notes": "ملاحظات",
-        "placeholder": {
-          "modelType": "مثل: مرسيدس، مان، تويوتا",
-          "plateNumber": "مثل: أ ب ج-123"
-        },
-        "submit": "إضافة المعدات",
-        "submitting": "جاري الإضافة..."
-      },
-      "editForm": {
-        "title": "تعديل المعدات",
-        "saveChanges": "حفظ التغييرات",
-        "saveSubmitting": "جاري الحفظ...",
-        "cancel": "إلغاء"
-      },
-      "table": {
-        "index": "#",
-        "model": "الطراز / النوع",
-        "plate": "رقم اللوحة",
-        "driver1": "السائق 1",
-        "driver2": "السائق 2",
-        "status": "الحالة",
-        "notes": "ملاحظات",
-        "actions": "الإجراءات"
-      },
-      "alerts": {
-        "fillRequiredFields": "يرجى ملء حقل الطراز/النوع ورقم اللوحة.",
-        "addSuccess": "✅ تمت إضافة المعدات بنجاح!",
-        "addError": "❌ خطأ: {{message}}",
-        "networkError": "خطأ في الشبكة أثناء إضافة المعدات.",
-        "deleteConfirm": "هل أنت متأكد أنك تريد حذف المعدات \"{{plateNumber}}\" بشكل دائم؟\n\nلا يمكن التراجع عن هذا الإجراء.",
-        "deleteSuccess": "✅ تمت إزالة المعدات بنجاح!",
-        "deleteError": "❌ خطأ: {{message}}",
-        "deleteNetworkError": "خطأ في الشبكة أثناء حذف المعدات.",
-        "updateSuccess": "✅ تم تحديث المعدات بنجاح!",
-        "updateError": "❌ خطأ: {{message}}",
-        "updateNetworkError": "خطأ في الشبكة أثناء تحديث المعدات.",
-        "fillRequiredFieldsEdit": "يرجى ملء حقل الطراز/النوع ورقم اللوحة."
-      }
     }
   }
 }
