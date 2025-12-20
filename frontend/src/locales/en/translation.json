@@ -391,6 +391,35 @@
           "description": "View all past cleaning records"
         }
       }
+    },
+    "form": {
+      "back": "Back",
+      "title": "Cleaning Log Form",
+      "subtitle": "Record a cleaning activity",
+      "date": "Date",
+      "model": "Model / Type",
+      "plate": "Plate Number",
+      "driver": "Driver",
+      "cleanedBy": "Cleaned By",
+      "cleaningType": "Cleaning Type",
+      "comments": "Comments",
+      "photoBefore": "Photo Before",
+      "photoAfter": "Photo After",
+      "chooseModel": "--- Choose Model ---",
+      "choosePlate": "--- Choose Plate ---",
+      "chooseDriver": "--- Choose Driver ---",
+      "selectCleaner": "--- Select Cleaner ---",
+      "selectCleaningType": "--- Select Cleaning Type ---",
+      "submit": "Submit Cleaning Log",
+      "submitting": "Submitting...",
+      "alerts": {
+        "missingAsset": "Please choose at least Model, Plate Number, or Driver.",
+        "missingCleaner": "Please select who cleaned the equipment.",
+        "missingCleaningType": "Please select a cleaning type.",
+        "success": "✅ Cleaning log added successfully.",
+        "error": "❌ Error",
+        "networkError": "Network error submitting form."
+      }
     }
   }
 }
