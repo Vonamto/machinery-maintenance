@@ -296,7 +296,7 @@ export default function CleaningHistory() {
                     <td className="p-4 text-sm">{r["Cleaned By"]}</td>
                     <td className="p-4 text-sm">
                       <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-sky-500/20 text-sky-300">
-                        {r["Cleaning Type"]}
+                        {t(`cleaningTypes.${r["Cleaning Type"]}`) || r["Cleaning Type"]}
                       </span>
                     </td>
                     <td className="p-4 text-sm max-w-xs truncate">
