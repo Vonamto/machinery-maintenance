@@ -262,16 +262,16 @@ export default function PartsCurrent() {
               <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
                 <tr>
                   {[
-                    "Request Date",
-                    "Model / Type",
-                    "Plate Number",
-                    "Driver",
-                    "Requested Parts",
-                    "Status",
-                    "Handled By",
-                    "Comments",
-                    "Attachment",
-                    "Actions",
+                    t("requests.parts.current.table.requestDate"),
+                    t("requests.parts.current.table.model"),
+                    t("requests.parts.current.table.plate"),
+                    t("requests.parts.current.table.driver"),
+                    t("requests.parts.current.table.requestedParts"),
+                    t("requests.parts.current.table.status"),
+                    t("requests.parts.current.table.handledBy"),
+                    t("requests.parts.current.table.comments"),
+                    t("requests.parts.current.table.attachment"),
+                    t("requests.parts.current.table.actions"),
                   ].map((h) => (
                     <th
                       key={h}
