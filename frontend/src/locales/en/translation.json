@@ -483,62 +483,6 @@
         "status": "Status",
         "notes": "Notes"
       }
-    },
-    "manage": {
-      "title": "Manage Equipment",
-      "subtitle": "Add, edit, or remove equipment entries",
-      "accessDenied": {
-        "title": "Access Denied",
-        "message": "Only Supervisors can manage equipment.",
-        "goBack": "Go Back"
-      },
-      "addButton": "Add Equipment",
-      "cancelButton": "Cancel",
-      "addForm": {
-        "title": "Add New Equipment",
-        "modelType": "Model / Type *",
-        "plateNumber": "Plate Number *",
-        "driver1": "Driver 1",
-        "driver2": "Driver 2",
-        "status": "Status",
-        "notes": "Notes",
-        "placeholder": {
-          "modelType": "e.g., Mercedes, MAN, Toyota",
-          "plateNumber": "e.g., ABC-123"
-        },
-        "submit": "Add Equipment",
-        "submitting": "Adding..."
-      },
-      "editForm": {
-        "title": "Edit Equipment",
-        "saveChanges": "Save Changes",
-        "saveSubmitting": "Saving...",
-        "cancel": "Cancel"
-      },
-      "table": {
-        "index": "#",
-        "model": "Model / Type",
-        "plate": "Plate Number",
-        "driver1": "Driver 1",
-        "driver2": "Driver 2",
-        "status": "Status",
-        "notes": "Notes",
-        "actions": "Actions"
-      },
-      "alerts": {
-        "fillRequiredFields": "Please fill in Model/Type and Plate Number.",
-        "addSuccess": "✅ Equipment added successfully!",
-        "addError": "❌ Error: {{message}}",
-        "networkError": "Network error adding equipment.",
-        "deleteConfirm": "Are you sure you want to PERMANENTLY DELETE equipment \"{{plateNumber}}\"?\n\nThis action cannot be undone.",
-        "deleteSuccess": "✅ Equipment deleted successfully!",
-        "deleteError": "❌ Error: {{message}}",
-        "deleteNetworkError": "Network error deleting equipment.",
-        "updateSuccess": "✅ Equipment updated successfully!",
-        "updateError": "❌ Error: {{message}}",
-        "updateNetworkError": "Network error updating equipment.",
-        "fillRequiredFieldsEdit": "Please fill in Model/Type and Plate Number."
-      }
     }
   }
 }
