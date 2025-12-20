@@ -143,7 +143,7 @@ export default function UsersManage() {
   const handleEditClick = (row) => {
     setEditingRow({
       ...row,
-       {
+      data: {
         Username: row.Username || "",
         Password: row.Password || "",
         Role: row.Role || "",
@@ -155,7 +155,7 @@ export default function UsersManage() {
   const handleEditChange = (field, value) => {
     setEditingRow({
       ...editingRow,
-       { ...editingRow.data, [field]: value },
+      data: { ...editingRow.data, [field]: value },
     });
   };
 
@@ -269,7 +269,7 @@ export default function UsersManage() {
             <h2 className="text-xl font-semibold mb-4 text-blue-400">{t("users.manage.editForm.title")}</h2>
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <UserInputs user={editingRow.data} setUser={(u) => setEditingRow({ ...editingRow,  u })} />
+                <UserInputs user={editingRow.data} setUser={(u) => setEditingRow({ ...editingRow, data: u })} />
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <SubmitButton saving={saving} text={t("users.manage.editForm.saveChanges")} />
