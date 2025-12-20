@@ -16,7 +16,9 @@ export default function Login() {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (isLoggedIn) navigate("/");
+    if (isLoggedIn) {
+      navigate("/", { replace: true });
+      }
   }, [isLoggedIn, navigate]);
 
   // RTL handling for Arabic
