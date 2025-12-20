@@ -60,11 +60,14 @@ export default function EquipmentList() {
 
     const style = styles[lower] || styles["active"];
 
+    // Capitalize first letter to match translation keys
+    const capitalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    
     return (
       <span
         className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}
       >
-        {t(`status.${status}`) || status || t("status.Pending")}
+        {t(`status.${capitalizedStatus}`) || status || t("status.Pending")}
       </span>
     );
   };
