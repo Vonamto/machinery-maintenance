@@ -5,15 +5,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { List, Settings, ArrowLeft, Truck } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 export default function EquipmentMenu() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const cards = [
     {
-      title: "View Equipment List",
-      description: "Browse all vehicles and equipment",
+      title: t("equipment.menu.cards.list.title"),
+      description: t("equipment.menu.cards.list.description"),
       icon: <List className="w-10 h-10 text-white drop-shadow-lg" />,
       link: "/equipment/list",
       gradient: "from-orange-600 to-yellow-500",
@@ -21,8 +23,8 @@ export default function EquipmentMenu() {
       allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
     },
     {
-      title: "Manage Equipment",
-      description: "Add or remove equipment entries",
+      title: t("equipment.menu.cards.manage.title"),
+      description: t("equipment.menu.cards.manage.description"),
       icon: <Settings className="w-10 h-10 text-white drop-shadow-lg" />,
       link: "/equipment/manage",
       gradient: "from-red-600 to-orange-500",
@@ -49,7 +51,7 @@ export default function EquipmentMenu() {
             size={18}
             className="group-hover:-translate-x-1 transition-transform"
           />
-          Back
+          {t("equipment.menu.back")}
         </button>
 
         {/* Header */}
@@ -59,10 +61,10 @@ export default function EquipmentMenu() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-500">
-              Equipment Management
+              {t("equipment.menu.title")}
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              View and manage all company vehicles and equipment
+              {t("equipment.menu.subtitle")}
             </p>
           </div>
         </div>
