@@ -13,7 +13,7 @@ export default function Navbar({ user }) {
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef(null);
 
-  // Close dropdown on outside click
+  // Close language dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e) {
       if (langRef.current && !langRef.current.contains(e.target)) {
@@ -40,14 +40,19 @@ export default function Navbar({ user }) {
   // Hide Navbar on login page
   if (location.pathname === "/login") return null;
 
+  const fullName = user?.full_name || user?.username || "";
+
   return (
     <header className="bg-gray-900/90 backdrop-blur-lg text-white shadow-md flex items-center justify-between px-4 py-3 sticky top-0 z-50 border-b border-white/10">
-      
-      {/* Left: Welcome */}
-      <h1 className="text-sm sm:text-lg font-semibold truncate max-w-[50%]">
+
+      {/* Left: Welcome + Name */}
+      <h1
+        className="text-sm sm:text-lg font-semibold truncate max-w-[50%]"
+        title={fullName} // ✅ shows full name on hover / long-press
+      >
         👋 {t("navbar.welcome")},{" "}
         <span className="text-cyan-400">
-          {user?.full_name || user?.username}
+          {fullName}
         </span>
       </h1>
 
@@ -92,7 +97,9 @@ export default function Navbar({ user }) {
           className="flex items-center gap-1 sm:gap-2 bg-blue-600 hover:bg-blue-700 text-white px-2 sm:px-3 py-2 rounded-lg transition text-sm"
         >
           <Home size={16} />
-          <span className="hidden sm:inline">{t("navbar.dashboard")}</span>
+          <span className="hidden sm:inline">
+            {t("navbar.dashboard")}
+          </span>
         </button>
 
         {/* Logout */}
@@ -101,7 +108,9 @@ export default function Navbar({ user }) {
           className="flex items-center gap-1 sm:gap-2 bg-red-500 hover:bg-red-600 text-white px-2 sm:px-3 py-2 rounded-lg transition text-sm"
         >
           <LogOut size={16} />
-          <span className="hidden sm:inline">{t("navbar.logout")}</span>
+          <span className="hidden sm:inline">
+            {t("navbar.logout")}
+          </span>
         </button>
       </div>
     </header>
