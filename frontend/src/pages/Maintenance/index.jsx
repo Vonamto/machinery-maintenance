@@ -23,7 +23,7 @@ export default function Maintenance() {
     },
     {
       title: t("maintenance.history.title"),
-      description: t("maintenance.history.description"),
+      description: t("maintenance.history.subtitle"),
       icon: <History className="w-10 h-10 text-white drop-shadow-lg" />,
       link: "/maintenance/history",
       gradient: "from-emerald-600 to-green-500",
