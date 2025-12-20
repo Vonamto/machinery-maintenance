@@ -15,6 +15,7 @@ import { useAuth } from "../../../context/AuthContext"; // Adjusted path
 import { useNavigate } from "react-router-dom"; // Adjusted path
 import { useCache } from "../../../context/CacheContext"; // Adjusted path
 import CONFIG from "../../../config"; // Adjusted path
+import { useTranslation } from "react-i18next"; // Added hook
 
 const getThumbnailUrl = (url) => {
   if (!url) return null;
@@ -54,6 +55,7 @@ export default function GreaseOilCurrent() {
   const [saving, setSaving] = useState(false); // ✅ Added saving state
   const navigate = useNavigate();
   const cache = useCache();
+  const { t } = useTranslation(); // Added translation hook
 
   const canEdit =
     user && (user.role === "Supervisor" || user.role === "Mechanic");
@@ -112,7 +114,7 @@ export default function GreaseOilCurrent() {
 
   const handleSaveClick = async (index) => {
     if (!editData.Status) {
-      alert("Please select a status.");
+      alert(t("requests.grease.current.alerts.missingStatus"));
       return;
     }
     if (
@@ -120,13 +122,13 @@ export default function GreaseOilCurrent() {
       !editData["Handled By"]
     ) {
       alert(
-        "For 'Completed' or 'Rejected' status, please select 'Handled By'."
+        t("requests.grease.current.alerts.missingHandler")
       );
       return;
     }
 
     if (editData.rowIndex === undefined || editData.rowIndex === null) {
-      alert("Cannot save: Row index is missing. Please refresh the page.");
+      alert(t("requests.grease.current.alerts.missingRowIndex"));
       return;
     }
 
@@ -182,13 +184,13 @@ export default function GreaseOilCurrent() {
 
         setEditingRow(null);
         setEditData({});
-        alert("Request updated successfully!");
+        alert(t("requests.grease.current.alerts.updateSuccess"));
       } else {
-        alert(`Error: ${result.message || "Unknown error"}`);
+        alert(t("requests.grease.current.alerts.updateError", { message: result.message || "Unknown error" }));
       }
     } catch (err) {
       console.error("Error saving grease/oil request:", err);
-      alert("An error occurred while saving. Please check console for details.");
+      alert(t("requests.grease.current.alerts.saveError"));
     } finally {
       setSaving(false); // ✅ stop saving
     }
@@ -250,7 +252,7 @@ export default function GreaseOilCurrent() {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500 mb-4"></div>
-          <p className="text-lg">Loading current requests...</p>
+          <p className="text-lg">{t("requests.grease.current.loading")}</p>
         </div>
       </div>
     );
@@ -268,7 +270,7 @@ export default function GreaseOilCurrent() {
             size={18}
             className="group-hover:-translate-x-1 transition-transform"
           />
-          Back
+          {t("common.back")}
         </button>
 
         <div className="mb-8 flex items-center gap-4">
@@ -277,10 +279,10 @@ export default function GreaseOilCurrent() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">
-              Current Grease/Oil Requests
+              {t("requests.grease.current.title")}
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              View and manage pending requests
+              {t("requests.grease.current.subtitle")}
             </p>
           </div>
         </div>
@@ -289,7 +291,7 @@ export default function GreaseOilCurrent() {
           <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
             <AlertCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400 text-lg">
-              No pending or in-progress requests found.
+              {t("requests.grease.current.empty")}
             </p>
           </div>
         ) : (
@@ -298,17 +300,17 @@ export default function GreaseOilCurrent() {
               <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
                 <tr>
                   {[
-                    "Request Date",
-                    "Model / Type",
-                    "Plate Number",
-                    "Driver",
-                    "Request Type",
-                    "Status",
-                    "Handled By",
-                    "Appointment Date",
-                    "Comments",
-                    "Odometer Photo - Before",
-                    "Odometer Photo - After",
+                    t("requests.grease.current.table.requestDate"),
+                    t("requests.grease.current.table.model"),
+                    t("requests.grease.current.table.plate"),
+                    t("requests.grease.current.table.driver"),
+                    t("requests.grease.current.table.requestType"),
+                    t("requests.grease.current.table.status"),
+                    t("requests.grease.current.table.handledBy"),
+                    t("requests.grease.current.table.appointmentDate"),
+                    t("requests.grease.current.table.comments"),
+                    t("requests.grease.current.table.photoBefore"),
+                    t("requests.grease.current.table.photoAfter"),
                   ].map((h) => (
                     <th
                       key={h}
@@ -319,7 +321,7 @@ export default function GreaseOilCurrent() {
                   ))}
                   {canEdit && (
                     <th className="p-4 text-left text-sm font-semibold text-gray-300">
-                      Actions
+                      {t("requests.grease.current.table.actions")}
                     </th>
                   )}
                 </tr>
@@ -350,11 +352,11 @@ export default function GreaseOilCurrent() {
                             }
                             className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
                           >
-                            <option value="">Select Status</option>
-                            <option value="Pending">Pending</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Rejected">Rejected</option>
+                            <option value="">{t("requests.grease.current.selectStatus")}</option>
+                            <option value="Pending">{t("status.Pending")}</option>
+                            <option value="In Progress">{t("status.In Progress")}</option>
+                            <option value="Completed">{t("status.Completed")}</option>
+                            <option value="Rejected">{t("status.Rejected")}</option>
                           </select>
                         </td>
                         <td className="p-4">
@@ -368,7 +370,7 @@ export default function GreaseOilCurrent() {
                             }
                             className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600 text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
                           >
-                            <option value="">Select Handler</option>
+                            <option value="">{t("requests.grease.current.selectHandler")}</option>
                             {mechanicSupervisorOptions.map((name) => (
                               <option key={name} value={name}>
                                 {name}
@@ -394,7 +396,7 @@ export default function GreaseOilCurrent() {
                       <>
                         <td className="p-4">{getStatusBadge(r["Status"])}</td>
                         <td className="p-4 text-sm">
-                          {r["Handled By"] || <span className="text-gray-500">Unassigned</span>}
+                          {r["Handled By"] || <span className="text-gray-500">{t("common.no")}</span>}
                         </td>
                         <td className="p-4 text-sm">
                           {r["Appointment Date"] ? formatAppointmentDate(r["Appointment Date"]) : <span className="text-gray-500">—</span>}
@@ -405,12 +407,12 @@ export default function GreaseOilCurrent() {
                     <td className="p-4">
                       {r["Photo Before"] ? (
                         <a href={r["Photo Before"]} target="_blank" rel="noopener noreferrer" className="relative group block">
-                          <img src={getThumbnailUrl(r["Photo Before"])} alt="Odometer Photo - Before" className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"/>
+                          <img src={getThumbnailUrl(r["Photo Before"])} alt={t("requests.grease.current.table.photoBefore")} className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"/>
                           <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
                             <ExternalLink className="w-6 h-6 text-cyan-400" />
                           </div>
                         </a>
-                      ) : <span className="text-gray-500 text-sm">No Photo</span>}
+                      ) : <span className="text-gray-500 text-sm">{t("requests.grease.current.noPhoto")}</span>}
                     </td>
                     <td className="p-4">
                       {editingRow === i ? (
@@ -418,27 +420,27 @@ export default function GreaseOilCurrent() {
                           <div className="flex gap-2">
                             <label className="flex-1 flex items-center justify-center gap-1 cursor-pointer bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white px-2 py-1 rounded-lg transition-all text-xs">
                               <Upload size={14} />
-                              <span>Upload</span>
+                              <span>{t("common.upload")}</span>
                               <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Photo After")} />
                             </label>
                             <label className="flex-1 flex items-center justify-center gap-1 cursor-pointer bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-2 py-1 rounded-lg transition-all text-xs">
                               <Camera size={14} />
-                              <span>Camera</span>
+                              <span>{t("common.camera")}</span>
                               <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Photo After")} />
                             </label>
                           </div>
                           {editData["Photo After"] && (
-                            <img src={editData["Photo After"]} alt="Preview After" className="h-16 w-16 object-cover rounded-lg border border-gray-600 mx-auto"/>
+                            <img src={editData["Photo After"]} alt={t("requests.grease.current.table.photoAfter")} className="h-16 w-16 object-cover rounded-lg border border-gray-600 mx-auto"/>
                           )}
                         </div>
                       ) : r["Photo After"] ? (
                         <a href={r["Photo After"]} target="_blank" rel="noopener noreferrer" className="relative group block">
-                          <img src={getThumbnailUrl(r["Photo After"])} alt="Odometer Photo - After" className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"/>
+                          <img src={getThumbnailUrl(r["Photo After"])} alt={t("requests.grease.current.table.photoAfter")} className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-cyan-500 group-hover:scale-110 transition-all duration-200 shadow-lg"/>
                           <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
                             <ExternalLink className="w-6 h-6 text-cyan-400" />
                           </div>
                         </a>
-                      ) : <span className="text-gray-500 text-sm">No Photo</span>}
+                      ) : <span className="text-gray-500 text-sm">{t("requests.grease.current.noPhoto")}</span>}
                     </td>
                     {canEdit && (
                       <td className="p-4">
@@ -449,14 +451,14 @@ export default function GreaseOilCurrent() {
                               disabled={saving}
                               className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg text-sm font-medium transition-all shadow-lg shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              {saving ? "Saving..." : "Save"}
+                              {saving ? t("requests.grease.current.saving") : t("requests.grease.current.save")}
                             </button>
                             <button
                               onClick={handleCancelClick}
                               disabled={saving}
                               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              Cancel
+                              {t("requests.grease.current.cancel")}
                             </button>
                           </div>
                         ) : (
@@ -464,7 +466,7 @@ export default function GreaseOilCurrent() {
                             onClick={() => handleEditClick(i, r)}
                             className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-500/30"
                           >
-                            Edit
+                            {t("requests.grease.current.edit")}
                           </button>
                         )}
                       </td>
