@@ -2,13 +2,10 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { login as apiLogin } from "../api/api";
-import { useCache } from "./CacheContext";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const { forceRefreshEquipment, forceRefreshUsernames } = useCache();
-
   const [token, setToken] = useState(() => localStorage.getItem("token"));
   const [user, setUser] = useState(() => {
     try {
@@ -34,11 +31,6 @@ export function AuthProvider({ children }) {
     if (res?.status === "success") {
       setToken(res.token);
       setUser(res.user);
-
-      // 🚀 PRELOAD DROPDOWN DATA AFTER LOGIN
-      forceRefreshEquipment();
-      forceRefreshUsernames();
-
       return { ok: true };
     }
 
