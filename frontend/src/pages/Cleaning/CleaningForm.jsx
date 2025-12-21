@@ -1,8 +1,7 @@
 // frontend/src/pages/Cleaning/CleaningForm.jsx
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Upload, Droplets } from "lucide-react";
+import { ArrowLeft, Camera, Upload, Droplets, Loader2 } from "lucide-react"; // Added Loader2
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
@@ -32,11 +31,46 @@ export default function CleaningForm() {
   const [plateOptions, setPlateOptions] = useState([]);
   const [driverOptions, setDriverOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true); // Add loading state
 
   useEffect(() => {
-    const models = cache.getModels ? cache.getModels() : [];
-    setModelOptions(models);
-  }, [cache]);
+    const loadInitialData = async () => {
+      try {
+        // Check if essential data exists in cache
+        const hasModels = cache.getModels && cache.getModels().length > 0;
+        const hasUsernames = cache.getUsernames && cache.getUsernames().length > 0;
+
+        // If data is missing, force a refresh
+        if (!hasModels || !hasUsernames) {
+          // Use optional chaining to avoid errors if functions don't exist
+          await Promise.allSettled([
+            cache.forceRefreshEquipment?.(),
+            cache.forceRefreshUsernames?.()
+          ]);
+        }
+
+        // After attempting to load, set initial options from cache
+        const models = cache.getModels ? cache.getModels() : [];
+        setModelOptions(models);
+
+        const cachedUsers = cache.getUsernames ? cache.getUsernames() : cache.usernames || [];
+        const allUserNames = (cachedUsers || [])
+          .map((u) => u.Name || u["Full Name"])
+          .filter(Boolean);
+        setDriverOptions(allUserNames); // Use all user names for initial drivers too
+
+      } catch (err) {
+        console.error("Error during initial data load:", err);
+        // Optionally, you could display an error message to the user here
+        // For now, just log and proceed with potentially empty arrays
+      } finally {
+        setLoading(false); // Always stop loading eventually
+      }
+    };
+
+    loadInitialData();
+  }, [cache]); // Run once on mount
+
 
   useEffect(() => {
     const model = form["Model / Type"];
@@ -138,6 +172,20 @@ export default function CleaningForm() {
   const allUserNames = (cachedUsers || [])
     .map((u) => u.Name || u["Full Name"])
     .filter(Boolean);
+
+  // Loading Screen
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
+        <Navbar user={user} />
+        <div className="max-w-4xl mx-auto p-6 flex flex-col items-center justify-center h-[calc(100vh-120px)]"> {/* Adjust height calculation if needed */}
+          <Loader2 className="h-12 w-12 animate-spin text-sky-400 mb-4" />
+          <p className="text-lg text-gray-300">{t("common.loading") || "Loading form data..."}</p>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
