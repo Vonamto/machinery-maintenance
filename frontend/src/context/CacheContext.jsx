@@ -1,186 +1,193 @@
 // frontend/src/context/CacheContext.jsx
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { fetchEquipmentList, fetchUsernames } from "../api/api";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { fetchEquipmentList, fetchUsernames } from '../api/api'; // Ensure this path is correct
+import CONFIG from '../config'; // Ensure this path is correct
 
-/**
- * CacheContext
- * - Caches Equipment_List and Usernames (safe list) in memory + localStorage
- * - TTL-based refresh (default 5 minutes)
- * - Exposes helpers:
- *    getEquipment(), forceRefreshEquipment()
- *    getUsernames(), forceRefreshUsernames()
- *
- * Usage:
- *   const { equipment, usernames, loading } = useCache();
- *
- * Implementation notes:
- * - Backend endpoints used: /api/equipment and /api/usernames (protected)
- * - Auth token is read from localStorage at call time
- */
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
-const CacheContext = createContext(null);
-
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const LS_KEYS = {
-  equipment: "cache_equipment_v1",
-  equipment_ts: "cache_equipment_ts_v1",
-  usernames: "cache_usernames_v1",
-  usernames_ts: "cache_usernames_ts_v1",
+// Helper to check if stored data is stale
+const isStale = (timestampKey) => {
+  const timestamp = localStorage.getItem(timestampKey);
+  return !timestamp || Date.now() - parseInt(timestamp, 10) > CACHE_TTL_MS;
 };
 
-export function CacheProvider({ children }) {
-  const [equipment, setEquipment] = useState(() => {
-    try {
-      const raw = localStorage.getItem(LS_KEYS.equipment);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [usernames, setUsernames] = useState(() => {
-    try {
-      const raw = localStorage.getItem(LS_KEYS.usernames);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
+const LS_KEYS = {
+  equipment: 'cached_equipment',
+  equipment_ts: 'cached_equipment_timestamp',
+  usernames: 'cached_usernames',
+  usernames_ts: 'cached_usernames_timestamp',
+};
 
-  const [loadingEquipment, setLoadingEquipment] = useState(false);
-  const [loadingUsernames, setLoadingUsernames] = useState(false);
+const persistEquipment = (data) => {
+  localStorage.setItem(LS_KEYS.equipment, JSON.stringify(data));
+  localStorage.setItem(LS_KEYS.equipment_ts, Date.now().toString());
+};
 
-  const isStale = (tsKey) => {
-    try {
-      const ts = Number(localStorage.getItem(tsKey) || 0);
-      return Date.now() - ts > CACHE_TTL_MS;
-    } catch {
-      return true;
-    }
-  };
+const persistUsernames = (data) => {
+  localStorage.setItem(LS_KEYS.usernames, JSON.stringify(data));
+  localStorage.setItem(LS_KEYS.usernames_ts, Date.now().toString());
+};
 
-  // Internal: save to localStorage + state
-  const persistEquipment = (arr) => {
-    try {
-      localStorage.setItem(LS_KEYS.equipment, JSON.stringify(arr || []));
-      localStorage.setItem(LS_KEYS.equipment_ts, String(Date.now()));
-    } catch (e) {
-      // ignore storage errors
-      console.warn("Cache: failed to persist equipment", e);
-    }
-    setEquipment(arr || []);
-  };
+const retrieveEquipment = () => {
+  try {
+    const item = localStorage.getItem(LS_KEYS.equipment);
+    return item ? JSON.parse(item) : null;
+  } catch (e) {
+    console.error('Error retrieving cached equipment:', e);
+    return null;
+  }
+};
 
-  const persistUsernames = (arr) => {
-    try {
-      localStorage.setItem(LS_KEYS.usernames, JSON.stringify(arr || []));
-      localStorage.setItem(LS_KEYS.usernames_ts, String(Date.now()));
-    } catch (e) {
-      console.warn("Cache: failed to persist usernames", e);
-    }
-    setUsernames(arr || []);
-  };
+const retrieveUsernames = () => {
+  try {
+    const item = localStorage.getItem(LS_KEYS.usernames);
+    return item ? JSON.parse(item) : null;
+  } catch (e) {
+    console.error('Error retrieving cached usernames:', e);
+    return null;
+  }
+};
 
-  // Fetch equipment from backend using api helper (reads token inside api)
+const CacheContext = createContext();
+
+export const CacheProvider = ({ children }) => {
+  const [equipment, setEquipment] = useState(() => retrieveEquipment() || []);
+  const [usernames, setUsernames] = useState(() => retrieveUsernames() || []);
+  const [loadingEquipment, setLoadingEquipment] = useState(false); // Expose loading state
+  const [loadingUsernames, setLoadingUsernames] = useState(false); // Expose loading state
+
   const refreshEquipment = useCallback(async (force = false) => {
     const token = localStorage.getItem("token");
     if (!token) return;
+
+    // Check cache staleness before fetching, unless forced
     if (!force && !isStale(LS_KEYS.equipment_ts) && equipment && equipment.length) {
-      // not stale, keep current
-      return;
+      return; // Already have fresh data
     }
+
     try {
-      setLoadingEquipment(true);
-      const data = await fetchEquipmentList(token);
-      // Expecting array of rows: [{ "Model / Type": "...", "Plate Number": "...", "Driver 1": "...", "Driver 2": "..." }, ...]
+      setLoadingEquipment(true); // Set loading state *before* fetching
+      const data = await fetchEquipmentList(token); // Use your actual API function
       persistEquipment(Array.isArray(data) ? data : []);
+      setEquipment(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Cache: refreshEquipment failed", err);
+      // Optionally set to empty array on error
+      setEquipment([]);
     } finally {
-      setLoadingEquipment(false);
+      setLoadingEquipment(false); // Always clear loading state after fetch
     }
-  }, [equipment]);
+  }, [equipment]); // Depend on equipment to ensure callback updates if equipment changes
 
-  // Fetch usernames (safe) endpoint
   const refreshUsernames = useCallback(async (force = false) => {
     const token = localStorage.getItem("token");
     if (!token) return;
+
     if (!force && !isStale(LS_KEYS.usernames_ts) && usernames && usernames.length) {
       return;
     }
+
     try {
-      setLoadingUsernames(true);
-      const data = await fetchUsernames(token);
-      // Expecting [{ Name: 'Full Name', Role: 'Mechanic' }, ...]
+      setLoadingUsernames(true); // Set loading state *before* fetching
+      const data = await fetchUsernames(token); // Use your actual API function
       persistUsernames(Array.isArray(data) ? data : []);
+      setUsernames(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Cache: refreshUsernames failed", err);
+      // Optionally set to empty array on error
+      setUsernames([]);
     } finally {
-      setLoadingUsernames(false);
+      setLoadingUsernames(false); // Always clear loading state after fetch
     }
-  }, [usernames]);
+  }, [usernames]); // Depend on usernames
 
-  // On mount, refresh in background only if stale
+
+  // Effect to initiate loading when token becomes available (or on mount if already logged in)
+  // This is key for triggering the load early!
   useEffect(() => {
-    try {
+    const token = localStorage.getItem("token");
+    if (token) {
+      // Check staleness and trigger refresh if needed
       if (isStale(LS_KEYS.equipment_ts)) {
         refreshEquipment();
+      } else {
+        // If not stale, set the state from localStorage immediately
+        setEquipment(retrieveEquipment() || []);
       }
+
       if (isStale(LS_KEYS.usernames_ts)) {
         refreshUsernames();
+      } else {
+        setUsernames(retrieveUsernames() || []);
       }
-      // Also schedule periodic background refresh every TTL to keep things fresh while app open
-      const interval = setInterval(() => {
-        refreshEquipment();
-        refreshUsernames();
-      }, CACHE_TTL_MS);
-      return () => clearInterval(interval);
-    } catch (e) {
-      // ignore
+    } else {
+      // Clear cache if no token
+      setEquipment([]);
+      setUsernames([]);
     }
+  }, [refreshEquipment, refreshUsernames]); // Depend on the callbacks
+
+
+  // Optional: Periodic background refresh while the app is open
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        // Only refresh if data is stale
+        if (isStale(LS_KEYS.equipment_ts)) refreshEquipment();
+        if (isStale(LS_KEYS.usernames_ts)) refreshUsernames();
+      }
+    }, CACHE_TTL_MS);
+
+    return () => clearInterval(interval);
   }, [refreshEquipment, refreshUsernames]);
 
-  // Exposed API
+  // Memoized helper functions
+  const getModels = useMemo(() => () => {
+    const models = [...new Set((equipment || []).map(r => r["Model / Type"]).filter(Boolean))];
+    return models.sort();
+  }, [equipment]);
+
+  const getPlatesByModel = useMemo(() => (model) => {
+    if (!model) return [];
+    const matches = equipment.filter(e => e["Model / Type"] === model);
+    return [...new Set(matches.map(m => m["Plate Number"]).filter(Boolean))].sort();
+  }, [equipment]);
+
+  const getDriversByPlate = useMemo(() => (plate) => {
+    if (!plate) return [];
+    const matches = equipment.filter(e => e["Plate Number"] === plate);
+    const drivers = [...new Set(matches.flatMap(m => [m["Driver 1"], m["Driver 2"], m["Driver"]]).filter(Boolean))];
+    return drivers.sort();
+  }, [equipment]);
+
+  const getUsernames = useMemo(() => () => usernames, [usernames]); // Simple getter
+
+
   const value = {
     equipment,
     usernames,
-    loadingEquipment,
-    loadingUsernames,
-    // helpers
-    getEquipment: () => equipment,
-    getModels: () => {
-      // unique models list sorted
-      const models = [...new Set((equipment || []).map((r) => r["Model / Type"]).filter(Boolean))];
-      return models.sort();
-    },
-    getPlatesByModel: (model) => {
-      if (!model) return [];
-      return (equipment || [])
-        .filter((r) => r["Model / Type"] === model)
-        .map((r) => r["Plate Number"])
-        .filter(Boolean);
-    },
-    getEquipmentByPlate: (plate) => {
-      if (!plate) return null;
-      return (equipment || []).find((r) => r["Plate Number"] === plate) || null;
-    },
-    getDriversByPlate: (plate) => {
-      const eq = (equipment || []).find((r) => r["Plate Number"] === plate);
-      if (!eq) return [];
-      return [eq["Driver 1"], eq["Driver 2"]].filter(Boolean);
-    },
-    getUsernames: () => usernames,
-    // force refresh (manual)
+    loadingEquipment, // Expose this state
+    loadingUsernames, // Expose this state
+    getModels,
+    getPlatesByModel,
+    getDriversByPlate,
+    getUsernames,
     forceRefreshEquipment: () => refreshEquipment(true),
     forceRefreshUsernames: () => refreshUsernames(true),
   };
 
-  return <CacheContext.Provider value={value}>{children}</CacheContext.Provider>;
-}
+  return (
+    <CacheContext.Provider value={value}>
+      {children}
+    </CacheContext.Provider>
+  );
+};
 
-export function useCache() {
-  const ctx = useContext(CacheContext);
-  if (!ctx) {
-    throw new Error("useCache must be used inside CacheProvider");
+export const useCache = () => {
+  const context = useContext(CacheContext);
+  if (!context) {
+    throw new Error('useCache must be used within a CacheProvider');
   }
-  return ctx;
-}
+  return context;
+};
