@@ -1,28 +1,31 @@
-// frontend/src/pages/Requests/Parts/Form.jsx
-import React, { useState, useEffect } from "react";
+// frontend/src/pages/Requests/Parts/PartsRequestForm.jsx
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Camera, Upload, Package } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
+import CONFIG from "@/config";
 import { useTranslation } from "react-i18next";
 
 export default function PartsRequestForm() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const cache = useCache();
+  const cache = useCache(); // Get the cache context
   const { t } = useTranslation();
-  const todayDate = new Date().toISOString().split("T")[0];
 
+  const todayDate = new Date().toISOString().split("T")[0];
   const [form, setForm] = useState({
     "Request Date": todayDate,
     "Model / Type": "",
     "Plate Number": "",
-    Driver: "",
+    "Driver": "",
     "Requested Parts": "",
-    Comments: "",
-    "Attachment Photo": "",
+    "Status": "Pending", // Default status
+    "Handled By": "", // Will be filled when status changes
+    "Comments": "",
+    "Attachment Photo": null,
   });
 
   const [modelOptions, setModelOptions] = useState([]);
@@ -30,11 +33,13 @@ export default function PartsRequestForm() {
   const [driverOptions, setDriverOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Update modelOptions whenever cache changes (equipment data updates)
   useEffect(() => {
     const models = cache.getModels ? cache.getModels() : [];
     setModelOptions(models);
-  }, [cache]);
+  }, [cache]); // Dependency is the cache object itself
 
+  // Update plateOptions based on the selected model AND the cache
   useEffect(() => {
     const model = form["Model / Type"];
     if (!model) {
@@ -43,81 +48,69 @@ export default function PartsRequestForm() {
     }
     const plates = cache.getPlatesByModel ? cache.getPlatesByModel(model) : [];
     setPlateOptions(plates);
-  }, [form["Model / Type"], cache]);
+  }, [form["Model / Type"], cache]); // Include cache dependency
 
+  // Update driverOptions based on the selected plate AND the cache
   useEffect(() => {
     const plate = form["Plate Number"];
     if (!plate) {
       setDriverOptions([]);
       return;
     }
-    const eq = cache.getEquipmentByPlate ? cache.getEquipmentByPlate(plate) : null;
-    if (eq) {
-      setForm((p) => ({ ...p, "Model / Type": eq["Model / Type"] || p["Model / Type"] }));
-      const drivers = cache.getDriversByPlate ? cache.getDriversByPlate(plate) : [];
-      setDriverOptions(drivers);
-    }
-  }, [form["Plate Number"], cache]);
+    const drivers = cache.getDriversByPlate ? cache.getDriversByPlate(plate) : [];
+    setDriverOptions(drivers);
+  }, [form["Plate Number"], cache]); // Include cache dependency
 
-  useEffect(() => {
-    const driver = form.Driver;
-    if (!driver) return;
-    const allEquipment = cache.getEquipment ? cache.getEquipment() : cache.equipment || [];
-    const matches = (allEquipment || []).filter(
-      (e) => e["Driver 1"] === driver || e["Driver 2"] === driver || e["Driver"] === driver
-    );
-    if (matches.length === 1) {
-      const eq = matches[0];
-      setForm((p) => ({
-        ...p,
-        "Plate Number": eq["Plate Number"] || p["Plate Number"],
-        "Model / Type": eq["Model / Type"] || p["Model / Type"],
-      }));
-      setPlateOptions([eq["Plate Number"]]);
-      setDriverOptions([matches[0]["Driver 1"], matches[0]["Driver 2"]].filter(Boolean));
-    } else if (matches.length > 1) {
-      setPlateOptions(matches.map((m) => m["Plate Number"]));
-      setDriverOptions([...new Set(matches.flatMap((m) => [m["Driver 1"], m["Driver 2"]]).filter(Boolean))]);
-    } else {
-      setPlateOptions([]);
-    }
-  }, [form.Driver, cache]);
 
   const handleChange = (name, value) => {
-    setForm((p) => ({ ...p, [name]: value }));
+    setForm(prevForm => {
+      let updatedForm = { ...prevForm, [name]: value };
+
+      // Clear dependent fields when parent changes to prevent invalid selections
+      if (name === "Model / Type") {
+        updatedForm["Plate Number"] = "";
+        updatedForm["Driver"] = "";
+      }
+      if (name === "Plate Number") {
+        updatedForm["Driver"] = "";
+      }
+
+      return updatedForm;
+    });
   };
 
-  const handleFile = (file, field) => {
+  // Handle file upload (Attachment Photo)
+  const handleFile = (file) => {
     if (!file) return;
     const reader = new FileReader();
-    reader.onloadend = () => handleChange(field, reader.result);
+    reader.onloadend = () => handleChange("Attachment Photo", reader.result);
     reader.readAsDataURL(file);
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form["Model / Type"] && !form["Plate Number"] && !form.Driver) {
-      alert(t("requests.parts.form.alerts.missingAsset"));
-      return;
-    }
-    if (!form["Requested Parts"]) {
-      alert(t("requests.parts.form.alerts.missingParts"));
-      return;
-    }
     setSubmitting(true);
+
     try {
-      const payload = { ...form, Status: "Pending" };
-      const res = await fetchWithAuth("/api/add/Requests_Parts", {
+      const token = localStorage.getItem("token");
+      const payload = { ...form };
+      // Ensure date is formatted correctly if needed by backend
+      // payload["Request Date"] = new Date(payload["Request Date"]).toLocaleDateString("en-GB");
+
+      const res = await fetchWithAuth(`${CONFIG.BACKEND_URL}/api/add/Requests_Parts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       const data = await res.json();
+
       if (data.status === "success") {
         alert(t("requests.parts.form.alerts.success"));
-        navigate("/requests/parts");
+        navigate("/requests/parts/current");
       } else {
-        alert(t("requests.parts.form.alerts.error") + ": " + (data.message || "Unknown error"));
+        alert(`${t("requests.parts.form.alerts.error")}: ${data.message || "Unknown error"}`);
       }
     } catch (err) {
       console.error("Submit error:", err);
@@ -131,161 +124,155 @@ export default function PartsRequestForm() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
       <div className="max-w-4xl mx-auto p-6">
+        {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
+          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6"
         >
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-          {t("requests.parts.form.back")}
+          <ArrowLeft size={18} />
+          {t("common.back")}
         </button>
 
-        <div className="mb-8 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 shadow-lg shadow-blue-500/50">
-            <Package className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-              {t("requests.parts.form.title")}
-            </h1>
-            <p className="text-gray-400 text-sm mt-1">
-              {t("requests.parts.form.subtitle")}
-            </p>
-          </div>
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-500">
+            {t("requests.parts.form.title")}
+          </h1>
+          <p className="text-gray-400 mt-2">{t("requests.parts.form.subtitle")}</p>
         </div>
 
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                {t("requests.parts.form.requestDate")}
-              </label>
-              <input
-                type="date"
-                value={form["Request Date"]}
-                onChange={(e) => handleChange("Request Date", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                {t("requests.parts.form.model")}
-              </label>
-              <select
-                value={form["Model / Type"]}
-                onChange={(e) => handleChange("Model / Type", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white"
-              >
-                <option value="">{t("requests.parts.form.chooseModel")}</option>
-                {modelOptions.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                {t("requests.parts.form.plate")}
-              </label>
-              <select
-                value={form["Plate Number"]}
-                onChange={(e) => handleChange("Plate Number", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white"
-              >
-                <option value="">{t("requests.parts.form.choosePlate")}</option>
-                {(plateOptions.length ? plateOptions : (cache.getEquipment ? cache.getEquipment() : [])).map(
-                  (p) =>
-                    typeof p === "string" ? (
-                      <option key={p} value={p}>{p}</option>
-                    ) : (
-                      <option key={p["Plate Number"]} value={p["Plate Number"]}>
-                        {p["Plate Number"]}
-                      </option>
-                    )
-                )}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                {t("requests.parts.form.driver")}
-              </label>
-              <select
-                value={form.Driver}
-                onChange={(e) => handleChange("Driver", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white"
-              >
-                <option value="">{t("requests.parts.form.chooseDriver")}</option>
-                {(driverOptions.length
-                  ? driverOptions
-                  : Array.from(new Set((cache.getEquipment ? cache.getEquipment() : []).flatMap(
-                      (eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]]
-                    ).filter(Boolean)))
-                ).map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
+          {/* Request Date */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("requests.parts.form.requestDate")}</label>
+            <input
+              type="date"
+              value={form["Request Date"]}
+              onChange={(e) => handleChange("Request Date", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
           </div>
 
+          {/* Model / Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              {t("requests.parts.form.requestedParts")}
-            </label>
+            <label className="block text-sm font-medium mb-2">{t("requests.parts.form.model")}</label>
+            <select
+              value={form["Model / Type"]}
+              onChange={(e) => handleChange("Model / Type", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">{t("requests.parts.form.chooseModel")}</option>
+              {modelOptions.map((model) => (
+                <option key={model} value={model}>{model}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Plate Number */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("requests.parts.form.plate")}</label>
+            <select
+              value={form["Plate Number"]}
+              onChange={(e) => handleChange("Plate Number", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">{t("requests.parts.form.choosePlate")}</option>
+              {plateOptions.map((plate) => (
+                <option key={plate} value={plate}>{plate}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Driver */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("requests.parts.form.driver")}</label>
+            <select
+              value={form["Driver"]}
+              onChange={(e) => handleChange("Driver", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">{t("requests.parts.form.chooseDriver")}</option>
+              {driverOptions.map((driver) => (
+                <option key={driver} value={driver}>{driver}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Requested Parts */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("requests.parts.form.requestedParts")}</label>
             <textarea
-              rows={4}
               value={form["Requested Parts"]}
               onChange={(e) => handleChange("Requested Parts", e.target.value)}
-              placeholder={t("requests.parts.form.requestedPartsPlaceholder")}
-              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white resize-none"
-            />
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="3"
+              placeholder={t("requests.parts.form.partsPlaceholder")}
+              required
+            ></textarea>
           </div>
 
+          {/* Status (Hidden, defaults to Pending) */}
+          <input type="hidden" value={form.Status} />
+
+          {/* Comments */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              {t("requests.parts.form.comments")}
-            </label>
+            <label className="block text-sm font-medium mb-2">{t("requests.parts.form.comments")}</label>
             <textarea
-              rows={3}
-              value={form.Comments}
+              value={form["Comments"]}
               onChange={(e) => handleChange("Comments", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="2"
               placeholder={t("requests.parts.form.commentsPlaceholder")}
-              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white resize-none"
-            />
+            ></textarea>
           </div>
 
+          {/* Attachment Photo */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-3">
-              {t("requests.parts.form.attachmentPhoto")}
-            </label>
-            <div className="flex gap-3">
-              <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-xl">
-                <Upload size={18} />
-                <span>{t("common.upload")}</span>
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Attachment Photo")} />
-              </label>
-              <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-600 to-cyan-700 text-white px-4 py-3 rounded-xl">
-                <Camera size={18} />
-                <span>{t("common.camera")}</span>
-                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], "Attachment Photo")} />
-              </label>
-            </div>
-
-            {form["Attachment Photo"] && (
-              <div className="mt-4 p-2 bg-gray-800/30 rounded-xl border border-gray-700">
-                <img
-                  src={form["Attachment Photo"]}
-                  alt="Attachment Preview"
-                  className="max-h-64 mx-auto rounded-lg object-contain"
+            <label className="block text-sm font-medium mb-2">{t("requests.parts.form.attachment")}</label>
+            <div className="flex items-center gap-4">
+              <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700">
+                <Upload className="w-8 h-8 text-gray-400" />
+                <span className="mt-2 text-xs text-center text-gray-400">{t("requests.parts.form.upload")}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFile(e.target.files[0])}
+                  className="hidden"
                 />
-              </div>
-            )}
+              </label>
+              {form["Attachment Photo"] && (
+                <div className="relative">
+                  <img
+                    src={form["Attachment Photo"]}
+                    alt="Attachment"
+                    className="w-32 h-32 object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleChange("Attachment Photo", null)}
+                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold text-lg disabled:opacity-50"
+            className={`w-full py-3 px-4 rounded-md font-medium ${
+              submitting
+                ? "bg-gray-600 cursor-not-allowed"
+                : "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+            } transition`}
           >
             {submitting ? t("requests.parts.form.submitting") : t("requests.parts.form.submit")}
           </button>
