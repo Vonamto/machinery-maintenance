@@ -2,13 +2,10 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { login as apiLogin } from "../api/api";
-import { useCache } from "./CacheContext";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const { loadAll } = useCache();
-
   const [token, setToken] = useState(() => localStorage.getItem("token"));
   const [user, setUser] = useState(() => {
     try {
@@ -34,10 +31,6 @@ export function AuthProvider({ children }) {
     if (res?.status === "success") {
       setToken(res.token);
       setUser(res.user);
-
-      // ✅ LOAD CACHE AFTER LOGIN (THIS FIXES EVERYTHING)
-      await loadAll();
-
       return { ok: true };
     }
 
