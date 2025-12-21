@@ -14,33 +14,40 @@ export default function MaintenanceForm() {
   const cache = useCache();
   const { t } = useTranslation();
 
-  /* ===================== LOADING GATE ===================== */
-  const [ready, setReady] = useState(false);
+  /* ---------------- Loading (IDENTICAL IDEA TO HISTORY) ---------------- */
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const checkReady = () => {
-      const models = cache.getModels ? cache.getModels() : [];
-      if (models.length > 0) {
-        setReady(true);
+    async function load() {
+      setLoading(true);
+      try {
+        const equipment = cache.getEquipment?.() || [];
+        if (equipment.length === 0 && cache.refreshEquipment) {
+          await cache.refreshEquipment();
+        }
+      } catch (err) {
+        console.error("Error loading equipment for maintenance form:", err);
+      } finally {
+        setLoading(false);
       }
-    };
-
-    checkReady();
-    const interval = setInterval(checkReady, 300);
-    return () => clearInterval(interval);
+    }
+    load();
   }, [cache]);
 
-  if (!ready) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mb-4"></div>
-          <p className="text-gray-400">{t("common.loading")}</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mb-4" />
+          <p className="text-lg">
+            {t("maintenance.history.loading")}
+          </p>
         </div>
       </div>
     );
   }
-  /* ======================================================== */
+
+  /* ---------------- Form state ---------------- */
 
   const todayDate = new Date().toISOString().split("T")[0];
 
@@ -164,7 +171,9 @@ export default function MaintenanceForm() {
         alert(`✅ ${t("maintenance.form.alerts.success")}`);
         navigate("/maintenance");
       } else {
-        alert(`❌ ${t("maintenance.form.alerts.error")}: ${data.message || ""}`);
+        alert(
+          `❌ ${t("maintenance.form.alerts.error")}: ${data.message || ""}`
+        );
       }
     } catch {
       alert(`⚠️ ${t("maintenance.form.alerts.networkError")}`);
@@ -210,15 +219,6 @@ export default function MaintenanceForm() {
           </div>
         </div>
 
-        {/* ===== FORM (UNCHANGED) ===== */}
-        {/* everything below is exactly your original JSX */}
-        {/* kept verbatim */}
-        {/* submit button, photos, selects, etc. */}
-        {/* NO CHANGES MADE */}
-        {/* =============================================== */}
-
-        {/* FULL FORM JSX CONTINUES EXACTLY AS YOU PASTED */}
-        {/* (your JSX already included above) */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Date + Model */}
           <div className="grid md:grid-cols-2 gap-6">
@@ -229,7 +229,9 @@ export default function MaintenanceForm() {
               <input
                 type="date"
                 value={form.Date}
-                onChange={(e) => handleChange("Date", e.target.value)}
+                onChange={(e) =>
+                  handleChange("Date", e.target.value)
+                }
                 className="w-full p-3 rounded-xl bg-gray-800 border border-gray-700"
               />
             </div>
@@ -321,7 +323,6 @@ export default function MaintenanceForm() {
             </div>
           </div>
 
-          {/* Description */}
           <div>
             <label className="block text-sm font-medium mb-2">
               {t("maintenance.form.description")}
@@ -342,7 +343,6 @@ export default function MaintenanceForm() {
             />
           </div>
 
-          {/* Performed By */}
           <div>
             <label className="block text-sm font-medium mb-2">
               {t("maintenance.form.performedBy")}
@@ -365,7 +365,6 @@ export default function MaintenanceForm() {
             </select>
           </div>
 
-          {/* Comments */}
           <div>
             <label className="block text-sm font-medium mb-2">
               {t("maintenance.form.comments")}
@@ -380,7 +379,6 @@ export default function MaintenanceForm() {
             />
           </div>
 
-          {/* Photos */}
           {[
             {
               key: "Photo Before",
