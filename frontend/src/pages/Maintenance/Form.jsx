@@ -6,101 +6,102 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
+import CONFIG from "@/config";
 import { useTranslation } from "react-i18next";
 
 export default function MaintenanceForm() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const cache = useCache();
+  const cache = useCache(); // Get the cache context
   const { t } = useTranslation();
 
   const todayDate = new Date().toISOString().split("T")[0];
-
   const [form, setForm] = useState({
-    Date: todayDate,
+    "Date": todayDate,
     "Model / Type": "",
     "Plate Number": "",
-    Driver: "",
-    "Description of Work": "",
-    "Performed By": user?.full_name || "",
-    Comments: "",
-    "Photo Before": "",
-    "Photo After": "",
-    "Photo Repair/Problem": "",
+    "Driver": "",
+    "KMs Reading": "",
+    "Hours Reading": "",
+    "Lubrication": "",
+    "Greasing": "",
+    "Filters": "",
+    "Repairs": "",
+    "Other Work Done": "",
+    "Next Service KMs": "",
+    "Next Service Hours": "",
+    "Performed By": user?.full_name || "", // Pre-fill with user's name
+    "Photo Before": null,
+    "Photo After": null,
+    "Comments": ""
   });
 
   const [modelOptions, setModelOptions] = useState([]);
   const [plateOptions, setPlateOptions] = useState([]);
   const [driverOptions, setDriverOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  // Add a state to track if the initial dropdown data is still loading
+  const [loadingInitialData, setLoadingInitialData] = useState(true);
 
+  // Update options when cache updates
   useEffect(() => {
-    setModelOptions(cache.getModels ? cache.getModels() : []);
-  }, [cache]);
+    // Check if cache data is available (not just the functions)
+    // Using loadingEquipment/loadingUsernames might be safer
+    if (!cache.loadingEquipment /* && !cache.loadingUsernames */) { // Adjust based on which cache is critical for dropdowns
+      const models = cache.getModels ? cache.getModels() : [];
+      const usernames = cache.getUsernames ? cache.getUsernames() : [];
 
+      setModelOptions(models);
+      // Assuming Performed By uses usernames
+      const performers = [...new Set([user?.full_name, ...(usernames.map(u => u.Name || u["Full Name"] || u.Username).filter(Boolean))])].filter(Boolean);
+      // We don't set performer options here, just model options for initial check
+      // The plate/driver options will update based on form changes below
+
+      setLoadingInitialData(false); // Indicate initial data is loaded
+    }
+  }, [cache, user?.full_name]);
+
+  // Update plateOptions based on the selected model AND the cache
   useEffect(() => {
     const model = form["Model / Type"];
     if (!model) {
       setPlateOptions([]);
       return;
     }
-    setPlateOptions(
-      cache.getPlatesByModel ? cache.getPlatesByModel(model) : []
-    );
+    const plates = cache.getPlatesByModel ? cache.getPlatesByModel(model) : [];
+    setPlateOptions(plates);
   }, [form["Model / Type"], cache]);
 
+  // Update driverOptions based on the selected plate AND the cache
   useEffect(() => {
     const plate = form["Plate Number"];
     if (!plate) {
       setDriverOptions([]);
       return;
     }
-    const eq = cache.getEquipmentByPlate?.(plate);
-    if (eq) {
-      setForm((p) => ({
-        ...p,
-        "Model / Type": eq["Model / Type"] || p["Model / Type"],
-      }));
-      setDriverOptions(cache.getDriversByPlate?.(plate) || []);
-    }
+    const drivers = cache.getDriversByPlate ? cache.getDriversByPlate(plate) : [];
+    setDriverOptions(drivers);
   }, [form["Plate Number"], cache]);
 
-  useEffect(() => {
-    const driver = form.Driver;
-    if (!driver) return;
 
-    const allEquipment = cache.getEquipment?.() || [];
-    const matches = allEquipment.filter(
-      (e) =>
-        e["Driver 1"] === driver ||
-        e["Driver 2"] === driver ||
-        e["Driver"] === driver
-    );
+  const handleChange = (name, value) => {
+    setForm(prevForm => {
+      let updatedForm = { ...prevForm, [name]: value };
 
-    if (matches.length === 1) {
-      const eq = matches[0];
-      setForm((p) => ({
-        ...p,
-        "Plate Number": eq["Plate Number"],
-        "Model / Type": eq["Model / Type"],
-      }));
-      setPlateOptions([eq["Plate Number"]]);
-      setDriverOptions(
-        [eq["Driver 1"], eq["Driver 2"]].filter(Boolean)
-      );
-    } else if (matches.length > 1) {
-      setPlateOptions(matches.map((m) => m["Plate Number"]));
-      setDriverOptions([
-        ...new Set(
-          matches.flatMap((m) => [m["Driver 1"], m["Driver 2"]]).filter(Boolean)
-        ),
-      ]);
-    }
-  }, [form.Driver, cache]);
+      // Clear dependent fields when parent changes to prevent invalid selections
+      if (name === "Model / Type") {
+        updatedForm["Plate Number"] = "";
+        updatedForm["Driver"] = "";
+      }
+      if (name === "Plate Number") {
+        updatedForm["Driver"] = "";
+      }
 
-  const handleChange = (name, value) =>
-    setForm((p) => ({ ...p, [name]: value }));
+      return updatedForm;
+    });
+  };
 
+  // Handle file uploads (Photo Before, Photo After)
   const handleFile = (file, field) => {
     if (!file) return;
     const reader = new FileReader();
@@ -108,59 +109,69 @@ export default function MaintenanceForm() {
     reader.readAsDataURL(file);
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!form["Model / Type"] && !form["Plate Number"] && !form.Driver) {
-      alert(t("maintenance.form.alerts.missingAsset"));
-      return;
-    }
-    if (!form["Description of Work"]) {
-      alert(t("maintenance.form.alerts.missingDescription"));
-      return;
-    }
-    if (!form["Performed By"]) {
-      alert(t("maintenance.form.alerts.missingPerformer"));
-      return;
-    }
-
     setSubmitting(true);
+
     try {
-      const res = await fetchWithAuth("/api/add/Maintenance_Log", {
+      const token = localStorage.getItem("token");
+      const payload = { ...form };
+      // Ensure date is formatted correctly if needed by backend
+      // payload["Date"] = new Date(payload["Date"]).toLocaleDateString("en-GB");
+
+      const res = await fetchWithAuth(`${CONFIG.BACKEND_URL}/api/add/Maintenance_Log`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
+
       const data = await res.json();
+
       if (data.status === "success") {
-        alert(`✅ ${t("maintenance.form.alerts.success")}`);
+        alert(t("maintenance.form.alerts.success"));
         navigate("/maintenance");
       } else {
-        alert(`❌ ${t("maintenance.form.alerts.error")}: ${data.message || ""}`);
+        alert(`${t("maintenance.form.alerts.error")}: ${data.message || "Unknown error"}`);
       }
-    } catch {
-      alert(`⚠️ ${t("maintenance.form.alerts.networkError")}`);
+    } catch (err) {
+      console.error("Submit error:", err);
+      alert(t("maintenance.form.alerts.networkError"));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const cachedUsers = cache.getUsernames ? cache.getUsernames() : [];
-  const performers = cachedUsers
-    .filter((u) => ["Supervisor", "Mechanic"].includes(u.Role))
-    .map((u) => u.Name || u["Full Name"])
-    .filter(Boolean);
+  // Show loading indicator if initial data is still being fetched
+  if (loadingInitialData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
+        <Navbar user={user} />
+        <div className="max-w-4xl mx-auto p-6">
+          {/* Back Button */}
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6"
+          >
+            <ArrowLeft size={18} />
+            {t("common.back")}
+          </button>
 
-  if (user?.full_name && !performers.includes(user.full_name)) {
-    performers.unshift(user.full_name);
+          <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]"> {/* Adjust height calculation as needed */}
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mb-4"></div>
+            <p className="text-lg">{t("maintenance.form.loadingDropdowns") || "Loading equipment data..."}</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
+  // Existing form JSX starts here, unchanged except for conditional rendering
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
-
       <div className="max-w-4xl mx-auto p-6">
-        {/* Back */}
+        {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6"
@@ -170,205 +181,288 @@ export default function MaintenanceForm() {
         </button>
 
         {/* Header */}
-        <div className="mb-8 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-green-600 to-emerald-500">
-            <Wrench className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">
-              {t("maintenance.form.title")}
-            </h1>
-            <p className="text-gray-400 text-sm">
-              {t("maintenance.form.subtitle")}
-            </p>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+            {t("maintenance.form.title")}
+          </h1>
+          <p className="text-gray-400 mt-2">{t("maintenance.form.subtitle")}</p>
         </div>
 
-        {/* FORM */}
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Date + Model */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                {t("maintenance.form.date")}
-              </label>
-              <input
-                type="date"
-                value={form.Date}
-                onChange={(e) => handleChange("Date", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800 border border-gray-700"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                {t("maintenance.form.model")}
-              </label>
-              <select
-                value={form["Model / Type"]}
-                onChange={(e) => handleChange("Model / Type", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800 border border-gray-700"
-              >
-                <option value="">{t("maintenance.form.chooseModel")}</option>
-                {modelOptions.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                {t("maintenance.form.plate")}
-              </label>
-              <select
-                value={form["Plate Number"]}
-                onChange={(e) => handleChange("Plate Number", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800 border border-gray-700"
-              >
-                <option value="">{t("maintenance.form.choosePlate")}</option>
-                {(plateOptions.length ? plateOptions : cache.getEquipment?.() || []).map(
-                  (p) => {
-                    const plate = typeof p === "string" ? p : p["Plate Number"];
-                    return (
-                      <option key={plate} value={plate}>{plate}</option>
-                    );
-                  }
-                )}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                {t("maintenance.form.driver")}
-              </label>
-              <select
-                value={form.Driver}
-                onChange={(e) => handleChange("Driver", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800 border border-gray-700"
-              >
-                <option value="">{t("maintenance.form.chooseDriver")}</option>
-                {(driverOptions.length
-                  ? driverOptions
-                  : Array.from(
-                      new Set(
-                        (cache.getEquipment?.() || [])
-                          .flatMap((e) => [e["Driver 1"], e["Driver 2"], e["Driver"]])
-                          .filter(Boolean)
-                      )
-                    )
-                ).map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
+          {/* Date */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.date")}</label>
+            <input
+              type="date"
+              value={form.Date}
+              onChange={(e) => handleChange("Date", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
           </div>
 
-          {/* Description */}
+          {/* Model / Type */}
           <div>
-            <label className="block text-sm font-medium mb-2">
-              {t("maintenance.form.description")}
-            </label>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.model")}</label>
+            <select
+              value={form["Model / Type"]}
+              onChange={(e) => handleChange("Model / Type", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">{t("maintenance.form.chooseModel")}</option>
+              {modelOptions.map((model) => (
+                <option key={model} value={model}>{model}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Plate Number */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.plate")}</label>
+            <select
+              value={form["Plate Number"]}
+              onChange={(e) => handleChange("Plate Number", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">{t("maintenance.form.choosePlate")}</option>
+              {plateOptions.map((plate) => (
+                <option key={plate} value={plate}>{plate}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Driver */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.driver")}</label>
+            <select
+              value={form["Driver"]}
+              onChange={(e) => handleChange("Driver", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">{t("maintenance.form.chooseDriver")}</option>
+              {driverOptions.map((driver) => (
+                <option key={driver} value={driver}>{driver}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* KMs Reading */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.kmsReading")}</label>
+            <input
+              type="number"
+              value={form["KMs Reading"]}
+              onChange={(e) => handleChange("KMs Reading", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder={t("maintenance.form.kmsPlaceholder")}
+            />
+          </div>
+
+          {/* Hours Reading */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.hoursReading")}</label>
+            <input
+              type="number"
+              value={form["Hours Reading"]}
+              onChange={(e) => handleChange("Hours Reading", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder={t("maintenance.form.hoursPlaceholder")}
+            />
+          </div>
+
+          {/* Lubrication */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.lubrication")}</label>
             <textarea
-              rows={4}
-              value={form["Description of Work"]}
-              onChange={(e) =>
-                handleChange("Description of Work", e.target.value)
-              }
-              placeholder={t("maintenance.form.descriptionPlaceholder")}
-              className="w-full p-3 rounded-xl bg-gray-800 border border-gray-700"
+              value={form["Lubrication"]}
+              onChange={(e) => handleChange("Lubrication", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="2"
+              placeholder={t("maintenance.form.lubricationPlaceholder")}
+            ></textarea>
+          </div>
+
+          {/* Greasing */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.greasing")}</label>
+            <textarea
+              value={form["Greasing"]}
+              onChange={(e) => handleChange("Greasing", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="2"
+              placeholder={t("maintenance.form.greasingPlaceholder")}
+            ></textarea>
+          </div>
+
+          {/* Filters */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.filters")}</label>
+            <textarea
+              value={form["Filters"]}
+              onChange={(e) => handleChange("Filters", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="2"
+              placeholder={t("maintenance.form.filtersPlaceholder")}
+            ></textarea>
+          </div>
+
+          {/* Repairs */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.repairs")}</label>
+            <textarea
+              value={form["Repairs"]}
+              onChange={(e) => handleChange("Repairs", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="2"
+              placeholder={t("maintenance.form.repairsPlaceholder")}
+            ></textarea>
+          </div>
+
+          {/* Other Work Done */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.otherWorkDone")}</label>
+            <textarea
+              value={form["Other Work Done"]}
+              onChange={(e) => handleChange("Other Work Done", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="2"
+              placeholder={t("maintenance.form.otherWorkDonePlaceholder")}
+            ></textarea>
+          </div>
+
+          {/* Next Service KMs */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.nextServiceKMs")}</label>
+            <input
+              type="number"
+              value={form["Next Service KMs"]}
+              onChange={(e) => handleChange("Next Service KMs", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder={t("maintenance.form.nextServiceKMsPlaceholder")}
+            />
+          </div>
+
+          {/* Next Service Hours */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.nextServiceHours")}</label>
+            <input
+              type="number"
+              value={form["Next Service Hours"]}
+              onChange={(e) => handleChange("Next Service Hours", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder={t("maintenance.form.nextServiceHoursPlaceholder")}
             />
           </div>
 
           {/* Performed By */}
           <div>
-            <label className="block text-sm font-medium mb-2">
-              {t("maintenance.form.performedBy")}
-            </label>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.performedBy")}</label>
             <select
               value={form["Performed By"]}
-              onChange={(e) =>
-                handleChange("Performed By", e.target.value)
-              }
-              className="w-full p-3 rounded-xl bg-gray-800 border border-gray-700"
+              onChange={(e) => handleChange("Performed By", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
             >
               <option value="">{t("maintenance.form.choosePerformer")}</option>
-              {performers.map((p) => (
-                <option key={p} value={p}>{p}</option>
+              {[...(user?.full_name ? [user.full_name] : []), ...(cache.getUsernames ? cache.getUsernames().map(u => u.Name || u["Full Name"] || u.Username).filter(Boolean) : [])].map((name) => (
+                <option key={name} value={name}>{name}</option>
               ))}
             </select>
           </div>
 
-          {/* Comments */}
+          {/* Photo Before */}
           <div>
-            <label className="block text-sm font-medium mb-2">
-              {t("maintenance.form.comments")}
-            </label>
-            <textarea
-              rows={3}
-              value={form.Comments}
-              onChange={(e) => handleChange("Comments", e.target.value)}
-              className="w-full p-3 rounded-xl bg-gray-800 border border-gray-700"
-            />
-          </div>
-
-          {/* Photos */}
-          {[
-            { key: "Photo Before", label: t("maintenance.form.photoBefore") },
-            { key: "Photo After", label: t("maintenance.form.photoAfter") },
-            { key: "Photo Repair/Problem", label: t("maintenance.form.photoProblem") },
-          ].map(({ key, label }) => (
-            <div key={key}>
-              <label className="block text-sm font-medium mb-2">{label}</label>
-              <div className="flex gap-3">
-                <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-green-600 px-4 py-3 rounded-xl">
-                  <Upload size={18} />
-                  {t("common.upload")}
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={(e) =>
-                      handleFile(e.target.files?.[0], key)
-                    }
-                  />
-                </label>
-
-                <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-emerald-600 px-4 py-3 rounded-xl">
-                  <Camera size={18} />
-                  {t("common.camera")}
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={(e) =>
-                      handleFile(e.target.files?.[0], key)
-                    }
-                  />
-                </label>
-              </div>
-
-              {form[key] && (
-                <div className="mt-4">
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.photoBefore")}</label>
+            <div className="flex items-center gap-4">
+              <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700">
+                <Upload className="w-8 h-8 text-gray-400" />
+                <span className="mt-2 text-xs text-center text-gray-400">{t("maintenance.form.upload")}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFile(e.target.files[0], "Photo Before")}
+                  className="hidden"
+                />
+              </label>
+              {form["Photo Before"] && (
+                <div className="relative">
                   <img
-                    src={form[key]}
-                    alt={label}
-                    className="max-h-64 mx-auto rounded-lg"
+                    src={form["Photo Before"]}
+                    alt="Before"
+                    className="w-32 h-32 object-cover rounded-lg"
                   />
+                  <button
+                    type="button"
+                    onClick={() => handleChange("Photo Before", null)}
+                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                  >
+                    ×
+                  </button>
                 </div>
               )}
             </div>
-          ))}
+          </div>
 
-          {/* Submit */}
+          {/* Photo After */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.photoAfter")}</label>
+            <div className="flex items-center gap-4">
+              <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700">
+                <Upload className="w-8 h-8 text-gray-400" />
+                <span className="mt-2 text-xs text-center text-gray-400">{t("maintenance.form.upload")}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFile(e.target.files[0], "Photo After")}
+                  className="hidden"
+                />
+              </label>
+              {form["Photo After"] && (
+                <div className="relative">
+                  <img
+                    src={form["Photo After"]}
+                    alt="After"
+                    className="w-32 h-32 object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleChange("Photo After", null)}
+                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Comments */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("maintenance.form.comments")}</label>
+            <textarea
+              value={form["Comments"]}
+              onChange={(e) => handleChange("Comments", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="3"
+              placeholder={t("maintenance.form.commentsPlaceholder")}
+            ></textarea>
+          </div>
+
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-4 rounded-xl bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold text-lg disabled:opacity-50"
+            className={`w-full py-3 px-4 rounded-md font-medium ${
+              submitting
+                ? "bg-gray-600 cursor-not-allowed"
+                : "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700"
+            } transition`}
           >
-            {submitting
-              ? t("common.submitting")
-              : t("maintenance.form.submit")}
+            {submitting ? t("maintenance.form.submitting") : t("maintenance.form.submit")}
           </button>
         </form>
       </div>
