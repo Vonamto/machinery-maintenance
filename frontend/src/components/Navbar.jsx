@@ -13,7 +13,6 @@ export default function Navbar({ user }) {
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef(null);
 
-  // Close language dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e) {
       if (langRef.current && !langRef.current.contains(e.target)) {
@@ -37,7 +36,6 @@ export default function Navbar({ user }) {
     setLangOpen(false);
   };
 
-  // Hide Navbar on login page
   if (location.pathname === "/login") return null;
 
   const fullName = user?.full_name || user?.username || "";
@@ -46,18 +44,26 @@ export default function Navbar({ user }) {
     <header className="bg-gray-900/90 backdrop-blur-lg text-white shadow-md flex items-center justify-between px-4 py-3 sticky top-0 z-50 border-b border-white/10">
 
       {/* Left: Welcome + Name */}
-      <h1
-        className="text-sm sm:text-lg font-semibold truncate max-w-[50%]"
-        title={fullName} // ✅ shows full name on hover / long-press
-      >
-        👋 {t("navbar.welcome")},{" "}
-        <span className="text-cyan-400">
+      <div className="flex flex-col sm:block max-w-[65%]">
+        <span className="text-sm sm:text-lg font-semibold">
+          👋 {t("navbar.welcome")},
+        </span>
+        <span
+          className="
+            text-cyan-400
+            text-sm sm:text-lg
+            font-semibold
+            break-words
+            sm:truncate sm:max-w-[300px]
+          "
+          title={fullName}
+        >
           {fullName}
         </span>
-      </h1>
+      </div>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
 
         {/* Language Switch */}
         <div className="relative" ref={langRef}>
