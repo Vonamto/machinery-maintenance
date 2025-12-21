@@ -1,5 +1,4 @@
 // frontend/src/pages/Cleaning/CleaningForm.jsx
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Camera, Upload, Droplets } from "lucide-react";
@@ -7,37 +6,45 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
+import CONFIG from "@/config";
 import { useTranslation } from "react-i18next";
 
 export default function CleaningForm() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const cache = useCache();
+  const cache = useCache(); // Get the cache context
   const { t } = useTranslation();
-  const todayDate = new Date().toISOString().split("T")[0];
 
+  const todayDate = new Date().toISOString().split("T")[0];
   const [form, setForm] = useState({
-    Date: todayDate,
+    "Date": todayDate,
     "Model / Type": "",
     "Plate Number": "",
-    Driver: "",
-    "Cleaned By": user?.full_name || "",
-    "Cleaning Type": "",
-    Comments: "",
-    "Photo Before": "",
-    "Photo After": "",
+    "Driver": "",
+    "Cleaner": user?.full_name || "", // Pre-fill with user's name if applicable
+    "Exterior Cleaning": "",
+    "Interior Cleaning": "",
+    "Engine Cleaning": "",
+    "Other Services": "",
+    "Performed By": user?.full_name || "",
+    "Photo Before": null,
+    "Photo After": null,
+    "Comments": ""
   });
 
   const [modelOptions, setModelOptions] = useState([]);
   const [plateOptions, setPlateOptions] = useState([]);
   const [driverOptions, setDriverOptions] = useState([]);
+  const [cleanerOptions, setCleanerOptions] = useState([]); // Use usernames for cleaner
   const [submitting, setSubmitting] = useState(false);
 
+  // Update modelOptions whenever cache changes (equipment data updates)
   useEffect(() => {
     const models = cache.getModels ? cache.getModels() : [];
     setModelOptions(models);
-  }, [cache]);
+  }, [cache]); // Dependency is the cache object itself
 
+  // Update plateOptions based on the selected model AND the cache
   useEffect(() => {
     const model = form["Model / Type"];
     if (!model) {
@@ -46,50 +53,45 @@ export default function CleaningForm() {
     }
     const plates = cache.getPlatesByModel ? cache.getPlatesByModel(model) : [];
     setPlateOptions(plates);
-  }, [form["Model / Type"], cache]);
+  }, [form["Model / Type"], cache]); // Include cache dependency
 
+  // Update driverOptions based on the selected plate AND the cache
   useEffect(() => {
     const plate = form["Plate Number"];
     if (!plate) {
       setDriverOptions([]);
       return;
     }
-    const eq = cache.getEquipmentByPlate ? cache.getEquipmentByPlate(plate) : null;
-    if (eq) {
-      setForm((p) => ({ ...p, "Model / Type": eq["Model / Type"] || p["Model / Type"] }));
-      const drivers = cache.getDriversByPlate ? cache.getDriversByPlate(plate) : [];
-      setDriverOptions(drivers);
-    }
-  }, [form["Plate Number"], cache]);
+    const drivers = cache.getDriversByPlate ? cache.getDriversByPlate(plate) : [];
+    setDriverOptions(drivers);
+  }, [form["Plate Number"], cache]); // Include cache dependency
 
+  // Update cleanerOptions based on usernames cache
   useEffect(() => {
-    const driver = form.Driver;
-    if (!driver) return;
-    const allEquipment = cache.getEquipment ? cache.getEquipment() : cache.equipment || [];
-    const matches = (allEquipment || []).filter(
-      (e) => e["Driver 1"] === driver || e["Driver 2"] === driver || e["Driver"] === driver
-    );
-    if (matches.length === 1) {
-      const eq = matches[0];
-      setForm((p) => ({
-        ...p,
-        "Plate Number": eq["Plate Number"] || p["Plate Number"],
-        "Model / Type": eq["Model / Type"] || p["Model / Type"],
-      }));
-      setPlateOptions([eq["Plate Number"]]);
-      setDriverOptions([matches[0]["Driver 1"], matches[0]["Driver 2"]].filter(Boolean));
-    } else if (matches.length > 1) {
-      setPlateOptions(matches.map((m) => m["Plate Number"]));
-      setDriverOptions([...new Set(matches.flatMap((m) => [m["Driver 1"], m["Driver 2"]]).filter(Boolean))]);
-    } else {
-      setPlateOptions([]);
-    }
-  }, [form.Driver, cache]);
+    const usernames = cache.getUsernames ? cache.getUsernames() : [];
+    const cleaners = usernames.map(u => u.Name || u["Full Name"] || u.Username).filter(Boolean);
+    setCleanerOptions(cleaners);
+  }, [cache]); // Include cache dependency
+
 
   const handleChange = (name, value) => {
-    setForm((p) => ({ ...p, [name]: value }));
+    setForm(prevForm => {
+      let updatedForm = { ...prevForm, [name]: value };
+
+      // Clear dependent fields when parent changes to prevent invalid selections
+      if (name === "Model / Type") {
+        updatedForm["Plate Number"] = "";
+        updatedForm["Driver"] = "";
+      }
+      if (name === "Plate Number") {
+        updatedForm["Driver"] = "";
+      }
+
+      return updatedForm;
+    });
   };
 
+  // Handle file uploads (Photo Before, Photo After)
   const handleFile = (file, field) => {
     if (!file) return;
     const reader = new FileReader();
@@ -97,29 +99,25 @@ export default function CleaningForm() {
     reader.readAsDataURL(file);
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form["Model / Type"] && !form["Plate Number"] && !form.Driver) {
-      alert(t("cleaning.form.alerts.missingAsset"));
-      return;
-    }
-    if (!form["Cleaned By"]) {
-      alert(t("cleaning.form.alerts.missingCleaner"));
-      return;
-    }
-    if (!form["Cleaning Type"]) {
-      alert(t("cleaning.form.alerts.missingCleaningType"));
-      return;
-    }
-
     setSubmitting(true);
+
     try {
-      const res = await fetchWithAuth("/api/add/Cleaning_Log", {
+      const token = localStorage.getItem("token");
+      const payload = { ...form };
+      // Ensure date is formatted correctly if needed by backend
+      // payload["Date"] = new Date(payload["Date"]).toLocaleDateString("en-GB");
+
+      const res = await fetchWithAuth(`${CONFIG.BACKEND_URL}/api/add/Cleaning_Log`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
+
       const data = await res.json();
+
       if (data.status === "success") {
         alert(t("cleaning.form.alerts.success"));
         navigate("/cleaning");
@@ -134,170 +132,261 @@ export default function CleaningForm() {
     }
   };
 
-  const cachedUsers = cache.getUsernames ? cache.getUsernames() : cache.usernames || [];
-  const allUserNames = (cachedUsers || [])
-    .map((u) => u.Name || u["Full Name"])
-    .filter(Boolean);
+  // Combine current user and selected cleaner for 'Performed By' dropdown
+  const performers = [...new Set([user?.full_name, form["Cleaner"], ...(form["Performed By"] ? [form["Performed By"]] : [])])].filter(Boolean);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
       <div className="max-w-4xl mx-auto p-6">
+        {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
+          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6"
         >
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> {t("cleaning.form.back")}
+          <ArrowLeft size={18} />
+          {t("common.back")}
         </button>
 
-        <div className="mb-8 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-sky-600 to-indigo-500 shadow-lg shadow-sky-500/40">
-            <Droplets className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-500">
-              {t("cleaning.form.title")}
-            </h1>
-            <p className="text-gray-400 text-sm mt-1">
-              {t("cleaning.form.subtitle")}
-            </p>
-          </div>
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-500">
+            {t("cleaning.form.title")}
+          </h1>
+          <p className="text-gray-400 mt-2">{t("cleaning.form.subtitle")}</p>
         </div>
 
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.date")}</label>
-              <input
-                type="date"
-                value={form.Date}
-                onChange={(e) => handleChange("Date", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.model")}</label>
-              <select
-                value={form["Model / Type"]}
-                onChange={(e) => handleChange("Model / Type", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
-              >
-                <option value="">{t("cleaning.form.chooseModel")}</option>
-                {modelOptions.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.plate")}</label>
-              <select
-                value={form["Plate Number"]}
-                onChange={(e) => handleChange("Plate Number", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
-              >
-                <option value="">{t("cleaning.form.choosePlate")}</option>
-                {plateOptions.length
-                  ? plateOptions.map((p) => (<option key={p} value={p}>{p}</option>))
-                  : cache.getEquipment
-                  ? (cache.getEquipment() || []).map((e) => (<option key={e["Plate Number"]} value={e["Plate Number"]}>{e["Plate Number"]}</option>))
-                  : null}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.driver")}</label>
-              <select
-                value={form.Driver}
-                onChange={(e) => handleChange("Driver", e.target.value)}
-                className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
-              >
-                <option value="">{t("cleaning.form.chooseDriver")}</option>
-                {driverOptions.length
-                  ? driverOptions.map((d) => (<option key={d} value={d}>{d}</option>))
-                  : Array.from(new Set((cache.getEquipment ? cache.getEquipment() : cache.equipment || []).flatMap((eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]]).filter(Boolean))).map((d) => (<option key={d} value={d}>{d}</option>))}
-              </select>
-            </div>
+          {/* Date */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("cleaning.form.date")}</label>
+            <input
+              type="date"
+              value={form.Date}
+              onChange={(e) => handleChange("Date", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
           </div>
 
+          {/* Model / Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.cleanedBy")}</label>
+            <label className="block text-sm font-medium mb-2">{t("cleaning.form.model")}</label>
             <select
-              value={form["Cleaned By"]}
-              onChange={(e) => handleChange("Cleaned By", e.target.value)}
-              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
+              value={form["Model / Type"]}
+              onChange={(e) => handleChange("Model / Type", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
             >
-              <option value="">{t("cleaning.form.selectCleaner")}</option>
-              {allUserNames.map((name) => (
+              <option value="">{t("cleaning.form.chooseModel")}</option>
+              {modelOptions.map((model) => (
+                <option key={model} value={model}>{model}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Plate Number */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("cleaning.form.plate")}</label>
+            <select
+              value={form["Plate Number"]}
+              onChange={(e) => handleChange("Plate Number", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">{t("cleaning.form.choosePlate")}</option>
+              {plateOptions.map((plate) => (
+                <option key={plate} value={plate}>{plate}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Driver */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("cleaning.form.driver")}</label>
+            <select
+              value={form["Driver"]}
+              onChange={(e) => handleChange("Driver", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">{t("cleaning.form.chooseDriver")}</option>
+              {driverOptions.map((driver) => (
+                <option key={driver} value={driver}>{driver}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Cleaner */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("cleaning.form.cleaner")}</label>
+            <select
+              value={form["Cleaner"]}
+              onChange={(e) => handleChange("Cleaner", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">{t("cleaning.form.chooseCleaner")}</option>
+              {cleanerOptions.map((cleaner) => (
+                <option key={cleaner} value={cleaner}>{cleaner}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Exterior Cleaning */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("cleaning.form.exteriorCleaning")}</label>
+            <textarea
+              value={form["Exterior Cleaning"]}
+              onChange={(e) => handleChange("Exterior Cleaning", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="2"
+              placeholder={t("cleaning.form.exteriorPlaceholder")}
+            ></textarea>
+          </div>
+
+          {/* Interior Cleaning */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("cleaning.form.interiorCleaning")}</label>
+            <textarea
+              value={form["Interior Cleaning"]}
+              onChange={(e) => handleChange("Interior Cleaning", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="2"
+              placeholder={t("cleaning.form.interiorPlaceholder")}
+            ></textarea>
+          </div>
+
+          {/* Engine Cleaning */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("cleaning.form.engineCleaning")}</label>
+            <textarea
+              value={form["Engine Cleaning"]}
+              onChange={(e) => handleChange("Engine Cleaning", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="2"
+              placeholder={t("cleaning.form.enginePlaceholder")}
+            ></textarea>
+          </div>
+
+          {/* Other Services */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("cleaning.form.otherServices")}</label>
+            <textarea
+              value={form["Other Services"]}
+              onChange={(e) => handleChange("Other Services", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="2"
+              placeholder={t("cleaning.form.otherPlaceholder")}
+            ></textarea>
+          </div>
+
+          {/* Performed By */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("cleaning.form.performedBy")}</label>
+            <select
+              value={form["Performed By"]}
+              onChange={(e) => handleChange("Performed By", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">{t("cleaning.form.choosePerformer")}</option>
+              {performers.map((name) => (
                 <option key={name} value={name}>{name}</option>
               ))}
             </select>
           </div>
 
+          {/* Photo Before */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.cleaningType")}</label>
-            <select
-              value={form["Cleaning Type"]}
-              onChange={(e) => handleChange("Cleaning Type", e.target.value)}
-              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
-            >
-              <option value="">{t("cleaning.form.selectCleaningType")}</option>
-              <option value="Blow Cleaning">{t("cleaningTypes.Blow Cleaning")}</option>
-              <option value="Water Wash">{t("cleaningTypes.Water Wash")}</option>
-              <option value="Full Cleaning (Air & Water)">{t("cleaningTypes.Full Cleaning (Air & Water)")}</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.comments")}</label>
-            <textarea
-              rows={3}
-              value={form.Comments}
-              onChange={(e) => handleChange("Comments", e.target.value)}
-              className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all resize-none"
-            />
-          </div>
-
-          {["Photo Before", "Photo After"].map((field) => (
-            <div key={field}>
-              <label className="block text-sm font-medium text-gray-300 mb-3">{t(`cleaning.form.${field.toLowerCase().replace(' ', '')}`)}</label>
-              <div className="flex gap-3">
-                <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-700 hover:to-sky-800 text-white px-4 py-3 rounded-xl transition-all shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50">
-                  <Upload size={18} />
-                  <span className="font-medium">{t("common.upload")}</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], field)} />
-                </label>
-                <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white px-4 py-3 rounded-xl transition-all shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50">
-                  <Camera size={18} />
-                  <span className="font-medium">{t("common.camera")}</span>
-                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], field)} />
-                </label>
-              </div>
-              {form[field] && (
-                <div className="mt-4 p-2 bg-gray-800/30 rounded-xl border border-gray-700">
-                  <img src={form[field]} alt={t(`cleaning.form.${field.toLowerCase().replace(' ', '')}`)} className="max-h-64 mx-auto rounded-lg object-contain" />
+            <label className="block text-sm font-medium mb-2">{t("cleaning.form.photoBefore")}</label>
+            <div className="flex items-center gap-4">
+              <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700">
+                <Upload className="w-8 h-8 text-gray-400" />
+                <span className="mt-2 text-xs text-center text-gray-400">{t("cleaning.form.upload")}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFile(e.target.files[0], "Photo Before")}
+                  className="hidden"
+                />
+              </label>
+              {form["Photo Before"] && (
+                <div className="relative">
+                  <img
+                    src={form["Photo Before"]}
+                    alt="Before"
+                    className="w-32 h-32 object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleChange("Photo Before", null)}
+                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                  >
+                    ×
+                  </button>
                 </div>
               )}
             </div>
-          ))}
+          </div>
 
+          {/* Photo After */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("cleaning.form.photoAfter")}</label>
+            <div className="flex items-center gap-4">
+              <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700">
+                <Upload className="w-8 h-8 text-gray-400" />
+                <span className="mt-2 text-xs text-center text-gray-400">{t("cleaning.form.upload")}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFile(e.target.files[0], "Photo After")}
+                  className="hidden"
+                />
+              </label>
+              {form["Photo After"] && (
+                <div className="relative">
+                  <img
+                    src={form["Photo After"]}
+                    alt="After"
+                    className="w-32 h-32 object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleChange("Photo After", null)}
+                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Comments */}
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("cleaning.form.comments")}</label>
+            <textarea
+              value={form["Comments"]}
+              onChange={(e) => handleChange("Comments", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="3"
+              placeholder={t("cleaning.form.commentsPlaceholder")}
+            ></textarea>
+          </div>
+
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-4 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-500 hover:from-sky-700 hover:to-indigo-600 text-white font-semibold text-lg shadow-lg shadow-sky-500/50 hover:shadow-sky-500/70 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`w-full py-3 px-4 rounded-md font-medium ${
+              submitting
+                ? "bg-gray-600 cursor-not-allowed"
+                : "bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700"
+            } transition`}
           >
-            {submitting ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                {t("cleaning.form.submitting")}
-              </span>
-            ) : (
-              t("cleaning.form.submit")
-            )}
+            {submitting ? t("cleaning.form.submitting") : t("cleaning.form.submit")}
           </button>
         </form>
       </div>
