@@ -12,6 +12,8 @@ export default function Maintenance() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  const role = user?.role;
+
   const cards = [
     {
       title: t("maintenance.addLog.title"),
@@ -20,6 +22,7 @@ export default function Maintenance() {
       link: "/maintenance/form",
       gradient: "from-blue-600 to-cyan-500",
       glow: "shadow-[0_0_20px_3px_rgba(59,130,246,0.5)]",
+      allowedRoles: ["Supervisor", "Mechanic"], // 🚫 Driver hidden
     },
     {
       title: t("maintenance.history.title"),
@@ -28,8 +31,13 @@ export default function Maintenance() {
       link: "/maintenance/history",
       gradient: "from-emerald-600 to-green-500",
       glow: "shadow-[0_0_20px_3px_rgba(34,197,94,0.5)]",
+      allowedRoles: ["Supervisor", "Mechanic", "Driver"], // ✅ Driver allowed
     },
   ];
+
+  const visibleCards = cards.filter((card) =>
+    card.allowedRoles.includes(role)
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
@@ -62,7 +70,7 @@ export default function Maintenance() {
         </div>
 
         <div className="grid gap-8 sm:grid-cols-2">
-          {cards.map((card) => (
+          {visibleCards.map((card) => (
             <Link to={card.link} key={card.link}>
               <Card
                 className={`rounded-2xl bg-gradient-to-br ${card.gradient} ${card.glow} hover:scale-[1.04] hover:brightness-110 transition-all duration-300 border border-white/10 backdrop-blur-md`}
