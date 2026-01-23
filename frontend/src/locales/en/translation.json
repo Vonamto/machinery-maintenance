@@ -98,7 +98,6 @@
       "chooseModel": "--- Choose Model ---",
       "choosePlate": "--- Choose Plate ---",
       "chooseDriver": "--- Choose Driver ---",
-      "choosePerformer": "--- Select Performer ---",
       "descriptionPlaceholder": "Describe the maintenance performed...",
       "photoBefore": "Photo Before",
       "photoAfter": "Photo After",
@@ -107,7 +106,6 @@
       "alerts": {
         "missingAsset": "Please choose at least Model, Plate Number, or Driver.",
         "missingDescription": "Please enter a description of work.",
-        "missingPerformer": "Please select who performed the work.",
         "success": "Maintenance log added successfully.",
         "error": "Error",
         "networkError": "Network error submitting form."
