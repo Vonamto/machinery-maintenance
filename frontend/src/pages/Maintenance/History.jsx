@@ -1,6 +1,6 @@
 // frontend/src/pages/Maintenance/History.jsx
 import React, { useEffect, useState, useMemo } from "react";
-import { ArrowLeft, History as HistoryIcon, Wrench } from "lucide-react";
+import { ArrowLeft, Wrench } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
@@ -29,7 +29,7 @@ export default function MaintenanceHistory() {
   const navigate = useNavigate();
 
   const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [filters, setFilters] = useState({
     model: "",
@@ -39,32 +39,51 @@ export default function MaintenanceHistory() {
     to: "",
   });
 
-  /* ---------------- Load data ---------------- */
+  /* ---------------- Load Maintenance Log ---------------- */
 
   useEffect(() => {
     async function load() {
-      setLoading(true);
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(`${CONFIG.BACKEND_URL}/api/Maintenance_Log`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-        if (Array.isArray(data)) setRows(data.reverse());
+        if (Array.isArray(data)) {
+          setRows(data.reverse());
+        }
       } catch (err) {
         console.error("Error loading maintenance history:", err);
-      } finally {
-        setLoading(false);
       }
     }
     load();
   }, []);
 
-  /* ---------------- Driver auto-filter ---------------- */
+  /* ---------------- Ensure Equipment Cache is Ready ---------------- */
+
+  useEffect(() => {
+    const ensureEquipmentLoaded = async () => {
+      const hasEquipment =
+        cache.getEquipment && cache.getEquipment().length > 0;
+
+      if (!hasEquipment) {
+        await cache.forceRefreshEquipment?.();
+      }
+
+      setLoading(false);
+    };
+
+    ensureEquipmentLoaded();
+  }, [cache]);
+
+  /* ---------------- Driver → Allowed Plates ---------------- */
 
   const driverAllowedPlates = useMemo(() => {
     if (user?.role !== "Driver") return null;
+
     const equipment = cache.getEquipment?.() || [];
+    if (!equipment.length) return null;
+
     return equipment
       .filter(
         (e) =>
@@ -76,30 +95,6 @@ export default function MaintenanceHistory() {
       .filter(Boolean);
   }, [user, cache]);
 
-  /* ---------------- Filter options ---------------- */
-
-  const modelOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(rows.map((r) => r["Model / Type"]).filter(Boolean))
-      ).sort(),
-    [rows]
-  );
-
-  const plateOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(rows.map((r) => r["Plate Number"]).filter(Boolean))
-      ).sort(),
-    [rows]
-  );
-
-  const driverOptions = useMemo(
-    () =>
-      Array.from(new Set(rows.map((r) => r["Driver"]).filter(Boolean))).sort(),
-    [rows]
-  );
-
   /* ---------------- Filter rows ---------------- */
 
   const filteredRows = useMemo(() => {
@@ -109,9 +104,10 @@ export default function MaintenanceHistory() {
       const plate = r["Plate Number"] || "";
       const driver = r["Driver"] || "";
 
+      // 🔒 Driver restriction (plate-based)
       if (
         user?.role === "Driver" &&
-        driverAllowedPlates &&
+        Array.isArray(driverAllowedPlates) &&
         !driverAllowedPlates.includes(plate)
       ) {
         return false;
@@ -147,13 +143,10 @@ export default function MaintenanceHistory() {
 
   /* ---------------- Loading ---------------- */
 
-  if (loading && rows.length === 0) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mb-4" />
-          <p className="text-lg">{t("maintenance.history.loading")}</p>
-        </div>
+        <p className="text-lg">{t("maintenance.history.loading")}</p>
       </div>
     );
   }
