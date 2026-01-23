@@ -11,7 +11,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const role = user?.role || "Guest";
   const { t } = useTranslation();
-
+  
   const cards = [
     {
       title: t("dashboard.maintenanceLog.title"),
