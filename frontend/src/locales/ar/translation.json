@@ -98,8 +98,8 @@
       "chooseModel": "---  اختر الطراز  ---",
       "choosePlate": "---  اختر رقم اللوحة  ---",
       "chooseDriver": "---  اختر السائق  ---",
-      "choosePerformer": "---  اختر المنفذ  ---",
       "descriptionPlaceholder": " صف أعمال الصيانة المنجزة ...",
+      "otherOption": "خيار آخر",
       "photoBefore": " صورة قبل ",
       "photoAfter": " صورة بعد ",
       "photoProblem": " صورة العطل / المشكلة ",
@@ -107,19 +107,20 @@
       "alerts": {
         "missingAsset": " يرجى اختيار الطراز أو رقم اللوحة أو السائق .",
         "missingDescription": " يرجى إدخال وصف العمل .",
-        "missingPerformer": " يرجى اختيار من قام بالعمل .",
         "success": " تمت إضافة سجل الصيانة بنجاح .",
         "error": " خطأ ",
         "networkError": " خطأ في الشبكة أثناء إرسال النموذج ."
       }
     }
   },
+
   "roles": {
     "Supervisor": " مشرف ",
     "Mechanic": " ميكانيكي ",
     "Driver": " سائق ",
     "Cleaning Guy": " عامل نظافة "
   },
+
   "status": {
     "Pending": " قيد الانتظار ",
     "In Progress": " قيد التنفيذ ",
@@ -129,16 +130,18 @@
     "Inactive": " غير نشط ",
     "Maintenance": " تحت الصيانة "
   },
+
   "cleaningTypes": {
     "Blow Cleaning": " تنظيف بالهواء ",
     "Water Wash": " غسل بالماء ",
     "Full Cleaning (Air & Water)": " تنظيف كامل (هواء وماء) "
   },
+
   "requestTypes": {
     "Oil Service": " تغيير زيت ",
     "Grease Service": " تشحيم ",
     "Full Service (Oil + Greasing)": " خدمة كاملة (زيت + تشحيم) "
-  },
+  }
   "requests": {
     "menu": {
       "back": " رجوع ",
