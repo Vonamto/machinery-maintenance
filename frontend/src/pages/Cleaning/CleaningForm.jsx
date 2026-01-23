@@ -1,7 +1,7 @@
 // frontend/src/pages/Cleaning/CleaningForm.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Upload, Droplets, Loader2 } from "lucide-react"; // Added Loader2
+import { ArrowLeft, Camera, Upload, Droplets, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
@@ -13,6 +13,13 @@ export default function CleaningForm() {
   const navigate = useNavigate();
   const cache = useCache();
   const { t } = useTranslation();
+
+  // 🚫 Driver cannot access
+  if (user?.role === "Driver") {
+    navigate("/", { replace: true });
+    return null;
+  }
+
   const todayDate = new Date().toISOString().split("T")[0];
 
   const [form, setForm] = useState({
@@ -31,98 +38,59 @@ export default function CleaningForm() {
   const [plateOptions, setPlateOptions] = useState([]);
   const [driverOptions, setDriverOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true); // Add loading state
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        // Check if essential data exists in cache
         const hasModels = cache.getModels && cache.getModels().length > 0;
-        const hasUsernames = cache.getUsernames && cache.getUsernames().length > 0;
+        const hasUsernames =
+          cache.getUsernames && cache.getUsernames().length > 0;
 
-        // If data is missing, force a refresh
         if (!hasModels || !hasUsernames) {
-          // Use optional chaining to avoid errors if functions don't exist
           await Promise.allSettled([
             cache.forceRefreshEquipment?.(),
-            cache.forceRefreshUsernames?.()
+            cache.forceRefreshUsernames?.(),
           ]);
         }
 
-        // After attempting to load, set initial options from cache
-        const models = cache.getModels ? cache.getModels() : [];
-        setModelOptions(models);
-
-        const cachedUsers = cache.getUsernames ? cache.getUsernames() : cache.usernames || [];
-        const allUserNames = (cachedUsers || [])
-          .map((u) => u.Name || u["Full Name"])
-          .filter(Boolean);
-        setDriverOptions(allUserNames); // Use all user names for initial drivers too
-
-      } catch (err) {
-        console.error("Error during initial data load:", err);
-        // Optionally, you could display an error message to the user here
-        // For now, just log and proceed with potentially empty arrays
+        setModelOptions(cache.getModels ? cache.getModels() : []);
+        const users =
+          cache.getUsernames?.() ||
+          cache.usernames ||
+          [];
+        setDriverOptions(
+          users.map((u) => u.Name || u["Full Name"]).filter(Boolean)
+        );
       } finally {
-        setLoading(false); // Always stop loading eventually
+        setLoading(false);
       }
     };
 
     loadInitialData();
-  }, [cache]); // Run once on mount
-
+  }, [cache]);
 
   useEffect(() => {
     const model = form["Model / Type"];
-    if (!model) {
-      setPlateOptions([]);
-      return;
-    }
-    const plates = cache.getPlatesByModel ? cache.getPlatesByModel(model) : [];
-    setPlateOptions(plates);
+    if (!model) return setPlateOptions([]);
+    setPlateOptions(cache.getPlatesByModel?.(model) || []);
   }, [form["Model / Type"], cache]);
 
   useEffect(() => {
     const plate = form["Plate Number"];
-    if (!plate) {
-      setDriverOptions([]);
-      return;
-    }
-    const eq = cache.getEquipmentByPlate ? cache.getEquipmentByPlate(plate) : null;
+    if (!plate) return;
+    const eq = cache.getEquipmentByPlate?.(plate);
     if (eq) {
-      setForm((p) => ({ ...p, "Model / Type": eq["Model / Type"] || p["Model / Type"] }));
-      const drivers = cache.getDriversByPlate ? cache.getDriversByPlate(plate) : [];
-      setDriverOptions(drivers);
+      setForm((p) => ({
+        ...p,
+        "Model / Type": eq["Model / Type"] || p["Model / Type"],
+      }));
+      setDriverOptions(cache.getDriversByPlate?.(plate) || []);
     }
   }, [form["Plate Number"], cache]);
 
-  useEffect(() => {
-    const driver = form.Driver;
-    if (!driver) return;
-    const allEquipment = cache.getEquipment ? cache.getEquipment() : cache.equipment || [];
-    const matches = (allEquipment || []).filter(
-      (e) => e["Driver 1"] === driver || e["Driver 2"] === driver || e["Driver"] === driver
-    );
-    if (matches.length === 1) {
-      const eq = matches[0];
-      setForm((p) => ({
-        ...p,
-        "Plate Number": eq["Plate Number"] || p["Plate Number"],
-        "Model / Type": eq["Model / Type"] || p["Model / Type"],
-      }));
-      setPlateOptions([eq["Plate Number"]]);
-      setDriverOptions([matches[0]["Driver 1"], matches[0]["Driver 2"]].filter(Boolean));
-    } else if (matches.length > 1) {
-      setPlateOptions(matches.map((m) => m["Plate Number"]));
-      setDriverOptions([...new Set(matches.flatMap((m) => [m["Driver 1"], m["Driver 2"]]).filter(Boolean))]);
-    } else {
-      setPlateOptions([]);
-    }
-  }, [form.Driver, cache]);
-
-  const handleChange = (name, value) => {
+  const handleChange = (name, value) =>
     setForm((p) => ({ ...p, [name]: value }));
-  };
 
   const handleFile = (file, field) => {
     if (!file) return;
@@ -133,6 +101,7 @@ export default function CleaningForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!form["Model / Type"] && !form["Plate Number"] && !form.Driver) {
       alert(t("cleaning.form.alerts.missingAsset"));
       return;
@@ -158,34 +127,25 @@ export default function CleaningForm() {
         alert(t("cleaning.form.alerts.success"));
         navigate("/cleaning");
       } else {
-        alert(`${t("cleaning.form.alerts.error")}: ${data.message || "Unknown error"}`);
+        alert(`${t("cleaning.form.alerts.error")}: ${data.message || ""}`);
       }
-    } catch (err) {
-      console.error("Submit error:", err);
+    } catch {
       alert(t("cleaning.form.alerts.networkError"));
     } finally {
       setSubmitting(false);
     }
   };
-
-  const cachedUsers = cache.getUsernames ? cache.getUsernames() : cache.usernames || [];
-  const allUserNames = (cachedUsers || [])
-    .map((u) => u.Name || u["Full Name"])
-    .filter(Boolean);
-
-  // Loading Screen
+//loading
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
         <Navbar user={user} />
-        <div className="max-w-4xl mx-auto p-6 flex flex-col items-center justify-center h-[calc(100vh-120px)]"> {/* Adjust height calculation if needed */}
-          <Loader2 className="h-12 w-12 animate-spin text-sky-400 mb-4" />
-          <p className="text-lg text-gray-300">{t("common.loading") || "Loading form data..."}</p>
+        <div className="flex items-center justify-center h-[calc(100vh-120px)]">
+          <Loader2 className="h-12 w-12 animate-spin text-sky-400" />
         </div>
       </div>
     );
   }
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
