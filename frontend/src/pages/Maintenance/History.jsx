@@ -37,6 +37,7 @@ export default function MaintenanceHistory() {
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedIndex, setExpandedIndex] = useState(null);
 
   const [filters, setFilters] = useState({
     model: "",
@@ -339,8 +340,11 @@ export default function MaintenanceHistory() {
             <div className="md:hidden space-y-4">
               {filteredRows.map((r, i) => (
                 <div
-                  key={i}
-                  className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg"
+                   key={i}
+                   onClick={() =>
+                     setExpandedIndex(expandedIndex === i ? null : i)
+                   }
+                   className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg cursor-pointer"
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div>
@@ -351,7 +355,7 @@ export default function MaintenanceHistory() {
                         {r["Model / Type"]}
                       </p>
                     </div>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs font-semibold text-gray-300">
                       {r["Date"]}
                     </span>
                   </div>
@@ -383,29 +387,42 @@ export default function MaintenanceHistory() {
                     </p>
                   </div>
 
-                  <div className="flex gap-2 mt-3">
-                    {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
-                      (field) =>
-                        r[field] ? (
-                          <a
-                            key={field}
-                            href={r[field]}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="relative group"
-                          >
-                            <img
-                              src={getThumbnailUrl(r[field])}
-                              alt={field}
-                              className="h-16 w-16 object-cover rounded-lg border border-gray-600"
-                            />
-                            <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                              <ExternalLink className="w-5 h-5 text-emerald-400" />
-                            </div>
-                          </a>
-                        ) : null
-                    )}
-                  </div>
+                  {expandedIndex === i && (
+  <>
+    {/* Comments */}
+    <div className="mt-3 text-sm">
+      <span className="text-gray-400">
+        {t("maintenance.history.table.comments")}:
+      </span>{" "}
+      {r["Comments"] || "---"}
+    </div>
+
+    {/* Photos */}
+    <div className="flex gap-2 mt-3">
+      {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
+        (field) =>
+          r[field] ? (
+            <a
+              key={field}
+              href={r[field]}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative group"
+            >
+              <img
+                src={getThumbnailUrl(r[field])}
+                alt={field}
+                className="h-16 w-16 object-cover rounded-lg border border-gray-600"
+              />
+              <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                <ExternalLink className="w-5 h-5 text-emerald-400" />
+              </div>
+            </a>
+          ) : null
+      )}
+    </div>
+  </>
+)}
                 </div>
               ))}
             </div>
