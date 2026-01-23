@@ -284,7 +284,7 @@ export default function MaintenanceForm() {
               value={descriptionType}
               onChange={(e) => {
                 setDescriptionType(e.target.value);
-                if (e.target.value !== "OTHER_AR") {
+                if (e.target.value !== "OTHER") {
                   setOtherDescription("");
                 }
               }}
@@ -298,7 +298,7 @@ export default function MaintenanceForm() {
               ))}
             </select>
 
-            {descriptionType === "OTHER_AR" && (
+            {descriptionType === "OTHER" && (
               <textarea
                 rows={3}
                 value={otherDescription}
