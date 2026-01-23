@@ -14,6 +14,8 @@ import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
 import { useTranslation } from "react-i18next";
 
+/* ---------------- Helpers ---------------- */
+
 const getThumbnailUrl = (url) => {
   if (!url) return null;
   const match = url.match(/id=([^&]+)/);
@@ -24,14 +26,17 @@ const getThumbnailUrl = (url) => {
   return url;
 };
 
+/* ---------------- Component ---------------- */
+
 export default function CleaningHistory() {
   const { user } = useAuth();
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  // filters
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [expandedIndex, setExpandedIndex] = useState(null);
+
   const [filters, setFilters] = useState({
     model: "",
     plate: "",
@@ -41,6 +46,8 @@ export default function CleaningHistory() {
     from: "",
     to: "",
   });
+
+  /* ---------------- Load Cleaning Log ---------------- */
 
   useEffect(() => {
     async function load() {
@@ -61,7 +68,8 @@ export default function CleaningHistory() {
     load();
   }, []);
 
-  // derive dropdown options dynamically
+  /* ---------------- Filter options ---------------- */
+
   const modelOptions = useMemo(
     () =>
       Array.from(
@@ -72,7 +80,9 @@ export default function CleaningHistory() {
 
   const plateOptions = useMemo(
     () =>
-      Array.from(new Set(rows.map((r) => r["Plate Number"]).filter(Boolean))).sort(),
+      Array.from(
+        new Set(rows.map((r) => r["Plate Number"]).filter(Boolean))
+      ).sort(),
     [rows]
   );
 
@@ -84,17 +94,22 @@ export default function CleaningHistory() {
 
   const cleanedByOptions = useMemo(
     () =>
-      Array.from(new Set(rows.map((r) => r["Cleaned By"]).filter(Boolean))).sort(),
+      Array.from(
+        new Set(rows.map((r) => r["Cleaned By"]).filter(Boolean))
+      ).sort(),
     [rows]
   );
 
   const cleaningTypeOptions = useMemo(
     () =>
-      Array.from(new Set(rows.map((r) => r["Cleaning Type"]).filter(Boolean))).sort(),
+      Array.from(
+        new Set(rows.map((r) => r["Cleaning Type"]).filter(Boolean))
+      ).sort(),
     [rows]
   );
 
-  // apply filters
+  /* ---------------- Apply filters ---------------- */
+
   const filteredRows = useMemo(() => {
     return rows.filter((r) => {
       const date = r["Date"];
@@ -107,36 +122,57 @@ export default function CleaningHistory() {
       const matchModel = !filters.model || model === filters.model;
       const matchPlate = !filters.plate || plate === filters.plate;
       const matchDriver = !filters.driver || driver === filters.driver;
-      const matchCleanedBy = !filters.cleanedBy || cleanedBy === filters.cleanedBy;
-      const matchCleaningType = !filters.cleaningType || cleaningType === filters.cleaningType;
+      const matchCleanedBy =
+        !filters.cleanedBy || cleanedBy === filters.cleanedBy;
+      const matchCleaningType =
+        !filters.cleaningType || cleaningType === filters.cleaningType;
 
       let matchDate = true;
       if (filters.from && date < filters.from) matchDate = false;
       if (filters.to && date > filters.to) matchDate = false;
 
-      return matchModel && matchPlate && matchDriver && matchCleanedBy && matchCleaningType && matchDate;
+      return (
+        matchModel &&
+        matchPlate &&
+        matchDriver &&
+        matchCleanedBy &&
+        matchCleaningType &&
+        matchDate
+      );
     });
   }, [rows, filters]);
 
   const resetFilters = () =>
-    setFilters({ model: "", plate: "", driver: "", cleanedBy: "", cleaningType: "", from: "", to: "" });
+    setFilters({
+      model: "",
+      plate: "",
+      driver: "",
+      cleanedBy: "",
+      cleaningType: "",
+      from: "",
+      to: "",
+    });
+
+  /* ---------------- Loading ---------------- */
 
   if (loading && rows.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500 mb-4"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500 mb-4" />
           <p className="text-lg">{t("cleaning.history.loading")}</p>
         </div>
       </div>
     );
   }
 
+  /* ---------------- UI ---------------- */
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
+
       <div className="max-w-7xl mx-auto p-6">
-        {/* back button */}
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
@@ -148,7 +184,6 @@ export default function CleaningHistory() {
           {t("common.back")}
         </button>
 
-        {/* header */}
         <div className="mb-8 flex items-center gap-4">
           <div className="p-3 rounded-xl bg-gradient-to-br from-sky-600 to-indigo-500 shadow-lg shadow-sky-500/40">
             <Droplets className="w-8 h-8 text-white" />
@@ -163,13 +198,15 @@ export default function CleaningHistory() {
           </div>
         </div>
 
-        {/* filters */}
+        {/* Filters */}
         <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-4 mb-8 shadow-lg">
           <div className="grid md:grid-cols-7 sm:grid-cols-2 gap-4">
             <select
               value={filters.model}
-              onChange={(e) => setFilters((f) => ({ ...f, model: e.target.value }))}
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, model: e.target.value }))
+              }
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
             >
               <option value="">{t("cleaning.history.filters.model")}</option>
               {modelOptions.map((m) => (
@@ -179,8 +216,10 @@ export default function CleaningHistory() {
 
             <select
               value={filters.plate}
-              onChange={(e) => setFilters((f) => ({ ...f, plate: e.target.value }))}
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, plate: e.target.value }))
+              }
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
             >
               <option value="">{t("cleaning.history.filters.plate")}</option>
               {plateOptions.map((p) => (
@@ -190,8 +229,10 @@ export default function CleaningHistory() {
 
             <select
               value={filters.driver}
-              onChange={(e) => setFilters((f) => ({ ...f, driver: e.target.value }))}
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, driver: e.target.value }))
+              }
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
             >
               <option value="">{t("cleaning.history.filters.driver")}</option>
               {driverOptions.map((d) => (
@@ -201,10 +242,14 @@ export default function CleaningHistory() {
 
             <select
               value={filters.cleanedBy}
-              onChange={(e) => setFilters((f) => ({ ...f, cleanedBy: e.target.value }))}
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, cleanedBy: e.target.value }))
+              }
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
             >
-              <option value="">{t("cleaning.history.filters.cleanedBy")}</option>
+              <option value="">
+                {t("cleaning.history.filters.cleanedBy")}
+              </option>
               {cleanedByOptions.map((c) => (
                 <option key={c}>{c}</option>
               ))}
@@ -212,35 +257,42 @@ export default function CleaningHistory() {
 
             <select
               value={filters.cleaningType}
-              onChange={(e) => setFilters((f) => ({ ...f, cleaningType: e.target.value }))}
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, cleaningType: e.target.value }))
+              }
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
             >
-              <option value="">{t("cleaning.history.filters.cleaningType")}</option>
-              {cleaningTypeOptions.map((t) => (
-                <option key={t}>{t}</option>
+              <option value="">
+                {t("cleaning.history.filters.cleaningType")}
+              </option>
+              {cleaningTypeOptions.map((c) => (
+                <option key={c}>{c}</option>
               ))}
             </select>
 
             <input
               type="date"
               value={filters.from}
-              onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
-              placeholder={t("cleaning.history.filters.from")}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, from: e.target.value }))
+              }
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
             />
 
             <input
               type="date"
               value={filters.to}
-              onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
-              placeholder={t("cleaning.history.filters.to")}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, to: e.target.value }))
+              }
+              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
             />
           </div>
+
           <div className="flex justify-end mt-4">
             <button
               onClick={resetFilters}
-              className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium transition-all"
+              className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium"
             >
               <XCircle size={14} />
               {t("cleaning.history.filters.reset")}
@@ -248,94 +300,200 @@ export default function CleaningHistory() {
           </div>
         </div>
 
-        {/* main content */}
+        {/* Empty */}
         {filteredRows.length === 0 ? (
           <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
             <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">{t("cleaning.history.noResults")}</p>
+            <p className="text-gray-400 text-lg">
+              {t("cleaning.history.noResults")}
+            </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
-            <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
-              <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
-                <tr>
-                  {[
-                    t("cleaning.history.table.index"),
-                    t("cleaning.history.table.date"),
-                    t("cleaning.history.table.model"),
-                    t("cleaning.history.table.plate"),
-                    t("cleaning.history.table.driver"),
-                    t("cleaning.history.table.cleanedBy"),
-                    t("cleaning.history.table.cleaningType"),
-                    t("cleaning.history.table.comments"),
-                    t("cleaning.history.table.photoBefore"),
-                    t("cleaning.history.table.photoAfter"),
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="p-4 text-left text-sm font-semibold text-gray-300"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRows.map((r, i) => (
-                  <tr
-                    key={i}
-                    className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
-                      i % 2 === 0 ? "bg-white/[0.02]" : ""
-                    }`}
-                  >
-                    <td className="p-4 text-sm text-gray-400">{i + 1}</td>
-                    <td className="p-4 text-sm">{r["Date"]}</td>
-                    <td className="p-4 text-sm">{r["Model / Type"]}</td>
-                    <td className="p-4 text-sm font-mono">{r["Plate Number"]}</td>
-                    <td className="p-4 text-sm">{r["Driver"]}</td>
-                    <td className="p-4 text-sm">{r["Cleaned By"]}</td>
-                    <td className="p-4 text-sm">
-                      <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-sky-500/20 text-sky-300">
-                        {t(`cleaningTypes.${r["Cleaning Type"]}`) || r["Cleaning Type"]}
-                      </span>
-                    </td>
-                    <td className="p-4 text-sm max-w-xs truncate">
-                      {r["Comments"] || (
-                        <span className="text-gray-500">---</span>
-                      )}
-                    </td>
-                    {["Photo Before", "Photo After"].map((field) => (
-                      <td key={field} className="p-4">
-                        {r[field] ? (
-                          <a
-                            href={r[field]}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="relative group block"
-                          >
-                            <img
-                              src={getThumbnailUrl(r[field])}
-                              alt={t(`cleaning.history.table.${field.toLowerCase().replace(' ', '')}`)}
-                              className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-sky-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
-                              onError={(e) => {
-                                e.target.style.display = "none";
-                                e.target.nextSibling.style.display = "flex";
-                              }}
-                            />
-                            <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                              <ExternalLink className="w-6 h-6 text-sky-400" />
-                            </div>
-                          </a>
-                        ) : (
-                          <span className="text-gray-500 text-sm">---</span>
+          <>
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-4">
+              {filteredRows.map((r, i) => (
+                <div
+                  key={i}
+                  onClick={() =>
+                    setExpandedIndex(expandedIndex === i ? null : i)
+                  }
+                  className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg cursor-pointer"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="text-lg font-semibold text-sky-400">
+                        {r["Plate Number"]}
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        {r["Model / Type"]}
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold text-gray-300">
+                      {r["Date"]}
+                    </span>
+                  </div>
+
+                  <div className="text-sm space-y-1">
+                    <p>
+                      <span className="text-gray-400">
+                        {t("cleaning.history.table.cleanedBy")}:
+                      </span>{" "}
+                      {r["Cleaned By"]}
+                    </p>
+                    <p>
+                      <span className="text-gray-400">
+                        {t("cleaning.history.table.cleaningType")}:
+                      </span>{" "}
+                      {t(`cleaningTypes.${r["Cleaning Type"]}`) ||
+                        r["Cleaning Type"]}
+                    </p>
+                    <p>
+                      <span className="text-gray-400">
+                        {t("cleaning.history.table.driver")}:
+                      </span>{" "}
+                      {r["Driver"]}
+                    </p>
+                  </div>
+
+                  {expandedIndex === i && (
+                    <>
+                      <div className="mt-3 text-sm">
+                        <span className="text-gray-400">
+                          {t("cleaning.history.table.comments")}:
+                        </span>{" "}
+                        {r["Comments"] || "---"}
+                      </div>
+
+                      <div className="flex gap-3 mt-3">
+                        {[
+                          {
+                            field: "Photo Before",
+                            label: t(
+                              "cleaning.history.table.photoBefore"
+                            ),
+                          },
+                          {
+                            field: "Photo After",
+                            label: t(
+                              "cleaning.history.table.photoAfter"
+                            ),
+                          },
+                        ].map(
+                          ({ field, label }) =>
+                            r[field] ? (
+                              <div
+                                key={field}
+                                className="flex flex-col items-center gap-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <a
+                                  href={r[field]}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="relative group"
+                                >
+                                  <img
+                                    src={getThumbnailUrl(r[field])}
+                                    alt={label}
+                                    className="h-16 w-16 object-cover rounded-lg border border-gray-600"
+                                  />
+                                  <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                                    <ExternalLink className="w-5 h-5 text-sky-400" />
+                                  </div>
+                                </a>
+                                <span className="text-[11px] text-gray-400 text-center">
+                                  {label}
+                                </span>
+                              </div>
+                            ) : null
                         )}
-                      </td>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
+              <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
+                <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
+                  <tr>
+                    {[
+                      "index",
+                      "date",
+                      "model",
+                      "plate",
+                      "driver",
+                      "cleanedBy",
+                      "cleaningType",
+                      "comments",
+                      "photoBefore",
+                      "photoAfter",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="p-4 text-left text-sm font-semibold text-gray-300"
+                      >
+                        {t(`cleaning.history.table.${h}`)}
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredRows.map((r, i) => (
+                    <tr
+                      key={i}
+                      className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
+                        i % 2 === 0 ? "bg-white/[0.02]" : ""
+                      }`}
+                    >
+                      <td className="p-4 text-sm text-gray-400">{i + 1}</td>
+                      <td className="p-4 text-sm">{r["Date"]}</td>
+                      <td className="p-4 text-sm">{r["Model / Type"]}</td>
+                      <td className="p-4 text-sm font-mono">
+                        {r["Plate Number"]}
+                      </td>
+                      <td className="p-4 text-sm">{r["Driver"]}</td>
+                      <td className="p-4 text-sm">{r["Cleaned By"]}</td>
+                      <td className="p-4 text-sm">
+                        {t(`cleaningTypes.${r["Cleaning Type"]}`) ||
+                          r["Cleaning Type"]}
+                      </td>
+                      <td className="p-4 text-sm max-w-xs truncate">
+                        {r["Comments"] || "---"}
+                      </td>
+
+                      {["Photo Before", "Photo After"].map((field) => (
+                        <td key={field} className="p-4">
+                          {r[field] ? (
+                            <a
+                              href={r[field]}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="relative group block"
+                            >
+                              <img
+                                src={getThumbnailUrl(r[field])}
+                                alt={field}
+                                className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-sky-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
+                              />
+                              <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                                <ExternalLink className="w-6 h-6 text-sky-400" />
+                              </div>
+                            </a>
+                          ) : (
+                            <span className="text-gray-500 text-sm">---</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
