@@ -45,7 +45,7 @@ export default function MaintenanceForm() {
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Grease/Oil request types reused
+  // Description options (i18n-safe)
   const DESCRIPTION_OPTIONS = [
     { key: "Oil Service", label: t("requestTypes.Oil Service") },
     { key: "Grease Service", label: t("requestTypes.Grease Service") },
@@ -53,7 +53,7 @@ export default function MaintenanceForm() {
       key: "Full Service (Oil + Greasing)",
       label: t("requestTypes.Full Service (Oil + Greasing)"),
     },
-    { key: "OTHER_AR", label: "خيار آخر" },
+    { key: "OTHER", label: t("maintenance.form.otherOption") }
   ];
 
   useEffect(() => {
@@ -108,7 +108,7 @@ export default function MaintenanceForm() {
     e.preventDefault();
 
     const finalDescription =
-      descriptionType === "OTHER_AR"
+      descriptionType === "OTHER"
         ? otherDescription.trim()
         : descriptionType;
 
