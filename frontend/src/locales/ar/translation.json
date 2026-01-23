@@ -177,8 +177,8 @@
       "cleaningType": "نوع التنظيف",
       "comments": "ملاحظات",
 
-      "photoBefore": "صورة قبل",
-      "photoAfter": "صورة بعد",
+      "photobefore": "صورة قبل",
+      "photoafter": "صورة بعد",
 
       "chooseModel": "--- اختر الطراز ---",
       "choosePlate": "--- اختر رقم اللوحة ---",
