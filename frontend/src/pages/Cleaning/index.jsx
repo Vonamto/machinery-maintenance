@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 
 export default function CleaningMenu() {
   const { user } = useAuth();
+  const role = user?.role;
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -21,6 +22,7 @@ export default function CleaningMenu() {
       link: "/cleaning/form",
       gradient: "from-sky-600 to-indigo-500",
       glow: "shadow-[0_0_15px_2px_rgba(56,189,248,0.6)]",
+      allowedRoles: ["Supervisor", "Mechanic", "Cleaning Guy"],
     },
     {
       title: t("cleaning.menu.cards.history.title"),
@@ -29,12 +31,18 @@ export default function CleaningMenu() {
       link: "/cleaning/history",
       gradient: "from-indigo-600 to-purple-500",
       glow: "shadow-[0_0_15px_2px_rgba(99,102,241,0.6)]",
+      allowedRoles: ["Supervisor", "Mechanic", "Cleaning Guy", "Driver"],
     },
   ];
+
+  const visibleCards = cards.filter((card) =>
+    card.allowedRoles.includes(role)
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
+
       <div className="p-6">
         {/* Back button */}
         <button
@@ -50,9 +58,9 @@ export default function CleaningMenu() {
         </h1>
 
         {/* Cards Grid */}
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-2">
-          {cards.map((card, index) => (
-            <Link to={card.link} key={index}>
+        <div className="grid gap-8 sm:grid-cols-2">
+          {visibleCards.map((card) => (
+            <Link to={card.link} key={card.link}>
               <Card
                 className={`rounded-2xl bg-gradient-to-br ${card.gradient} ${card.glow} hover:scale-[1.04] hover:brightness-110 transition-all duration-300 border border-white/10`}
               >
@@ -63,7 +71,9 @@ export default function CleaningMenu() {
                   <h2 className="text-xl font-semibold text-white drop-shadow-md">
                     {card.title}
                   </h2>
-                  <p className="text-gray-100/90 text-sm">{card.description}</p>
+                  <p className="text-gray-100/90 text-sm">
+                    {card.description}
+                  </p>
                 </CardContent>
               </Card>
             </Link>
