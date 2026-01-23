@@ -177,8 +177,8 @@
       "cleaningType": "Cleaning Type",
       "comments": "Comments",
 
-      "photoBefore": "Photo Before",
-      "photoAfter": "Photo After",
+      "photobefore": "Photo Before",
+      "photoafter": "Photo After",
 
       "chooseModel": "--- Choose Model ---",
       "choosePlate": "--- Choose Plate ---",
