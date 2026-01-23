@@ -1,7 +1,7 @@
 // frontend/src/pages/Maintenance/Form.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Upload, Wrench, Loader2 } from "lucide-react"; // Added Loader2
+import { ArrowLeft, Camera, Upload, Wrench, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
@@ -14,7 +14,16 @@ export default function MaintenanceForm() {
   const cache = useCache();
   const { t } = useTranslation();
 
+  // 🚫 Driver cannot access
+  if (user?.role === "Driver") {
+    navigate("/", { replace: true });
+    return null;
+  }
+
   const todayDate = new Date().toISOString().split("T")[0];
+
+  const [descriptionType, setDescriptionType] = useState("");
+  const [otherDescription, setOtherDescription] = useState("");
 
   const [form, setForm] = useState({
     Date: todayDate,
@@ -23,6 +32,7 @@ export default function MaintenanceForm() {
     Driver: "",
     "Description of Work": "",
     "Performed By": user?.full_name || "",
+    "Completion Date": todayDate,
     Comments: "",
     "Photo Before": "",
     "Photo After": "",
@@ -33,50 +43,33 @@ export default function MaintenanceForm() {
   const [plateOptions, setPlateOptions] = useState([]);
   const [driverOptions, setDriverOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true); // Add loading state
+  const [loading, setLoading] = useState(true);
+
+  // Grease/Oil request types reused
+  const DESCRIPTION_OPTIONS = [
+    { key: "Oil Service", label: t("requestTypes.Oil Service") },
+    { key: "Grease Service", label: t("requestTypes.Grease Service") },
+    {
+      key: "Full Service (Oil + Greasing)",
+      label: t("requestTypes.Full Service (Oil + Greasing)"),
+    },
+    { key: "OTHER_AR", label: "خيار آخر" },
+  ];
 
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        // Check if essential data exists in cache
         const hasModels = cache.getModels && cache.getModels().length > 0;
-        const hasUsernames = cache.getUsernames && cache.getUsernames().length > 0;
-
-        // If data is missing, force a refresh
-        if (!hasModels || !hasUsernames) {
-          // Use optional chaining to avoid errors if functions don't exist
-          await Promise.allSettled([
-            cache.forceRefreshEquipment?.(),
-            cache.forceRefreshUsernames?.()
-          ]);
+        if (!hasModels) {
+          await cache.forceRefreshEquipment?.();
         }
-
-        // After attempting to load, set initial options from cache
         setModelOptions(cache.getModels ? cache.getModels() : []);
-
-        const cachedUsers = cache.getUsernames ? cache.getUsernames() : [];
-        const performers = cachedUsers
-          .filter((u) => ["Supervisor", "Mechanic"].includes(u.Role))
-          .map((u) => u.Name || u["Full Name"])
-          .filter(Boolean);
-
-        if (user?.full_name && !performers.includes(user.full_name)) {
-          performers.unshift(user.full_name);
-        }
-        setDriverOptions(performers); // Use performers list for initial drivers too
-
-      } catch (err) {
-        console.error("Error during initial data load:", err);
-        // Optionally, you could display an error message to the user here
-        // For now, just log and proceed with potentially empty arrays
       } finally {
-        setLoading(false); // Always stop loading eventually
+        setLoading(false);
       }
     };
-
     loadInitialData();
-  }, [cache, user]); // Run once on mount
-
+  }, [cache]);
 
   useEffect(() => {
     const model = form["Model / Type"];
@@ -84,17 +77,13 @@ export default function MaintenanceForm() {
       setPlateOptions([]);
       return;
     }
-    setPlateOptions(
-      cache.getPlatesByModel ? cache.getPlatesByModel(model) : []
-    );
+    setPlateOptions(cache.getPlatesByModel?.(model) || []);
   }, [form["Model / Type"], cache]);
 
   useEffect(() => {
     const plate = form["Plate Number"];
-    if (!plate) {
-      setDriverOptions([]);
-      return;
-    }
+    if (!plate) return;
+
     const eq = cache.getEquipmentByPlate?.(plate);
     if (eq) {
       setForm((p) => ({
@@ -104,39 +93,6 @@ export default function MaintenanceForm() {
       setDriverOptions(cache.getDriversByPlate?.(plate) || []);
     }
   }, [form["Plate Number"], cache]);
-
-  useEffect(() => {
-    const driver = form.Driver;
-    if (!driver) return;
-
-    const allEquipment = cache.getEquipment?.() || [];
-    const matches = allEquipment.filter(
-      (e) =>
-        e["Driver 1"] === driver ||
-        e["Driver 2"] === driver ||
-        e["Driver"] === driver
-    );
-
-    if (matches.length === 1) {
-      const eq = matches[0];
-      setForm((p) => ({
-        ...p,
-        "Plate Number": eq["Plate Number"],
-        "Model / Type": eq["Model / Type"],
-      }));
-      setPlateOptions([eq["Plate Number"]]);
-      setDriverOptions(
-        [eq["Driver 1"], eq["Driver 2"]].filter(Boolean)
-      );
-    } else if (matches.length > 1) {
-      setPlateOptions(matches.map((m) => m["Plate Number"]));
-      setDriverOptions([
-        ...new Set(
-          matches.flatMap((m) => [m["Driver 1"], m["Driver 2"]]).filter(Boolean)
-        ),
-      ]);
-    }
-  }, [form.Driver, cache]);
 
   const handleChange = (name, value) =>
     setForm((p) => ({ ...p, [name]: value }));
@@ -151,26 +107,34 @@ export default function MaintenanceForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const finalDescription =
+      descriptionType === "OTHER_AR"
+        ? otherDescription.trim()
+        : descriptionType;
+
     if (!form["Model / Type"] && !form["Plate Number"] && !form.Driver) {
       alert(t("maintenance.form.alerts.missingAsset"));
       return;
     }
-    if (!form["Description of Work"]) {
+    if (!finalDescription) {
       alert(t("maintenance.form.alerts.missingDescription"));
-      return;
-    }
-    if (!form["Performed By"]) {
-      alert(t("maintenance.form.alerts.missingPerformer"));
       return;
     }
 
     setSubmitting(true);
     try {
+      const payload = {
+        ...form,
+        "Description of Work": finalDescription,
+        "Completion Date": form.Date,
+      };
+
       const res = await fetchWithAuth("/api/add/Maintenance_Log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
+
       const data = await res.json();
       if (data.status === "success") {
         alert(`✅ ${t("maintenance.form.alerts.success")}`);
@@ -185,36 +149,23 @@ export default function MaintenanceForm() {
     }
   };
 
-  const cachedUsers = cache.getUsernames ? cache.getUsernames() : [];
-  const performers = cachedUsers
-    .filter((u) => ["Supervisor", "Mechanic"].includes(u.Role))
-    .map((u) => u.Name || u["Full Name"])
-    .filter(Boolean);
-
-  if (user?.full_name && !performers.includes(user.full_name)) {
-    performers.unshift(user.full_name);
-  }
-
-  // Loading Screen
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
         <Navbar user={user} />
-        <div className="max-w-4xl mx-auto p-6 flex flex-col items-center justify-center h-[calc(100vh-120px)]"> {/* Adjust height calculation if needed */}
+        <div className="max-w-4xl mx-auto p-6 flex flex-col items-center justify-center h-[calc(100vh-120px)]">
           <Loader2 className="h-12 w-12 animate-spin text-cyan-400 mb-4" />
-          <p className="text-lg text-gray-300">{t("common.loading") || "Loading form data..."}</p>
+          <p className="text-lg text-gray-300">{t("common.loading")}</p>
         </div>
       </div>
     );
   }
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
 
       <div className="max-w-4xl mx-auto p-6">
-        {/* Back */}
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6"
@@ -223,24 +174,19 @@ export default function MaintenanceForm() {
           {t("common.back")}
         </button>
 
-        {/* Header */}
         <div className="mb-8 flex items-center gap-4">
           <div className="p-3 rounded-xl bg-gradient-to-br from-green-600 to-emerald-500">
             <Wrench className="w-8 h-8 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">
-              {t("maintenance.form.title")}
-            </h1>
+            <h1 className="text-3xl font-bold">{t("maintenance.form.title")}</h1>
             <p className="text-gray-400 text-sm">
               {t("maintenance.form.subtitle")}
             </p>
           </div>
         </div>
 
-        {/* FORM */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Date + Model */}
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium mb-2">
@@ -265,7 +211,9 @@ export default function MaintenanceForm() {
               >
                 <option value="">{t("maintenance.form.chooseModel")}</option>
                 {modelOptions.map((m) => (
-                  <option key={m} value={m}>{m}</option>
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
                 ))}
               </select>
             </div>
@@ -280,14 +228,18 @@ export default function MaintenanceForm() {
                 className="w-full p-3 rounded-xl bg-gray-800 border border-gray-700"
               >
                 <option value="">{t("maintenance.form.choosePlate")}</option>
-                {(plateOptions.length ? plateOptions : cache.getEquipment?.() || []).map(
-                  (p) => {
-                    const plate = typeof p === "string" ? p : p["Plate Number"];
-                    return (
-                      <option key={plate} value={plate}>{plate}</option>
-                    );
-                  }
-                )}
+                {(plateOptions.length
+                  ? plateOptions
+                  : cache.getEquipment?.() || []
+                ).map((p) => {
+                  const plate =
+                    typeof p === "string" ? p : p["Plate Number"];
+                  return (
+                    <option key={plate} value={plate}>
+                      {plate}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -306,53 +258,70 @@ export default function MaintenanceForm() {
                   : Array.from(
                       new Set(
                         (cache.getEquipment?.() || [])
-                          .flatMap((e) => [e["Driver 1"], e["Driver 2"], e["Driver"]])
+                          .flatMap((e) => [
+                            e["Driver 1"],
+                            e["Driver 2"],
+                            e["Driver"],
+                          ])
                           .filter(Boolean)
                       )
                     )
                 ).map((d) => (
-                  <option key={d} value={d}>{d}</option>
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Description */}
+          {/* Description dropdown */}
           <div>
             <label className="block text-sm font-medium mb-2">
               {t("maintenance.form.description")}
             </label>
-            <textarea
-              rows={4}
-              value={form["Description of Work"]}
-              onChange={(e) =>
-                handleChange("Description of Work", e.target.value)
-              }
-              placeholder={t("maintenance.form.descriptionPlaceholder")}
+            <select
+              value={descriptionType}
+              onChange={(e) => {
+                setDescriptionType(e.target.value);
+                if (e.target.value !== "OTHER_AR") {
+                  setOtherDescription("");
+                }
+              }}
               className="w-full p-3 rounded-xl bg-gray-800 border border-gray-700"
-            />
+            >
+              <option value="">---</option>
+              {DESCRIPTION_OPTIONS.map((o) => (
+                <option key={o.key} value={o.key}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+
+            {descriptionType === "OTHER_AR" && (
+              <textarea
+                rows={3}
+                value={otherDescription}
+                onChange={(e) => setOtherDescription(e.target.value)}
+                className="mt-3 w-full p-3 rounded-xl bg-gray-800 border border-gray-700"
+                placeholder={t("maintenance.form.descriptionPlaceholder")}
+              />
+            )}
           </div>
 
-          {/* Performed By */}
+          {/* Performed By (read-only) */}
           <div>
             <label className="block text-sm font-medium mb-2">
               {t("maintenance.form.performedBy")}
             </label>
-            <select
+            <input
+              type="text"
               value={form["Performed By"]}
-              onChange={(e) =>
-                handleChange("Performed By", e.target.value)
-              }
-              className="w-full p-3 rounded-xl bg-gray-800 border border-gray-700"
-            >
-              <option value="">{t("maintenance.form.choosePerformer")}</option>
-              {performers.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
+              disabled
+              className="w-full p-3 rounded-xl bg-gray-700 border border-gray-600 cursor-not-allowed"
+            />
           </div>
 
-          {/* Comments */}
           <div>
             <label className="block text-sm font-medium mb-2">
               {t("maintenance.form.comments")}
@@ -365,8 +334,7 @@ export default function MaintenanceForm() {
             />
           </div>
 
-          {/* Photos */}
-          {[
+          {[ 
             { key: "Photo Before", label: t("maintenance.form.photoBefore") },
             { key: "Photo After", label: t("maintenance.form.photoAfter") },
             { key: "Photo Repair/Problem", label: t("maintenance.form.photoProblem") },
@@ -386,7 +354,6 @@ export default function MaintenanceForm() {
                     }
                   />
                 </label>
-
                 <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-emerald-600 px-4 py-3 rounded-xl">
                   <Camera size={18} />
                   {t("common.camera")}
@@ -414,7 +381,6 @@ export default function MaintenanceForm() {
             </div>
           ))}
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={submitting}
