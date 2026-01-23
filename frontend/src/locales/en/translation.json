@@ -10,6 +10,7 @@
     "upload": "Upload",
     "camera": "Camera"
   },
+
   "auth": {
     "loginTitle": "Machinery Maintenance Login",
     "username": "Username",
@@ -21,22 +22,20 @@
     "loginSuccess": "Logged in as {{name}}",
     "loginError": "Invalid username or password",
     "connectionError": "Connection error",
-    "languageHint": "English /  العربية  (coming soon)"
+    "languageHint": "English / العربية"
   },
+
   "navbar": {
     "welcome": "Welcome",
     "dashboard": "Dashboard",
     "logout": "Logout"
   },
+
   "dashboard": {
     "title": "Dashboard",
     "maintenanceLog": {
       "title": "Maintenance Log",
       "description": "Fill or view maintenance operations"
-    },
-    "maintenanceRequests": {
-      "title": "Maintenance Requests",
-      "description": "Manage Spare Parts and Oil/Grease requests"
     },
     "cleaningLog": {
       "title": "Cleaning Log",
@@ -51,18 +50,22 @@
       "description": "Manage user accounts and roles"
     }
   },
+
   "maintenance": {
     "title": "Maintenance Management",
     "description": "Manage and track all equipment maintenance operations",
+
     "addLog": {
       "title": "Add Maintenance Log",
       "description": "Fill in a new maintenance record for your equipment"
     },
+
     "history": {
       "title": "Maintenance History",
       "subtitle": "View and filter completed maintenance logs",
       "loading": "Loading maintenance history...",
       "noResults": "No records match your filters.",
+
       "filters": {
         "model": "Model",
         "plate": "Plate",
@@ -70,6 +73,7 @@
         "performedBy": "Performed By",
         "reset": "Reset Filters"
       },
+
       "table": {
         "index": "#",
         "date": "Date",
@@ -79,13 +83,13 @@
         "performedBy": "Performed By",
         "description": "Description",
         "completionDate": "Completion Date",
-        "status": "Status",
         "comments": "Comments",
         "photoBefore": "Photo Before",
         "photoAfter": "Photo After",
         "photoProblem": "Photo Repair / Problem"
       }
     },
+
     "form": {
       "title": "Maintenance Work Log",
       "subtitle": "Record completed maintenance or repairs",
@@ -96,15 +100,20 @@
       "description": "Description of Work",
       "performedBy": "Performed By",
       "comments": "Comments",
+
       "chooseModel": "--- Choose Model ---",
       "choosePlate": "--- Choose Plate ---",
       "chooseDriver": "--- Choose Driver ---",
+
       "descriptionPlaceholder": "Describe the maintenance performed...",
       "otherOption": "Other",
+
       "photoBefore": "Photo Before",
       "photoAfter": "Photo After",
       "photoProblem": "Photo Repair / Problem",
+
       "submit": "Submit Maintenance Log",
+
       "alerts": {
         "missingAsset": "Please choose at least Model, Plate Number, or Driver.",
         "missingDescription": "Please enter a description of work.",
@@ -114,254 +123,32 @@
       }
     }
   },
+
   "roles": {
     "Supervisor": "Supervisor",
     "Mechanic": "Mechanic",
     "Driver": "Driver",
     "Cleaning Guy": "Cleaning Guy"
   },
+
   "status": {
-    "Pending": "Pending",
-    "In Progress": "In Progress",
-    "Completed": "Completed",
-    "Rejected": "Rejected",
     "Active": "Active",
     "Inactive": "Inactive",
     "Maintenance": "Maintenance"
   },
+
   "cleaningTypes": {
     "Blow Cleaning": "Blow Cleaning",
     "Water Wash": "Water Wash",
     "Full Cleaning (Air & Water)": "Full Cleaning (Air & Water)"
   },
+
   "requestTypes": {
     "Oil Service": "Oil Service",
     "Grease Service": "Grease Service",
     "Full Service (Oil + Greasing)": "Full Service (Oil + Greasing)"
   },
-  "requests": {
-    "menu": {
-      "back": "Back",
-      "title": "Maintenance Requests",
-      "cards": {
-        "parts": {
-          "title": "Maintenance & Spare Parts Request",
-          "description": "Make a Maintenance Request & Keep Track of Your Requests"
-        },
-        "grease": {
-          "title": "Grease / Oil Requests",
-          "description": "Request oil or grease service and schedule appointments"
-        }
-      }
-    },
-    "parts": {
-      "menu": {
-        "back": "Back",
-        "title": "Spare Parts Requests",
-        "cards": {
-          "make": {
-            "title": "Make a Request",
-            "description": "Submit a new request"
-          },
-          "current": {
-            "title": "Current Requests",
-            "description": "View pending and in-progress requests"
-          },
-          "history": {
-            "title": "Requests History",
-            "description": "View completed and rejected requests"
-          }
-        }
-      },
-      "form": {
-        "back": "Back",
-        "title": "Maintenance & Spare Parts Request",
-        "subtitle": "Fill in the details below to submit your request",
-        "requestDate": "Request Date",
-        "model": "Model / Type",
-        "plate": "Plate Number",
-        "driver": "Driver",
-        "requestedParts": "Describe Your Request",
-        "comments": "Comments (Optional)",
-        "attachmentPhoto": "Attachment Photo",
-        "chooseModel": "--- Choose Model ---",
-        "choosePlate": "--- Choose Plate ---",
-        "chooseDriver": "--- Choose Driver ---",
-        "requestedPartsPlaceholder": "Describe the problem or needed part",
-        "commentsPlaceholder": "Additional notes...",
-        "submit": "Submit Request",
-        "submitting": "Submitting...",
-        "alerts": {
-          "missingAsset": "Please choose at least Model, Plate Number, or Driver.",
-          "missingParts": "Please enter the requested parts.",
-          "success": " ✅  Parts request submitted successfully.",
-          "error": " ❌  Error",
-          "networkError": "Network error submitting form."
-        }
-      },
-      "current": {
-        "title": "Current Spare Parts Requests",
-        "subtitle": "View and manage pending spare parts requests",
-        "loading": "Loading current requests...",
-        "empty": "No pending or in-progress requests found.",
-        "selectStatus": "Select Status",
-        "selectHandler": "Select Handler",
-        "saving": "Saving...",
-        "save": "Save",
-        "updatedSuccess": "Request updated successfully.",
-        "updateFailed": "Update failed.",
-        "saveFailed": "Save failed.",
-        "edit": "Edit",
-        "noPhoto": "No Photo",
-        "table": {
-          "requestDate": "Request Date",
-          "model": "Model / Type",
-          "plate": "Plate Number",
-          "driver": "Driver",
-          "requestedParts": "Requested Parts",
-          "status": "Status",
-          "handledBy": "Handled By",
-          "comments": "Comments",
-          "attachment": "Attachment",
-          "actions": "Actions"
-        }
-      },
-      "history": {
-        "title": "Parts Requests History",
-        "subtitle": "View completed and rejected requests",
-        "loadingPage": "Loading requests history...",
-        "loadingInline": "Loading history...",
-        "empty": "No completed or rejected requests found.",
-        "table": {
-          "requestDate": "Request Date",
-          "model": "Model / Type",
-          "plate": "Plate Number",
-          "driver": "Driver",
-          "requestedParts": "Requested Parts",
-          "status": "Status",
-          "handledBy": "Handled By",
-          "completionDate": "Completion Date",
-          "comments": "Comments",
-          "photo": "Photo"
-        },
-        "noPhoto": "No Photo"
-      }
-    },
-    "grease": {
-      "menu": {
-        "accessDenied": {
-          "title": "Access Denied",
-          "message": "You do not have permission to access this page."
-        },
-        "back": "Back",
-        "title": "Grease & Oil Requests",
-        "cards": {
-          "make": {
-            "title": "Request Grease/Oil Service",
-            "description": "Submit a new grease or oil service request"
-          },
-          "current": {
-            "title": "Current Grease/Oil Requests",
-            "description": "View and manage pending requests"
-          },
-          "history": {
-            "title": "Grease/Oil Requests History",
-            "description": "View completed or rejected requests"
-          }
-        }
-      },
-      "form": {
-        "back": "Back",
-        "title": "Request Grease/Oil Service",
-        "subtitle": "Fill in the details below to submit your service request",
-        "requestDate": "Request Date",
-        "model": "Model / Type",
-        "plate": "Plate Number",
-        "driver": "Driver",
-        "requestType": "Request Type",
-        "comments": "Comments (Optional)",
-        "photoBefore": "Odometer Photo - Before (Optional)",
-        "chooseModel": "--- Choose Model ---",
-        "choosePlate": "--- Choose Plate ---",
-        "chooseDriver": "--- Choose Driver ---",
-        "selectRequestType": "--- Select Request Type ---",
-        "commentsPlaceholder": "Additional notes...",
-        "submit": "Submit Grease/Oil Request",
-        "submitting": "Submitting...",
-        "requiredField": "*",
-        "alerts": {
-          "missingAsset": "Please choose at least Model, Plate Number, or Driver.",
-          "missingRequestType": "Please select a request type.",
-          "success": " ✅  Grease/Oil request submitted successfully.",
-          "error": " ❌  Error",
-          "networkError": "Network error submitting form."
-        }
-      },
-      "current": {
-        "title": "Current Grease/Oil Requests",
-        "subtitle": "View and manage pending requests",
-        "loading": "Loading current requests...",
-        "empty": "No pending or in-progress requests found.",
-        "selectStatus": "Select Status",
-        "selectHandler": "Select Handler",
-        "saving": "Saving...",
-        "save": "Save",
-        "cancel": "Cancel",
-        "edit": "Edit",
-        "noPhoto": "No Photo",
-        "table": {
-          "requestDate": "Request Date",
-          "model": "Model / Type",
-          "plate": "Plate Number",
-          "driver": "Driver",
-          "requestType": "Request Type",
-          "status": "Status",
-          "handledBy": "Handled By",
-          "appointmentDate": "Appointment Date",
-          "comments": "Comments",
-          "photoBefore": "Odometer Photo - Before",
-          "photoAfter": "Odometer Photo - After",
-          "actions": "Actions"
-        },
-        "alerts": {
-          "missingStatus": "Please select a status.",
-          "missingHandler": "For 'Completed' or 'Rejected' status, please select 'Handled By'.",
-          "missingRowIndex": "Cannot save: Row index is missing. Please refresh the page.",
-          "updateSuccess": "Request updated successfully!",
-          "updateError": "Error: {{message}}",
-          "saveError": "An error occurred while saving. Please check console for details."
-        }
-      },
-      "history": {
-        "title": "Grease / Oil Requests History",
-        "subtitle": "View and filter completed or rejected requests",
-        "loading": "Loading grease/oil requests history...",
-        "noResults": "No requests match your filters.",
-        "filters": {
-          "model": "Model",
-          "plate": "Plate",
-          "driver": "Driver",
-          "status": "Status",
-          "from": "From",
-          "to": "To",
-          "reset": "Reset Filters"
-        },
-        "table": {
-          "requestDate": "Request Date",
-          "model": "Model / Type",
-          "plate": "Plate Number",
-          "driver": "Driver",
-          "requestType": "Request Type",
-          "status": "Status",
-          "handledBy": "Handled By",
-          "completionDate": "Completion Date",
-          "comments": "Comments",
-          "photoBefore": "Odometer Photo - Before",
-          "photoAfter": "Odometer Photo - After"
-        }
-      }
-    }
-  },
+
   "cleaning": {
     "menu": {
       "back": "Back",
@@ -377,6 +164,7 @@
         }
       }
     },
+
     "form": {
       "back": "Back",
       "title": "Cleaning Log Form",
@@ -388,29 +176,35 @@
       "cleanedBy": "Cleaned By",
       "cleaningType": "Cleaning Type",
       "comments": "Comments",
+
       "photoBefore": "Photo Before",
       "photoAfter": "Photo After",
+
       "chooseModel": "--- Choose Model ---",
       "choosePlate": "--- Choose Plate ---",
       "chooseDriver": "--- Choose Driver ---",
       "selectCleaner": "--- Select Cleaner ---",
       "selectCleaningType": "--- Select Cleaning Type ---",
+
       "submit": "Submit Cleaning Log",
       "submitting": "Submitting...",
+
       "alerts": {
         "missingAsset": "Please choose at least Model, Plate Number, or Driver.",
         "missingCleaner": "Please select who cleaned the equipment.",
         "missingCleaningType": "Please select a cleaning type.",
-        "success": " ✅  Cleaning log added successfully.",
-        "error": " ❌  Error",
+        "success": "Cleaning log added successfully.",
+        "error": "Error",
         "networkError": "Network error submitting form."
       }
     },
+
     "history": {
       "title": "Cleaning History",
       "subtitle": "View and filter all cleaning records",
       "loading": "Loading cleaning history...",
       "noResults": "No records match your filters.",
+
       "filters": {
         "model": "Model",
         "plate": "Plate",
@@ -421,6 +215,7 @@
         "to": "To",
         "reset": "Reset Filters"
       },
+
       "table": {
         "index": "#",
         "date": "Date",
@@ -435,6 +230,7 @@
       }
     }
   },
+
   "equipment": {
     "menu": {
       "back": "Back",
@@ -451,12 +247,14 @@
         }
       }
     },
+
     "list": {
       "back": "Back",
       "title": "Equipment List",
       "subtitle": "Click on Model, Plate, or Driver to view maintenance history",
       "loading": "Loading equipment list...",
       "noEquipment": "No equipment found.",
+
       "table": {
         "index": "#",
         "model": "Model / Type",
@@ -467,11 +265,14 @@
         "notes": "Notes"
       }
     },
+
     "manage": {
       "title": "Manage Equipment",
       "subtitle": "Add, edit, or remove equipment entries",
+
       "addButton": "Add Equipment",
       "cancelButton": "Cancel",
+
       "addForm": {
         "title": "Add New Equipment",
         "modelType": "Model / Type *",
@@ -485,12 +286,14 @@
         "placeholderModel": "e.g., Mercedes, MAN, Toyota",
         "placeholderPlate": "e.g., ABC-123"
       },
+
       "editForm": {
         "title": "Edit Equipment",
         "saveChanges": "Save Changes",
         "saving": "Saving...",
         "cancel": "Cancel"
       },
+
       "table": {
         "index": "#",
         "model": "Model / Type",
@@ -501,27 +304,32 @@
         "notes": "Notes",
         "actions": "Actions"
       },
+
       "actions": {
         "edit": "Edit",
         "delete": "Delete"
       },
+
       "alerts": {
         "missingFields": "Please fill in Model/Type and Plate Number.",
-        "addSuccess": "✅ Equipment added successfully!",
-        "editSuccess": "✅ Equipment updated successfully!",
-        "deleteSuccess": "✅ Equipment deleted successfully!",
-        "error": "❌ Error: {{message}}",
+        "addSuccess": "Equipment added successfully!",
+        "editSuccess": "Equipment updated successfully!",
+        "deleteSuccess": "Equipment deleted successfully!",
+        "error": "Error: {{message}}",
         "networkError": "Network error",
         "deleteConfirm": "Are you sure you want to PERMANENTLY DELETE equipment \"{{plateNumber}}\"?\n\nThis action cannot be undone."
       }
     }
   },
+
   "users": {
     "manage": {
       "title": "Manage Users",
       "subtitle": "Add, edit, or remove system users",
+
       "addButton": "Add User",
       "cancelButton": "Cancel",
+
       "addForm": {
         "title": "Add New User",
         "username": "Username *",
@@ -530,17 +338,20 @@
         "role": "Role",
         "addUser": "Add User",
         "saving": "Saving...",
+
         "placeholders": {
           "username": "Enter username",
           "password": "Enter password",
           "fullName": "Enter full name"
         }
       },
+
       "editForm": {
         "title": "Edit User",
         "saveChanges": "Save Changes",
         "cancel": "Cancel"
       },
+
       "table": {
         "index": "#",
         "username": "Username",
@@ -548,16 +359,18 @@
         "role": "Role",
         "actions": "Actions"
       },
+
       "actions": {
         "edit": "Edit",
         "delete": "Delete"
       },
+
       "alerts": {
         "missingFields": "Please fill in Username, Password, and Full Name.",
-        "addSuccess": "✅ User added successfully!",
-        "deleteSuccess": "✅ User deleted successfully!",
-        "editSuccess": "✅ User updated successfully!",
-        "error": "❌ Error: {{message}}",
+        "addSuccess": "User added successfully!",
+        "deleteSuccess": "User deleted successfully!",
+        "editSuccess": "User updated successfully!",
+        "error": "Error: {{message}}",
         "networkError": "Network error",
         "deleteConfirm": "Are you sure you want to delete user \"{{username}}\"?\n\nThis action cannot be undone."
       }
