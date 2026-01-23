@@ -1,14 +1,9 @@
 // frontend/src/pages/Maintenance/History.jsx
 import React, { useEffect, useState, useMemo } from "react";
-import {
-  ArrowLeft,
-  History as HistoryIcon,
-  Wrench,
-  XCircle,
-  CheckCircle,
-} from "lucide-react";
+import { ArrowLeft, History as HistoryIcon, Wrench } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
+import { useCache } from "@/context/CacheContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
 import { useTranslation } from "react-i18next";
@@ -29,6 +24,7 @@ const getThumbnailUrl = (url) => {
 
 export default function MaintenanceHistory() {
   const { user } = useAuth();
+  const cache = useCache();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -50,12 +46,9 @@ export default function MaintenanceHistory() {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(
-          `${CONFIG.BACKEND_URL}/api/Maintenance_Log`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const res = await fetch(`${CONFIG.BACKEND_URL}/api/Maintenance_Log`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const data = await res.json();
         if (Array.isArray(data)) setRows(data.reverse());
       } catch (err) {
@@ -67,20 +60,21 @@ export default function MaintenanceHistory() {
     load();
   }, []);
 
-  /* ---------------- Restore filters ---------------- */
+  /* ---------------- Driver auto-filter ---------------- */
 
-  useEffect(() => {
-    const savedFilter = sessionStorage.getItem("maintenanceFilter");
-    if (savedFilter) {
-      try {
-        const parsed = JSON.parse(savedFilter);
-        setFilters((f) => ({ ...f, ...parsed }));
-        sessionStorage.removeItem("maintenanceFilter");
-      } catch (err) {
-        console.error("Error parsing saved filter:", err);
-      }
-    }
-  }, []);
+  const driverAllowedPlates = useMemo(() => {
+    if (user?.role !== "Driver") return null;
+    const equipment = cache.getEquipment?.() || [];
+    return equipment
+      .filter(
+        (e) =>
+          e["Driver"] === user.full_name ||
+          e["Driver 1"] === user.full_name ||
+          e["Driver 2"] === user.full_name
+      )
+      .map((e) => e["Plate Number"])
+      .filter(Boolean);
+  }, [user, cache]);
 
   /* ---------------- Filter options ---------------- */
 
@@ -102,9 +96,7 @@ export default function MaintenanceHistory() {
 
   const driverOptions = useMemo(
     () =>
-      Array.from(
-        new Set(rows.map((r) => r["Driver"]).filter(Boolean))
-      ).sort(),
+      Array.from(new Set(rows.map((r) => r["Driver"]).filter(Boolean))).sort(),
     [rows]
   );
 
@@ -117,6 +109,14 @@ export default function MaintenanceHistory() {
       const plate = r["Plate Number"] || "";
       const driver = r["Driver"] || "";
 
+      if (
+        user?.role === "Driver" &&
+        driverAllowedPlates &&
+        !driverAllowedPlates.includes(plate)
+      ) {
+        return false;
+      }
+
       const matchModel = !filters.model || model === filters.model;
       const matchPlate = !filters.plate || plate === filters.plate;
       const matchDriver = !filters.driver || driver === filters.driver;
@@ -127,67 +127,22 @@ export default function MaintenanceHistory() {
 
       return matchModel && matchPlate && matchDriver && matchDate;
     });
-  }, [rows, filters]);
+  }, [rows, filters, user, driverAllowedPlates]);
 
-  const resetFilters = () => {
-    setFilters({ model: "", plate: "", driver: "", from: "", to: "" });
-  };
-
-  /* ---------------- ✅ FIXED TRANSLATION LOGIC ---------------- */
+  /* ---------------- Description translation ---------------- */
 
   const translateDescription = (value) => {
     if (!value) return "---";
 
     const cleaningKey = `cleaningTypes.${value}`;
     const cleaningTranslated = t(cleaningKey);
-    if (cleaningTranslated !== cleaningKey) {
-      return cleaningTranslated;
-    }
+    if (cleaningTranslated !== cleaningKey) return cleaningTranslated;
 
     const requestKey = `requestTypes.${value}`;
     const requestTranslated = t(requestKey);
-    if (requestTranslated !== requestKey) {
-      return requestTranslated;
-    }
+    if (requestTranslated !== requestKey) return requestTranslated;
 
     return value;
-  };
-
-  const getStatusBadge = (status) => {
-    const lower = (status || "").toLowerCase();
-
-    const styles = {
-      completed: {
-        bg: "bg-green-500/20",
-        text: "text-green-300",
-        icon: <CheckCircle size={14} />,
-      },
-      "in progress": {
-        bg: "bg-yellow-500/20",
-        text: "text-yellow-300",
-        icon: <HistoryIcon size={14} />,
-      },
-      rejected: {
-        bg: "bg-red-500/20",
-        text: "text-red-300",
-        icon: <XCircle size={14} />,
-      },
-    };
-
-    const style = styles[lower] || {
-      bg: "bg-gray-500/20",
-      text: "text-gray-300",
-      icon: <HistoryIcon size={14} />,
-    };
-
-    return (
-      <span
-        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}
-      >
-        {style.icon}
-        {status ? t(`status.${status}`, status) : "---"}
-      </span>
-    );
   };
 
   /* ---------------- Loading ---------------- */
@@ -197,9 +152,7 @@ export default function MaintenanceHistory() {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mb-4" />
-          <p className="text-lg">
-            {t("maintenance.history.loading")}
-          </p>
+          <p className="text-lg">{t("maintenance.history.loading")}</p>
         </div>
       </div>
     );
@@ -234,7 +187,6 @@ export default function MaintenanceHistory() {
           </div>
         </div>
 
-        {/* ---- TABLE ---- */}
         <div className="overflow-x-auto rounded-2xl border border-gray-700">
           <table className="min-w-full bg-gray-800/50">
             <thead>
@@ -248,7 +200,6 @@ export default function MaintenanceHistory() {
                   "performedBy",
                   "description",
                   "completionDate",
-                  "status",
                   "comments",
                   "photoBefore",
                   "photoAfter",
@@ -276,9 +227,6 @@ export default function MaintenanceHistory() {
                   <td className="p-4 text-sm">
                     {r["Completion Date"] || "---"}
                   </td>
-                  <td className="p-4">
-                    {getStatusBadge(r["Status"])}
-                  </td>
                   <td className="p-4 text-sm">
                     {r["Comments"] || "---"}
                   </td>
@@ -287,11 +235,7 @@ export default function MaintenanceHistory() {
                     (field) => (
                       <td key={field} className="p-4">
                         {r[field] ? (
-                          <a
-                            href={r[field]}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
+                          <a href={r[field]} target="_blank" rel="noreferrer">
                             <img
                               src={getThumbnailUrl(r[field])}
                               alt={field}
