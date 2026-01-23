@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, ClipboardList, Droplets, Truck, Users } from "lucide-react";
+import { Wrench, Droplets, Truck, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export default function Dashboard() {
@@ -18,37 +18,34 @@ export default function Dashboard() {
       description: t("dashboard.maintenanceLog.description"),
       icon: <Wrench className="w-8 h-8 text-white drop-shadow-md" />,
       link: "/maintenance",
+      // Driver CAN see maintenance history
       allowed: ["Supervisor", "Mechanic", "Driver"],
       glow: "shadow-[0_0_15px_2px_rgba(59,130,246,0.6)]",
       gradient: "from-blue-600 to-cyan-500",
     },
-    {
-      title: t("dashboard.maintenanceRequests.title"),
-      description: t("dashboard.maintenanceRequests.description"),
-      icon: <ClipboardList className="w-8 h-8 text-white drop-shadow-md" />,
-      link: "/requests",
-      allowed: ["Supervisor", "Mechanic", "Driver"],
-      glow: "shadow-[0_0_15px_2px_rgba(34,197,94,0.6)]",
-      gradient: "from-emerald-600 to-green-500",
-    },
+
     {
       title: t("dashboard.cleaningLog.title"),
       description: t("dashboard.cleaningLog.description"),
       icon: <Droplets className="w-8 h-8 text-white drop-shadow-md" />,
       link: "/cleaning",
+      // Driver CAN see cleaning history
       allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
       glow: "shadow-[0_0_15px_2px_rgba(56,189,248,0.6)]",
       gradient: "from-sky-600 to-indigo-500",
     },
+
     {
       title: t("dashboard.equipmentList.title"),
       description: t("dashboard.equipmentList.description"),
       icon: <Truck className="w-8 h-8 text-white drop-shadow-md" />,
       link: "/equipment",
-      allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
+      // 🚫 Driver must NOT see Equipment at all
+      allowed: ["Supervisor", "Mechanic", "Cleaning Guy"],
       glow: "shadow-[0_0_15px_2px_rgba(251,146,60,0.6)]",
       gradient: "from-orange-600 to-yellow-500",
     },
+
     {
       title: t("dashboard.users.title"),
       description: t("dashboard.users.description"),
@@ -60,7 +57,9 @@ export default function Dashboard() {
     },
   ];
 
-  const visibleCards = cards.filter((card) => card.allowed.includes(role));
+  const visibleCards = cards.filter((card) =>
+    card.allowed.includes(role)
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white">
