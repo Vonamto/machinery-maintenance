@@ -398,29 +398,50 @@ export default function MaintenanceHistory() {
     </div>
 
     {/* Photos */}
-    <div className="flex gap-2 mt-3">
-      {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
-        (field) =>
-          r[field] ? (
-            <a
-              key={field}
-              href={r[field]}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="relative group"
-            >
-              <img
-                src={getThumbnailUrl(r[field])}
-                alt={field}
-                className="h-16 w-16 object-cover rounded-lg border border-gray-600"
-              />
-              <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                <ExternalLink className="w-5 h-5 text-emerald-400" />
-              </div>
-            </a>
-          ) : null
-      )}
-    </div>
+    <div className="flex gap-3 mt-3">
+  {[
+    {
+      field: "Photo Before",
+      label: t("maintenance.history.table.photoBefore"),
+    },
+    {
+      field: "Photo After",
+      label: t("maintenance.history.table.photoAfter"),
+    },
+    {
+      field: "Photo Repair/Problem",
+      label: t("maintenance.history.table.photoProblem"),
+    },
+  ].map(
+    ({ field, label }) =>
+      r[field] ? (
+        <div
+          key={field}
+          className="flex flex-col items-center gap-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <a
+            href={r[field]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="relative group"
+          >
+            <img
+              src={getThumbnailUrl(r[field])}
+              alt={label}
+              className="h-16 w-16 object-cover rounded-lg border border-gray-600"
+            />
+            <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+              <ExternalLink className="w-5 h-5 text-emerald-400" />
+            </div>
+          </a>
+          <span className="text-[11px] text-gray-400 text-center">
+            {label}
+          </span>
+        </div>
+      ) : null
+  )}
+</div>
   </>
 )}
                 </div>
