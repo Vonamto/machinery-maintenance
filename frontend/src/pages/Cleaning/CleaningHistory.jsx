@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
+import { useCache } from "@/context/CacheContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
 import { useTranslation } from "react-i18next";
@@ -30,11 +31,12 @@ const getThumbnailUrl = (url) => {
 
 export default function CleaningHistory() {
   const { user } = useAuth();
+  const cache = useCache();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
   const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [expandedIndex, setExpandedIndex] = useState(null);
 
   const [filters, setFilters] = useState({
@@ -51,7 +53,6 @@ export default function CleaningHistory() {
 
   useEffect(() => {
     async function load() {
-      setLoading(true);
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(`${CONFIG.BACKEND_URL}/api/Cleaning_Log`, {
@@ -61,12 +62,42 @@ export default function CleaningHistory() {
         if (Array.isArray(data)) setRows(data.reverse());
       } catch (err) {
         console.error("Error loading cleaning history:", err);
-      } finally {
-        setLoading(false);
       }
     }
     load();
   }, []);
+
+  /* ---------------- Ensure Equipment Cache ---------------- */
+
+  useEffect(() => {
+    const ensureEquipmentLoaded = async () => {
+      const hasEquipment =
+        cache.getEquipment && cache.getEquipment().length > 0;
+      if (!hasEquipment) {
+        await cache.forceRefreshEquipment?.();
+      }
+      setLoading(false);
+    };
+    ensureEquipmentLoaded();
+  }, [cache]);
+
+  /* ---------------- Driver → Allowed Plates ---------------- */
+
+  const driverAllowedPlates = useMemo(() => {
+    if (user?.role !== "Driver") return null;
+    const equipment = cache.getEquipment?.() || [];
+    if (!equipment.length) return null;
+
+    return equipment
+      .filter(
+        (e) =>
+          e["Driver"] === user.full_name ||
+          e["Driver 1"] === user.full_name ||
+          e["Driver 2"] === user.full_name
+      )
+      .map((e) => e["Plate Number"])
+      .filter(Boolean);
+  }, [user, cache]);
 
   /* ---------------- Filter options ---------------- */
 
@@ -119,6 +150,14 @@ export default function CleaningHistory() {
       const cleanedBy = r["Cleaned By"] || "";
       const cleaningType = r["Cleaning Type"] || "";
 
+      if (
+        user?.role === "Driver" &&
+        Array.isArray(driverAllowedPlates) &&
+        !driverAllowedPlates.includes(plate)
+      ) {
+        return false;
+      }
+
       const matchModel = !filters.model || model === filters.model;
       const matchPlate = !filters.plate || plate === filters.plate;
       const matchDriver = !filters.driver || driver === filters.driver;
@@ -140,7 +179,7 @@ export default function CleaningHistory() {
         matchDate
       );
     });
-  }, [rows, filters]);
+  }, [rows, filters, user, driverAllowedPlates]);
 
   const resetFilters = () =>
     setFilters({
