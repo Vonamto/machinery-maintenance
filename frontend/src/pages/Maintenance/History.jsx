@@ -57,9 +57,7 @@ export default function MaintenanceHistory() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-        if (Array.isArray(data)) {
-          setRows(data.reverse());
-        }
+        if (Array.isArray(data)) setRows(data.reverse());
       } catch (err) {
         console.error("Error loading maintenance history:", err);
       }
@@ -327,7 +325,7 @@ export default function MaintenanceHistory() {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Empty */}
         {filteredRows.length === 0 ? (
           <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
             <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
@@ -336,91 +334,167 @@ export default function MaintenanceHistory() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
-            <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
-              <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
-                <tr>
-                  {[
-                    "index",
-                    "date",
-                    "model",
-                    "plate",
-                    "driver",
-                    "performedBy",
-                    "description",
-                    "completionDate",
-                    "comments",
-                    "photoBefore",
-                    "photoAfter",
-                    "photoProblem",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="p-4 text-left text-sm font-semibold text-gray-300"
-                    >
-                      {t(`maintenance.history.table.${h}`)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRows.map((r, i) => (
-                  <tr
-                    key={i}
-                    className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
-                      i % 2 === 0 ? "bg-white/[0.02]" : ""
-                    }`}
-                  >
-                    <td className="p-4 text-sm text-gray-400">{i + 1}</td>
-                    <td className="p-4 text-sm">{r["Date"]}</td>
-                    <td className="p-4 text-sm">{r["Model / Type"]}</td>
-                    <td className="p-4 text-sm font-mono">
-                      {r["Plate Number"]}
-                    </td>
-                    <td className="p-4 text-sm">{r["Driver"]}</td>
-                    <td className="p-4 text-sm">{r["Performed By"]}</td>
-                    <td className="p-4 text-sm">
-                      {translateDescription(r["Description of Work"])}
-                    </td>
-                    <td className="p-4 text-sm">
-                      {r["Completion Date"] || "---"}
-                    </td>
-                    <td className="p-4 text-sm max-w-xs truncate">
-                      {r["Comments"] || (
-                        <span className="text-gray-500">---</span>
-                      )}
-                    </td>
+          <>
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-4">
+              {filteredRows.map((r, i) => (
+                <div
+                  key={i}
+                  className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="text-lg font-semibold text-emerald-400">
+                        {r["Plate Number"]}
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        {r["Model / Type"]}
+                      </p>
+                    </div>
+                    <span className="text-xs text-gray-400">
+                      {r["Date"]}
+                    </span>
+                  </div>
 
+                  <div className="text-sm space-y-1">
+                    <p>
+                      <span className="text-gray-400">
+                        {t("maintenance.history.table.description")}:
+                      </span>{" "}
+                      {translateDescription(r["Description of Work"])}
+                    </p>
+                    <p>
+                      <span className="text-gray-400">
+                        {t("maintenance.history.table.performedBy")}:
+                      </span>{" "}
+                      {r["Performed By"]}
+                    </p>
+                    <p>
+                      <span className="text-gray-400">
+                        {t("maintenance.history.table.driver")}:
+                      </span>{" "}
+                      {r["Driver"]}
+                    </p>
+                    <p>
+                      <span className="text-gray-400">
+                        {t("maintenance.history.table.completionDate")}:
+                      </span>{" "}
+                      {r["Completion Date"] || "---"}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2 mt-3">
                     {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
-                      (field) => (
-                        <td key={field} className="p-4">
-                          {r[field] ? (
-                            <a
-                              href={r[field]}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="relative group block"
-                            >
-                              <img
-                                src={getThumbnailUrl(r[field])}
-                                alt={field}
-                                className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-emerald-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
-                              />
-                              <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                                <ExternalLink className="w-6 h-6 text-emerald-400" />
-                              </div>
-                            </a>
-                          ) : (
-                            <span className="text-gray-500 text-sm">---</span>
-                          )}
-                        </td>
-                      )
+                      (field) =>
+                        r[field] ? (
+                          <a
+                            key={field}
+                            href={r[field]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="relative group"
+                          >
+                            <img
+                              src={getThumbnailUrl(r[field])}
+                              alt={field}
+                              className="h-16 w-16 object-cover rounded-lg border border-gray-600"
+                            />
+                            <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                              <ExternalLink className="w-5 h-5 text-emerald-400" />
+                            </div>
+                          </a>
+                        ) : null
                     )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
+              <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
+                <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
+                  <tr>
+                    {[
+                      "index",
+                      "date",
+                      "model",
+                      "plate",
+                      "driver",
+                      "performedBy",
+                      "description",
+                      "completionDate",
+                      "comments",
+                      "photoBefore",
+                      "photoAfter",
+                      "photoProblem",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="p-4 text-left text-sm font-semibold text-gray-300"
+                      >
+                        {t(`maintenance.history.table.${h}`)}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredRows.map((r, i) => (
+                    <tr
+                      key={i}
+                      className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
+                        i % 2 === 0 ? "bg-white/[0.02]" : ""
+                      }`}
+                    >
+                      <td className="p-4 text-sm text-gray-400">{i + 1}</td>
+                      <td className="p-4 text-sm">{r["Date"]}</td>
+                      <td className="p-4 text-sm">{r["Model / Type"]}</td>
+                      <td className="p-4 text-sm font-mono">
+                        {r["Plate Number"]}
+                      </td>
+                      <td className="p-4 text-sm">{r["Driver"]}</td>
+                      <td className="p-4 text-sm">{r["Performed By"]}</td>
+                      <td className="p-4 text-sm">
+                        {translateDescription(r["Description of Work"])}
+                      </td>
+                      <td className="p-4 text-sm">
+                        {r["Completion Date"] || "---"}
+                      </td>
+                      <td className="p-4 text-sm max-w-xs truncate">
+                        {r["Comments"] || "---"}
+                      </td>
+
+                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
+                        (field) => (
+                          <td key={field} className="p-4">
+                            {r[field] ? (
+                              <a
+                                href={r[field]}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="relative group block"
+                              >
+                                <img
+                                  src={getThumbnailUrl(r[field])}
+                                  alt={field}
+                                  className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-emerald-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
+                                />
+                                <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                                  <ExternalLink className="w-6 h-6 text-emerald-400" />
+                                </div>
+                              </a>
+                            ) : (
+                              <span className="text-gray-500 text-sm">---</span>
+                            )}
+                          </td>
+                        )
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
