@@ -20,7 +20,13 @@ export default function ChecklistForm() {
     "Model / Type": "",
     "Plate Number": "",
     "Equipment Type": "",
-    "Checklist Data": ""
+    "General_Inspection_Data": "",
+    "Fluids_Check_Data": "",
+    "Electrical_Data": "",
+    "Tires_Data": "",
+    "Emergency_Equipment_Data": "",
+    "Hydraulic_System_Data": "",
+    "Lifting_System_Data": ""
   });
   
   // Detailed checklist data structure based on equipment type
@@ -229,7 +235,7 @@ export default function ChecklistForm() {
           initialData[key] = {
             status: null,
             comment: "",
-            photo: "" // Store base64 string or URL
+            photo: ""
           };
         });
       });
@@ -297,15 +303,36 @@ export default function ChecklistForm() {
     setSubmitting(true);
 
     try {
-      // Prepare checklist data as JSON string
-      const checklistJson = JSON.stringify(checklistData);
-      
+      // Split checklist data by sections to avoid character limits
+      const template = getChecklistTemplate(formData["Equipment Type"]);
+      const sectionData = {};
+
+      // Group checklist items by section
+      Object.entries(template).forEach(([section, items]) => {
+        const sectionItems = {};
+        items.forEach(item => {
+          const key = `${section}_${item}`.replace(/\s+/g, '_').toLowerCase();
+          sectionItems[item] = checklistData[key] || { status: null, comment: "", photo: "" };
+        });
+        sectionData[section] = sectionItems;
+      });
+
+      // Prepare data for each section column
       const submitData = {
         ...formData,
-        "Checklist Data": checklistJson,
+        "General_Inspection_Data": JSON.stringify(sectionData["General Inspection"] || {}),
+        "Fluids_Check_Data": JSON.stringify(sectionData["Fluids Check"] || {}),
+        "Electrical_Data": JSON.stringify(sectionData["Electrical"] || {}),
+        "Tires_Data": JSON.stringify(sectionData["Tires"] || {}),
+        "Emergency_Equipment_Data": JSON.stringify(sectionData["Emergency Equipment"] || {}),
+        "Hydraulic_System_Data": JSON.stringify(sectionData["Hydraulic System"] || {}),
+        "Lifting_System_Data": JSON.stringify(sectionData["Lifting System"] || {}),
         Role: user?.role || "",
         Timestamp: new Date().toISOString()
       };
+
+      // Remove the old combined checklist data field
+      delete submitData["Checklist Data"];
 
       // Use the correct API endpoint format like other forms
       const response = await fetchWithAuth('/api/add/Checklist_Log', {
