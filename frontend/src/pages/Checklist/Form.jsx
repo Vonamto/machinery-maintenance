@@ -188,6 +188,7 @@ export default function ChecklistForm() {
         setFormData(prev => ({
           ...prev,
           "Model / Type": foundEquipment["Model / Type"],
+          "Plate Number": foundEquipment["Plate Number"],
           "Equipment Type": equipType,
         }));
         setSelectedEquipment(foundEquipment);
@@ -306,7 +307,8 @@ export default function ChecklistForm() {
         Timestamp: new Date().toISOString()
       };
 
-      const response = await fetchWithAuth('/api/Checklist_Log', {
+      // Use the correct API endpoint format like other forms
+      const response = await fetchWithAuth('/api/add/Checklist_Log', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -314,16 +316,17 @@ export default function ChecklistForm() {
         body: JSON.stringify(submitData),
       });
 
-      if (response.ok) {
-        alert(t("checklist.form.alerts.success"));
+      const result = await response.json();
+      
+      if (result.status === "success") {
+        alert(`✅ ${t("checklist.form.alerts.success")}`);
         navigate('/checklist');
       } else {
-        const errorData = await response.json();
-        alert(`${t("checklist.form.alerts.error")}: ${errorData.message || t("checklist.form.alerts.genericError")}`);
+        alert(`❌ ${t("checklist.form.alerts.error")}: ${result.message || ""}`);
       }
     } catch (error) {
       console.error('Error submitting checklist:', error);
-      alert(t("checklist.form.alerts.networkError"));
+      alert(`⚠️ ${t("checklist.form.alerts.networkError")}`);
     } finally {
       setSubmitting(false);
     }
