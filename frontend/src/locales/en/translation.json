@@ -55,9 +55,9 @@
     "menu": {
       "title": "Safety Checklist",
       "formTitle": "New Inspection",
-      [cite_start]"formDescription": "Complete a new daily safety and maintenance inspection [cite: 1, 6]",
+      "formDescription": "Complete a new daily safety and maintenance inspection",
       "historyTitle": "Inspection History",
-      [cite_start]"historyDescription": "View and review previously submitted machinery checklists [cite: 1, 12]"
+      "historyDescription": "View and review previously submitted machinery checklists"
     },
     "form": {
       "title": "Daily Inspection",
