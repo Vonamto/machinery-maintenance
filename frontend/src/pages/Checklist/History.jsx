@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fetchWithAuth } from "../../utils/api";
+import { fetchWithAuth } from "../../api/api";
 import { useAuth } from "../../context/AuthContext";
 import { useCache } from "../../context/CacheContext";
 
