@@ -1,151 +1,203 @@
 // frontend/src/config/checklistTemplates.js
 /**
  * Dynamic checklist templates based on equipment type
- * Each equipment type has different sections and items
+ * Business-aligned sections and items
+ * English keys ONLY (Arabic handled via translations)
  */
 
 export const CHECKLIST_TEMPLATES = {
-  "Truck": [
+  Truck: [
     {
-      section: "truckSafety",
-      title: "truckSafetyTitle",
+      sectionKey: "general_inspection",
+      titleKey: "checklist.sections.general_inspection",
       items: [
-        { id: "seatbelt", label: "seatbeltCheck", required: true },
-        { id: "mirrors", label: "mirrorsCheck", required: true },
-        { id: "horn", label: "hornCheck", required: true },
-        { id: "emergencyKit", label: "emergencyKitCheck", required: true },
-        { id: "fireExtinguisher", label: "fireExtinguisherCheck", required: true }
+        { key: "vehicle_cleanliness" },
+        { key: "driver's_seat" },
+        { key: "seat_belt" },
+        { key: "windshield" },
+        { key: "horn" },
+        { key: "brakes" },
+        { key: "mirrors" },
+        { key: "reversing_alarm" }
       ]
     },
     {
-      section: "truckEngine",
-      title: "truckEngineTitle",
+      sectionKey: "fluids_check",
+      titleKey: "checklist.sections.fluids_check",
       items: [
-        { id: "oilLevel", label: "oilLevelCheck", required: true },
-        { id: "coolantLevel", label: "coolantLevelCheck", required: true },
-        { id: "brakeFluid", label: "brakeFluidCheck", required: true },
-        { id: "powerSteering", label: "powerSteeringCheck", required: true },
-        { id: "belts", label: "beltsCheck", required: true }
+        { key: "fuel_level" },
+        { key: "oil_level" },
+        { key: "water_level" },
+        { key: "no_warning_lights_on" }
       ]
     },
     {
-      section: "truckTiresBrakes",
-      title: "truckTiresBrakesTitle",
+      sectionKey: "electrical",
+      titleKey: "checklist.sections.electrical",
       items: [
-        { id: "tirePressure", label: "tirePressureCheck", required: true },
-        { id: "treadDepth", label: "treadDepthCheck", required: true },
-        { id: "brakePads", label: "brakePadsCheck", required: true },
-        { id: "brakeLines", label: "brakeLinesCheck", required: true },
-        { id: "spareTire", label: "spareTireCheck", required: true }
+        { key: "headlights" },
+        { key: "tail_lights" },
+        { key: "brake_lights" },
+        { key: "turn_signals" },
+        { key: "reverse_lights" }
       ]
     },
     {
-      section: "truckLights",
-      title: "truckLightsTitle",
+      sectionKey: "tires",
+      titleKey: "checklist.sections.tires",
       items: [
-        { id: "headlights", label: "headlightsCheck", required: true },
-        { id: "taillights", label: "taillightsCheck", required: true },
-        { id: "turnSignals", label: "turnSignalsCheck", required: true },
-        { id: "hazardLights", label: "hazardLightsCheck", required: true },
-        { id: "interiorLights", label: "interiorLightsCheck", required: true }
+        { key: "tire_air_pressure" },
+        { key: "condition_of_the_tire_rubber" },
+        { key: "spare_tire_condition" }
+      ]
+    },
+    {
+      sectionKey: "emergency_equipment",
+      titleKey: "checklist.sections.emergency_equipment",
+      items: [
+        { key: "hydraulic_jack" },
+        { key: "fire_extinguisher" },
+        { key: "first_aid_kit" },
+        { key: "warning_triangle" }
       ]
     }
   ],
-  "Forklift": [
+
+  Forklift: [
     {
-      section: "forkliftSafety",
-      title: "forkliftSafetyTitle",
+      sectionKey: "general_inspection",
+      titleKey: "checklist.sections.general_inspection",
       items: [
-        { id: "operatorManual", label: "operatorManualCheck", required: true },
-        { id: "loadChart", label: "loadChartCheck", required: true },
-        { id: "safetyBelt", label: "safetyBeltCheck", required: true },
-        { id: "horn", label: "hornCheck", required: true },
-        { id: "backupAlarm", label: "backupAlarmCheck", required: true }
+        { key: "vehicle_cleanliness" },
+        { key: "driver's_seat" },
+        { key: "seat_belt" },
+        { key: "horn" },
+        { key: "mirrors" }
       ]
     },
     {
-      section: "forkliftHydraulics",
-      title: "forkliftHydraulicsTitle",
+      sectionKey: "fluids_check",
+      titleKey: "checklist.sections.fluids_check",
       items: [
-        { id: "hydraulicFluid", label: "hydraulicFluidCheck", required: true },
-        { id: "hoses", label: "hosesCheck", required: true },
-        { id: "cylinders", label: "cylindersCheck", required: true },
-        { id: "mastChains", label: "mastChainsCheck", required: true },
-        { id: "liftCapacity", label: "liftCapacityCheck", required: true }
+        { key: "fuel_level" },
+        { key: "oil_level" },
+        { key: "water_level" },
+        { key: "no_warning_lights_on" }
       ]
     },
     {
-      section: "forkliftMechanical",
-      title: "forkliftMechanicalTitle",
+      sectionKey: "electrical",
+      titleKey: "checklist.sections.electrical",
       items: [
-        { id: "engineOil", label: "engineOilCheck", required: true },
-        { id: "coolant", label: "coolantCheck", required: true },
-        { id: "filters", label: "filtersCheck", required: true },
-        { id: "battery", label: "batteryCheck", required: true },
-        { id: "tires", label: "tiresCheck", required: true }
+        { key: "headlights" },
+        { key: "tail_lights" },
+        { key: "brake_lights" },
+        { key: "reverse_lights" }
       ]
     },
     {
-      section: "forkliftOperation",
-      title: "forkliftOperationTitle",
+      sectionKey: "tires",
+      titleKey: "checklist.sections.tires",
       items: [
-        { id: "steering", label: "steeringCheck", required: true },
-        { id: "brakes", label: "brakesCheck", required: true },
-        { id: "controls", label: "controlsCheck", required: true },
-        { id: "mastMovement", label: "mastMovementCheck", required: true },
-        { id: "forks", label: "forksCheck", required: true }
+        { key: "tire_air_pressure" },
+        { key: "condition_of_the_tire_rubber" }
+      ]
+    },
+    {
+      sectionKey: "emergency_equipment",
+      titleKey: "checklist.sections.emergency_equipment",
+      items: [
+        { key: "fire_extinguisher" },
+        { key: "first_aid_kit" },
+        { key: "warning_triangle" }
+      ]
+    },
+    {
+      sectionKey: "hydraulic_system",
+      titleKey: "checklist.sections.hydraulic_system",
+      items: [
+        { key: "hydraulic_cylinders" },
+        { key: "hydraulic_hose" },
+        { key: "hydraulic_fittings" },
+        { key: "hydraulic_leaks" }
       ]
     }
   ],
-  "Crane": [
+
+  Crane: [
     {
-      section: "craneSafety",
-      title: "craneSafetyTitle",
+      sectionKey: "general_inspection",
+      titleKey: "checklist.sections.general_inspection",
       items: [
-        { id: "certification", label: "certificationCheck", required: true },
-        { id: "loadChartVisible", label: "loadChartVisibleCheck", required: true },
-        { id: "safetyGear", label: "safetyGearCheck", required: true },
-        { id: "communication", label: "communicationCheck", required: true },
-        { id: "workArea", label: "workAreaCheck", required: true }
+        { key: "vehicle_cleanliness" },
+        { key: "driver's_seat" },
+        { key: "seat_belt" },
+        { key: "horn" },
+        { key: "mirrors" }
       ]
     },
     {
-      section: "craneStructure",
-      title: "craneStructureTitle",
+      sectionKey: "fluids_check",
+      titleKey: "checklist.sections.fluids_check",
       items: [
-        { id: "boom", label: "boomCheck", required: true },
-        { id: "outriggers", label: "outriggersCheck", required: true },
-        { id: "counterweights", label: "counterweightsCheck", required: true },
-        { id: "pinsConnections", label: "pinsConnectionsCheck", required: true },
-        { id: "welds", label: "weldsCheck", required: true }
+        { key: "fuel_level" },
+        { key: "oil_level" },
+        { key: "water_level" },
+        { key: "no_warning_lights_on" }
       ]
     },
     {
-      section: "craneMechanical",
-      title: "craneMechanicalTitle",
+      sectionKey: "electrical",
+      titleKey: "checklist.sections.electrical",
       items: [
-        { id: "hydraulicSystem", label: "hydraulicSystemCheck", required: true },
-        { id: "wireRope", label: "wireRopeCheck", required: true },
-        { id: "hooks", label: "hooksCheck", required: true },
-        { id: "limitSwitches", label: "limitSwitchesCheck", required: true },
-        { id: "brakeSystem", label: "brakeSystemCheck", required: true }
+        { key: "headlights" },
+        { key: "tail_lights" },
+        { key: "brake_lights" },
+        { key: "reverse_lights" }
       ]
     },
     {
-      section: "craneOperation",
-      title: "craneOperationTitle",
+      sectionKey: "tires",
+      titleKey: "checklist.sections.tires",
       items: [
-        { id: "controlsFunction", label: "controlsFunctionCheck", required: true },
-        { id: "rotation", label: "rotationCheck", required: true },
-        { id: "hoist", label: "hoistCheck", required: true },
-        { id: "telescope", label: "telescopeCheck", required: true },
-        { id: "emergencyStop", label: "emergencyStopCheck", required: true }
+        { key: "tire_air_pressure" },
+        { key: "condition_of_the_tire_rubber" }
+      ]
+    },
+    {
+      sectionKey: "emergency_equipment",
+      titleKey: "checklist.sections.emergency_equipment",
+      items: [
+        { key: "fire_extinguisher" },
+        { key: "first_aid_kit" },
+        { key: "warning_triangle" }
+      ]
+    },
+    {
+      sectionKey: "hydraulic_system",
+      titleKey: "checklist.sections.hydraulic_system",
+      items: [
+        { key: "hydraulic_cylinders" },
+        { key: "hydraulic_hose" },
+        { key: "hydraulic_fittings" },
+        { key: "hydraulic_leaks" }
+      ]
+    },
+    {
+      sectionKey: "lifting_system",
+      titleKey: "checklist.sections.lifting_system",
+      items: [
+        { key: "lifting_hook" },
+        { key: "anti-two_block_device_for_wire_rope" },
+        { key: "lifting_wire_rope" },
+        { key: "boom,_pins,_bolting" },
+        { key: "sheaves" }
       ]
     }
   ]
 };
 
-// Export utility functions
+// Utility helpers
 export const getChecklistTemplate = (equipmentType) => {
   return CHECKLIST_TEMPLATES[equipmentType] || [];
 };
