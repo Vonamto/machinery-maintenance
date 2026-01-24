@@ -13,29 +13,38 @@ from datetime import datetime
 import pytz
 
 # =====================================================
-# ✅ Load Google OAuth Token (from environment variable)
+#  ✅  Load Google OAuth Token (from environment variable)
 # =====================================================
 TOKEN_B64 = os.environ.get("GOOGLE_OAUTH_TOKEN_B64")
 if TOKEN_B64:
-    with open("token.pickle", "wb") as f:
-        f.write(base64.b64decode(TOKEN_B64))
+    try:
+        with open("token.pickle", "wb") as f:
+            f.write(base64.b64decode(TOKEN_B64))
+    except Exception as e:
+        print(f"Error decoding token: {e}")
 
 # =====================================================
-# ✅ Authorize Google Drive using OAuth token.pickle
+#  ✅  Authorize Google Drive using OAuth token.pickle
 # =====================================================
 creds = None
 if os.path.exists("token.pickle"):
-    with open("token.pickle", "rb") as token:
-        creds = pickle.load(token)
+    try:
+        with open("token.pickle", "rb") as token:
+            creds = pickle.load(token)
+    except Exception as e:
+        print(f"Error loading token.pickle: {e}")
 
 if creds and creds.expired and creds.refresh_token:
-    creds.refresh(Request())
+    try:
+        creds.refresh(Request())
+    except Exception as e:
+        print(f"Error refreshing token: {e}")
 
 # Build Drive service (OAuth)
 drive_service = build("drive", "v3", credentials=creds)
 
 # =====================================================
-# ✅ Google Sheets access (still uses service account)
+#  ✅  Google Sheets access (still uses service account)
 # =====================================================
 service_account_info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
 service_account_info["private_key"] = service_account_info["private_key"].replace("\\n", "\n")
@@ -47,30 +56,33 @@ sheet_creds = Credentials.from_service_account_info(
         "https://www.googleapis.com/auth/drive"
     ]
 )
-
 client = gspread.authorize(sheet_creds)
 
 # =====================================================
-# ✅ Your Google Sheet ID and Drive Folder
+#  ✅  Your Google Sheet ID and Drive Folder
 # =====================================================
 SPREADSHEET_ID = "1j5PbpbLeQFVxofnO69BlluIw851-LZtOCV5HM4NhNOM"
 FOLDER_A_ID = "1LXuX4GDaIPsnc0F5yizlL5znfMl22RnD"  # Main photo folder
 
 # =====================================================
-# ✅ Utility: Current Algeria Time
+#  ✅  Utility: Current Algeria Time
 # =====================================================
 def get_current_time():
     algeria_tz = pytz.timezone("Africa/Algiers")
     return datetime.now(algeria_tz).strftime("%Y-%m-%d %H:%M:%S")
 
 # =====================================================
-# ✅ Utility: Upload Base64 image to Google Drive
+#  ✅  Utility: Upload Base64 image to Google Drive
 # =====================================================
 def save_image_to_drive(base64_string, filename, subfolder_name):
     try:
+        if not base64_string or not isinstance(base64_string, str) or "base64," not in base64_string:
+            return ""
+
         # Ensure subfolder exists
         query = f"'{FOLDER_A_ID}' in parents and name='{subfolder_name}' and mimeType='application/vnd.google-apps.folder'"
         results = drive_service.files().list(q=query, fields="files(id)").execute()
+        
         if results["files"]:
             subfolder_id = results["files"][0]["id"]
         else:
@@ -83,10 +95,12 @@ def save_image_to_drive(base64_string, filename, subfolder_name):
             subfolder_id = subfolder["id"]
 
         # Decode image and upload
-        img_data = base64.b64decode(base64_string.split(",")[-1])
+        img_data = base64.b64decode(base64_string.split("base64,")[-1])
         file_stream = io.BytesIO(img_data)
+        
         file_metadata = {"name": filename, "parents": [subfolder_id]}
         media = MediaIoBaseUpload(file_stream, mimetype="image/jpeg", resumable=True)
+        
         uploaded_file = drive_service.files().create(
             body=file_metadata,
             media_body=media,
@@ -101,18 +115,20 @@ def save_image_to_drive(base64_string, filename, subfolder_name):
 
         return f"https://drive.google.com/uc?id={uploaded_file['id']}"
     except Exception as e:
-        return f"ERROR_UPLOAD: {str(e)}"
+        print(f"Upload Error: {str(e)}")
+        return f"ERROR_UPLOAD"
 
 # =====================================================
-# ✅ Copy to Maintenance_Log
+#  ✅  Copy to Maintenance_Log
 # =====================================================
 def copy_to_maintenance_log(source_sheet, data):
     try:
         maintenance = client.open_by_key(SPREADSHEET_ID).worksheet("Maintenance_Log")
         headers = maintenance.row_values(1)
         current_time = get_current_time()
-
+        
         new_row = {}
+        
         if source_sheet == "Cleaning_Log":
             new_row = {
                 "Date": data.get("Date", current_time),
@@ -125,29 +141,15 @@ def copy_to_maintenance_log(source_sheet, data):
                 "Photo Before": data.get("Photo Before", ""),
                 "Photo After": data.get("Photo After", "")
             }
-        elif source_sheet == "Grease_Oil_Requests":
-            new_row = {
-                "Date": data.get("Request Date", current_time),
-                "Model / Type": data.get("Model / Type", ""),
-                "Plate Number": data.get("Plate Number", ""),
-                "Driver": data.get("Driver", ""),
-                "Description of Work": data.get("Request Type", ""),
-                "Performed By": data.get("Handled By", ""),
-                "Status": data.get("Status", "Completed"),
-                "Completion Date": data.get("Completion Date", current_time),
-                "Comments": data.get("Comments", ""),
-                "Photo Before": data.get("Photo Before", ""),
-                "Photo After": data.get("Photo After", "")
-            }
-
+        
         row_to_add = [new_row.get(h, "") for h in headers]
         maintenance.append_row(row_to_add)
         return {"status": "success", "copied_to": "Maintenance_Log"}
     except Exception as e:
-        return {"status": "error", "message": f"Failed to copy to Maintenance_Log: {e}"}
+        return {"status": "error", "message": f"Failed to copy: {e}"}
 
 # =====================================================
-# ✅ Get Sheet Data
+#  ✅  Get Sheet Data
 # =====================================================
 def get_sheet_data(sheet_name):
     try:
@@ -158,7 +160,7 @@ def get_sheet_data(sheet_name):
         return jsonify({"error": str(e)})
 
 # =====================================================
-# ✅ Append Row (Add)
+#  ✅  Append Row (Add) - UPDATED FOR CHECKLIST
 # =====================================================
 def append_row(sheet_name, new_row):
     try:
@@ -166,38 +168,80 @@ def append_row(sheet_name, new_row):
         headers = sheet.row_values(1)
         current_time = get_current_time()
 
-        # Upload any Base64 photos
-        for key in list(new_row.keys()):
-            if "Photo" in key and isinstance(new_row[key], str) and new_row[key].startswith("data:image"):
-                filename = f"{sheet_name}_{key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                new_row[key] = save_image_to_drive(new_row[key], filename, sheet_name)
+        # ---------------------------------------------------
+        #  SPECIAL LOGIC: Checklist_Log (Nested JSON Photos)
+        # ---------------------------------------------------
+        if sheet_name == "Checklist_Log" and "Checklist Data" in new_row:
+            try:
+                # 1. Parse the JSON string coming from frontend
+                checklist_data = json.loads(new_row["Checklist Data"])
+                
+                # 2. Iterate through items to find photos
+                # Structure: { "item_id": { "status": "...", "photo": "data:image..." } }
+                for item_key, item_val in checklist_data.items():
+                    if isinstance(item_val, dict) and "photo" in item_val:
+                        photo_data = item_val["photo"]
+                        
+                        # If it is a Base64 string, upload it
+                        if photo_data and isinstance(photo_data, str) and photo_data.startswith("data:image"):
+                            filename = f"Checklist_{new_row.get('Plate Number', 'Unknown')}_{item_key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                            uploaded_url = save_image_to_drive(photo_data, filename, "Checklist_Log")
+                            
+                            # Replace the massive Base64 string with the URL
+                            item_val["photo"] = uploaded_url
+                
+                # 3. Pack the clean data back into JSON string
+                new_row["Checklist Data"] = json.dumps(checklist_data)
+                
+            except Exception as e:
+                print(f"Checklist Photo Processing Error: {e}")
+                # We continue even if photo processing fails, though sheet might reject if too large
 
-        # Fill timestamps
+        # ---------------------------------------------------
+        #  STANDARD LOGIC: Top-level Photos (Maintenance, Cleaning)
+        # ---------------------------------------------------
+        else:
+            for key in list(new_row.keys()):
+                if "Photo" in key and isinstance(new_row[key], str) and new_row[key].startswith("data:image"):
+                    filename = f"{sheet_name}_{key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                    new_row[key] = save_image_to_drive(new_row[key], filename, sheet_name)
+
+        # ---------------------------------------------------
+        #  Write to Sheet
+        # ---------------------------------------------------
         row_to_add = []
         for h in headers:
             value = new_row.get(h, "")
-            if h.strip().lower() in ["date", "request date"] and not value:
+            # Auto-fill timestamps if empty
+            if h.strip().lower() in ["date", "request date", "timestamp"] and not value:
                 value = current_time
             row_to_add.append(value)
 
         sheet.append_row(row_to_add)
 
-        # Auto-copy Cleaning_Log to Maintenance_Log
+        # Auto-copy Cleaning to Maintenance
         if sheet_name == "Cleaning_Log":
             copy_to_maintenance_log("Cleaning_Log", new_row)
 
         return {"status": "success", "added": new_row, "timestamp": current_time}
+
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 # =====================================================
-# ✅ Update Row (Edit)
+#  ✅  Update Row (Edit)
 # =====================================================
 def update_row(sheet_name, row_index, updated_data):
     try:
         sheet = client.open_by_key(SPREADSHEET_ID).worksheet(sheet_name)
         headers = sheet.row_values(1)
+        
+        # Get existing data to merge
         existing = sheet.row_values(row_index)
+        # Pad existing row if shorter than headers
+        if len(existing) < len(headers):
+            existing += [""] * (len(headers) - len(existing))
+            
         current_row = dict(zip(headers, existing))
 
         # Upload Base64 photos if included
@@ -210,40 +254,31 @@ def update_row(sheet_name, row_index, updated_data):
         for key, value in updated_data.items():
             current_row[key] = value
 
-        # Handle "Completed" logic
+        # Handle "Completed" logic for Maintenance
         if "Status" in headers and updated_data.get("Status", "").lower() == "completed":
             completion_date = get_current_time()
             if "Completion Date" in headers:
                 current_row["Completion Date"] = completion_date
-            copy_to_maintenance_log(sheet_name, current_row)
+            
+            # Optionally copy to Maintenance Log if it's a request
+            # copy_to_maintenance_log(sheet_name, current_row)
 
-        updated_row = [current_row.get(h, "") for h in headers]
-        sheet.update(f"A{row_index}:Z{row_index}", [updated_row])
+        updated_row_values = [current_row.get(h, "") for h in headers]
+        
+        # Update specific row
+        sheet.update(range_name=f"A{row_index}:Z{row_index}", values=[updated_row_values])
 
         return {"status": "success", "updated": current_row}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 # =====================================================
-# ✅ NEW: Delete Row (Completely Remove)
+#  ✅  Delete Row
 # =====================================================
 def delete_row(sheet_name, row_index):
-    """
-    Completely deletes a row from the Google Sheet.
-    
-    Args:
-        sheet_name: Name of the sheet tab
-        row_index: Row number to delete (1-based index, where 1 is header)
-    
-    Returns:
-        dict: Status response
-    """
     try:
         sheet = client.open_by_key(SPREADSHEET_ID).worksheet(sheet_name)
-        
-        # Delete the row (gspread uses 1-based indexing)
         sheet.delete_rows(row_index)
-        
         return {"status": "success", "message": f"Row {row_index} deleted successfully"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
