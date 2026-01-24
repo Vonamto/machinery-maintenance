@@ -1,15 +1,16 @@
 // frontend/src/pages/Checklist/index.jsx
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Navbar from "../../components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, History } from "lucide-react";
+import { FileText, History, ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export default function ChecklistMenu() {
   const { user } = useAuth();
   const role = user?.role || "Guest";
+  const navigate = useNavigate();
   const { t } = useTranslation();
 
   const cards = [
@@ -58,6 +59,15 @@ export default function ChecklistMenu() {
       <Navbar user={user} />
       
       <div className="p-6">
+        {/* Back button */}
+        <button 
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
+        >
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+          {t("common.back")}
+        </button>
+
         <h1 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">
           {t("checklist.menu.title")}
         </h1>
