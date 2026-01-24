@@ -1,50 +1,44 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { fetchSheetData, appendRow } from "../../services/googleSheets";
-import { CHECKLIST_DEFINITIONS, EQUIPMENT_TYPES } from "../../utils/checklistDefinitions";
+import { useCache } from "../../context/CacheContext";
+import { fetchWithAuth } from "../../api/api";
+import { CHECKLIST_DEFINITIONS } from "../../utils/checklistDefinitions";
 import { useTranslation } from "react-i18next";
 
 const CHECKLIST_SHEET = "Checklist_Log";
-const EQUIPMENT_SHEET = "Equipment_List";
 
 const STATUS_OPTIONS = ["ok", "warning", "fail"];
 
 export default function ChecklistForm() {
   const { user } = useAuth();
+  const { equipment } = useCache();
   const { t } = useTranslation();
 
-  const [equipmentList, setEquipmentList] = useState([]);
-
-  const [selectedName, setSelectedName] = useState(user?.fullName || "");
-  const [selectedPlate, setSelectedPlate] = useState("");
-  const [selectedModel, setSelectedModel] = useState("");
+  const [fullName, setFullName] = useState(user?.full_name || "");
+  const [plate, setPlate] = useState("");
+  const [model, setModel] = useState("");
   const [equipmentType, setEquipmentType] = useState("");
 
   const [checklist, setChecklist] = useState(null);
   const [responses, setResponses] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  /* ---------------- LOAD EQUIPMENT LIST ---------------- */
+  /* ---------------- DRIVER AUTO-FILL ---------------- */
   useEffect(() => {
-    fetchSheetData(EQUIPMENT_SHEET).then(setEquipmentList);
-  }, []);
-
-  /* ---------------- AUTO-FILL FOR DRIVER ---------------- */
-  useEffect(() => {
-    if (user?.role === "Driver" && equipmentList.length) {
-      const assigned = equipmentList.find(
+    if (user?.role === "Driver" && equipment.length) {
+      const assigned = equipment.find(
         e =>
-          e["Driver 1"] === user.fullName ||
-          e["Driver 2"] === user.fullName
+          e["Driver 1"] === user.full_name ||
+          e["Driver 2"] === user.full_name
       );
 
       if (assigned) {
-        setSelectedPlate(assigned["Plate Number"]);
-        setSelectedModel(assigned["Model / Type"]);
+        setPlate(assigned["Plate Number"]);
+        setModel(assigned["Model / Type"]);
         setEquipmentType(assigned["Equipment Type"]);
       }
     }
-  }, [equipmentList, user]);
+  }, [equipment, user]);
 
   /* ---------------- LOAD CHECKLIST TEMPLATE ---------------- */
   useEffect(() => {
@@ -59,10 +53,9 @@ export default function ChecklistForm() {
 
   /* ---------------- HANDLERS ---------------- */
   const handlePlateChange = value => {
-    const eq = equipmentList.find(e => e["Plate Number"] === value);
-
-    setSelectedPlate(value);
-    setSelectedModel(eq?.["Model / Type"] || "");
+    const eq = equipment.find(e => e["Plate Number"] === value);
+    setPlate(value);
+    setModel(eq?.["Model / Type"] || "");
     setEquipmentType(eq?.["Equipment Type"] || "");
   };
 
@@ -96,26 +89,33 @@ export default function ChecklistForm() {
   const handleSubmit = async e => {
     e.preventDefault();
 
-    if (!selectedPlate || !equipmentType) {
+    if (!plate || !equipmentType) {
       alert(t("checklist.alerts.missingAsset"));
       return;
     }
 
     setSubmitting(true);
 
-    const row = {
+    const payload = {
       Timestamp: new Date().toISOString(),
       Date: new Date().toLocaleDateString("en-GB"),
-      "Full Name": selectedName,
+      "Full Name": fullName,
       Role: user.role,
-      "Model / Type": selectedModel,
-      "Plate Number": selectedPlate,
+      "Model / Type": model,
+      "Plate Number": plate,
       "Equipment Type": equipmentType,
       "Checklist Data": JSON.stringify(responses)
     };
 
     try {
-      await appendRow(CHECKLIST_SHEET, row);
+      const res = await fetchWithAuth(`/api/add/${CHECKLIST_SHEET}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error("Failed");
+
       alert(t("checklist.alerts.success"));
       setResponses({});
     } catch (err) {
@@ -132,22 +132,22 @@ export default function ChecklistForm() {
         {t("checklist.form.title")}
       </h2>
 
-      {/* HEADER FIELDS */}
+      {/* HEADER */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <input
-          value={selectedName}
-          onChange={e => setSelectedName(e.target.value)}
+          value={fullName}
+          onChange={e => setFullName(e.target.value)}
           placeholder={t("checklist.form.fullName")}
           className="p-2 rounded"
         />
 
         <select
-          value={selectedPlate}
+          value={plate}
           onChange={e => handlePlateChange(e.target.value)}
           className="p-2 rounded"
         >
           <option value="">{t("checklist.form.choosePlate")}</option>
-          {equipmentList.map(e => (
+          {equipment.map(e => (
             <option key={e["Plate Number"]} value={e["Plate Number"]}>
               {e["Plate Number"]}
             </option>
@@ -155,7 +155,7 @@ export default function ChecklistForm() {
         </select>
 
         <input
-          value={selectedModel}
+          value={model}
           readOnly
           placeholder={t("checklist.form.model")}
           className="p-2 rounded bg-gray-100"
