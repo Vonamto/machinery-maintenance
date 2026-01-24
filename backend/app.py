@@ -52,6 +52,11 @@ ROLE_PERMISSIONS = {
         "view": ["Supervisor"],
         "add": ["Supervisor"],
         "edit": ["Supervisor"]
+    },
+    "Checklist_Log": {
+        "view": ["Supervisor", "Mechanic", "Driver"],
+        "add": ["Supervisor", "Mechanic", "Driver"],  # Allow Drivers to add
+        "edit": ["Supervisor", "Mechanic"]
     }
 }
 
