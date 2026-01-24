@@ -61,6 +61,7 @@
     },
     "form": {
       "title": "Daily Inspection",
+      "modelType": "Model Type",
       "checklist": "Safety Checklist Items",
       "subtitle": "Record daily safety and maintenance checks",
       "basicInfo": "General Information",
