@@ -7,7 +7,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
 import { useTranslation } from "react-i18next";
-import { getChecklistTemplate } from "@/config/checklistTemplates";
 
 export default function ChecklistForm() {
   const { user } = useAuth();
@@ -25,12 +24,144 @@ export default function ChecklistForm() {
     "Checklist Data": ""
   });
   
+  // Detailed checklist data structure based on equipment type
   const [checklistData, setChecklistData] = useState({});
   const [modelOptions, setModelOptions] = useState([]);
   const [plateOptions, setPlateOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedEquipment, setSelectedEquipment] = useState(null);
+
+  // Initialize checklist templates based on equipment type
+  const getChecklistTemplate = (equipmentType) => {
+    const templates = {
+      "Truck": {
+        "General Inspection": [
+          "Vehicle cleanliness",
+          "Driver's seat",
+          "Seat belt",
+          "Windshield",
+          "Horn",
+          "Brakes",
+          "Mirrors",
+          "Reversing alarm"
+        ],
+        "Fluids Check": [
+          "Fuel level",
+          "Oil level",
+          "Water Level",
+          "No warning lights on"
+        ],
+        "Electrical": [
+          "Headlights",
+          "Tail lights",
+          "Brake lights",
+          "Turn signals",
+          "Reverse lights"
+        ],
+        "Tires": [
+          "Tire air pressure",
+          "Condition of the tire rubber",
+          "Spare tire condition"
+        ],
+        "Emergency Equipment": [
+          "Hydraulic jack",
+          "Fire extinguisher",
+          "First aid kit",
+          "Warning triangle"
+        ]
+      },
+      "Forklift": {
+        "General Inspection": [
+          "Vehicle cleanliness",
+          "Driver's seat",
+          "Seat belt",
+          "Windshield",
+          "Horn",
+          "Brakes",
+          "Mirrors",
+          "Reversing alarm"
+        ],
+        "Fluids Check": [
+          "Fuel level",
+          "Oil level",
+          "Water Level",
+          "No warning lights on"
+        ],
+        "Electrical": [
+          "Headlights",
+          "Tail lights",
+          "Brake lights",
+          "Turn signals",
+          "Reverse lights"
+        ],
+        "Hydraulic System": [
+          "Hydraulic cylinders",
+          "Hydraulic hose",
+          "Hydraulic fittings",
+          "Hydraulic leaks"
+        ],
+        "Tires": [
+          "Tire air pressure",
+          "Condition of the tire rubber"
+        ],
+        "Emergency Equipment": [
+          "Fire extinguisher",
+          "First aid kit",
+          "Warning triangle"
+        ]
+      },
+      "Crane": {
+        "General Inspection": [
+          "Vehicle cleanliness",
+          "Driver's seat",
+          "Seat belt",
+          "Windshield",
+          "Horn",
+          "Brakes",
+          "Mirrors",
+          "Reversing alarm"
+        ],
+        "Fluids Check": [
+          "Fuel level",
+          "Oil level",
+          "Water Level",
+          "No warning lights on"
+        ],
+        "Electrical": [
+          "Headlights",
+          "Tail lights",
+          "Brake lights",
+          "Turn signals",
+          "Reverse lights"
+        ],
+        "Hydraulic System": [
+          "Hydraulic cylinders",
+          "Hydraulic hose",
+          "Hydraulic fittings",
+          "Hydraulic leaks"
+        ],
+        "Tires": [
+          "Tire air pressure",
+          "Condition of the tire rubber"
+        ],
+        "Lifting System": [
+          "Lifting hook",
+          "Anti-two block device for wire rope",
+          "Lifting wire rope",
+          "Boom, pins, bolting",
+          "Sheaves"
+        ],
+        "Emergency Equipment": [
+          "Fire extinguisher",
+          "First aid kit",
+          "Warning triangle"
+        ]
+      }
+    };
+    
+    return templates[equipmentType] || {};
+  };
 
   // Filter equipment based on user role
   useEffect(() => {
@@ -92,9 +223,10 @@ export default function ChecklistForm() {
       const template = getChecklistTemplate(formData["Equipment Type"]);
       const initialData = {};
       
-      template.forEach(section => {
-        section.items.forEach(item => {
-          initialData[item.id] = {
+      Object.entries(template).forEach(([section, items]) => {
+        items.forEach(item => {
+          const key = `${section}_${item}`.replace(/\s+/g, '_').toLowerCase();
+          initialData[key] = {
             status: null,
             comment: "",
             photo: ""
@@ -345,105 +477,109 @@ export default function ChecklistForm() {
                 {t("checklist.form.checklist")}
               </h2>
               
-              {getChecklistTemplate(formData["Equipment Type"]).map((section, sectionIndex) => (
-                <div key={section.section} className="border border-gray-700 rounded-xl p-4">
+              {Object.entries(getChecklistTemplate(formData["Equipment Type"])).map(([section, items], sectionIndex) => (
+                <div key={section} className="border border-gray-700 rounded-xl p-4">
                   <h3 className="text-lg font-medium mb-4 text-cyan-300">
-                    {t(`checklist.sections.${section.section}.${section.title}`)}
+                    {t(`checklist.sections.${section.replace(/\s+/g, '_').toLowerCase()}`)}
                   </h3>
                   
-                  <div className="space-y-4">
-                    {section.items.map((item) => (
-                      <div key={item.id} className="p-4 bg-gray-900/30 rounded-lg border border-gray-700">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="font-medium text-gray-200">
-                            {t(`checklist.items.${item.id}.${item.label}`)}
-                          </span>
-                          
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleItemStatusChange(item.id, "OK")}
-                              className={`p-2 rounded-lg transition ${
-                                checklistData[item.id]?.status === "OK"
-                                  ? "bg-emerald-500/20 border border-emerald-500 text-emerald-400"
-                                  : "bg-gray-700/50 hover:bg-gray-700 text-gray-400"
-                              }`}
-                              title={t("checklist.status.ok")}
-                            >
-                              <CheckCircle size={20} />
-                            </button>
+                  <div className="space-y-3">
+                    {items.map((item, itemIndex) => {
+                      const itemId = `${section}_${item}`.replace(/\s+/g, '_').toLowerCase();
+                      
+                      return (
+                        <div key={itemId} className="p-3 bg-gray-900/30 rounded-lg border border-gray-700">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium text-gray-200">
+                              {t(`checklist.items.${itemId}`)}
+                            </span>
                             
-                            <button
-                              type="button"
-                              onClick={() => handleItemStatusChange(item.id, "Warning")}
-                              className={`p-2 rounded-lg transition ${
-                                checklistData[item.id]?.status === "Warning"
-                                  ? "bg-amber-500/20 border border-amber-500 text-amber-400"
-                                  : "bg-gray-700/50 hover:bg-gray-700 text-gray-400"
-                              }`}
-                              title={t("checklist.status.warning")}
-                            >
-                              <AlertTriangle size={20} />
-                            </button>
-                            
-                            <button
-                              type="button"
-                              onClick={() => handleItemStatusChange(item.id, "Fail")}
-                              className={`p-2 rounded-lg transition ${
-                                checklistData[item.id]?.status === "Fail"
-                                  ? "bg-red-500/20 border border-red-500 text-red-400"
-                                  : "bg-gray-700/50 hover:bg-gray-700 text-gray-400"
-                              }`}
-                              title={t("checklist.status.fail")}
-                            >
-                              <XCircle size={20} />
-                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleItemStatusChange(itemId, "OK")}
+                                className={`p-2 rounded-lg transition ${
+                                  checklistData[itemId]?.status === "OK"
+                                    ? "bg-emerald-500/20 border border-emerald-500 text-emerald-400"
+                                    : "bg-gray-700/50 hover:bg-gray-700 text-gray-400"
+                                }`}
+                                title={t("checklist.status.ok")}
+                              >
+                                <CheckCircle size={20} />
+                              </button>
+                              
+                              <button
+                                type="button"
+                                onClick={() => handleItemStatusChange(itemId, "Warning")}
+                                className={`p-2 rounded-lg transition ${
+                                  checklistData[itemId]?.status === "Warning"
+                                    ? "bg-amber-500/20 border border-amber-500 text-amber-400"
+                                    : "bg-gray-700/50 hover:bg-gray-700 text-gray-400"
+                                }`}
+                                title={t("checklist.status.warning")}
+                              >
+                                <AlertTriangle size={20} />
+                              </button>
+                              
+                              <button
+                                type="button"
+                                onClick={() => handleItemStatusChange(itemId, "Fail")}
+                                className={`p-2 rounded-lg transition ${
+                                  checklistData[itemId]?.status === "Fail"
+                                    ? "bg-red-500/20 border border-red-500 text-red-400"
+                                    : "bg-gray-700/50 hover:bg-gray-700 text-gray-400"
+                                }`}
+                                title={t("checklist.status.fail")}
+                              >
+                                <XCircle size={20} />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                        
-                        {(checklistData[item.id]?.status === "Warning" || checklistData[item.id]?.status === "Fail") && (
-                          <>
-                            <div className="mt-3">
-                              <label className="block text-sm font-medium text-gray-300 mb-2">
-                                {t("checklist.form.comment")}
-                              </label>
-                              <textarea
-                                value={checklistData[item.id]?.comment || ""}
-                                onChange={(e) => handleCommentChange(item.id, e.target.value)}
-                                className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all"
-                                rows="2"
-                                placeholder={t("checklist.form.commentPlaceholder")}
-                              />
-                            </div>
-                            
-                            <div className="mt-3">
-                              <label className="block text-sm font-medium text-gray-300 mb-2">
-                                {t("checklist.form.photo")}
-                              </label>
-                              <div className="flex gap-2">
-                                <label className="flex items-center gap-2 px-4 py-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg cursor-pointer transition">
-                                  <Camera size={18} />
-                                  <span>{t("checklist.form.uploadPhoto")}</span>
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => e.target.files[0] && handlePhotoUpload(item.id, e.target.files[0])}
-                                    className="hidden"
-                                  />
+                          
+                          {(checklistData[itemId]?.status === "Warning" || checklistData[itemId]?.status === "Fail") && (
+                            <>
+                              <div className="mt-2">
+                                <label className="block text-xs font-medium text-gray-400 mb-1">
+                                  {t("checklist.form.comment")}
                                 </label>
-                                {checklistData[item.id]?.photo && (
-                                  <img 
-                                    src={checklistData[item.id].photo} 
-                                    alt="Preview" 
-                                    className="w-16 h-16 object-cover rounded-lg border border-gray-600"
-                                  />
-                                )}
+                                <textarea
+                                  value={checklistData[itemId]?.comment || ""}
+                                  onChange={(e) => handleCommentChange(itemId, e.target.value)}
+                                  className="w-full p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-sm"
+                                  rows="2"
+                                  placeholder={t("checklist.form.commentPlaceholder")}
+                                />
                               </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    ))}
+                              
+                              <div className="mt-2">
+                                <label className="block text-xs font-medium text-gray-400 mb-1">
+                                  {t("checklist.form.photo")}
+                                </label>
+                                <div className="flex gap-2">
+                                  <label className="flex items-center gap-1 px-3 py-1 bg-gray-700/50 hover:bg-gray-700 rounded-lg cursor-pointer transition text-sm">
+                                    <Camera size={16} />
+                                    <span>{t("checklist.form.uploadPhoto")}</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) => e.target.files[0] && handlePhotoUpload(itemId, e.target.files[0])}
+                                      className="hidden"
+                                    />
+                                  </label>
+                                  {checklistData[itemId]?.photo && (
+                                    <img 
+                                      src={checklistData[itemId].photo} 
+                                      alt="Preview" 
+                                      className="w-12 h-12 object-cover rounded-lg border border-gray-600"
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
