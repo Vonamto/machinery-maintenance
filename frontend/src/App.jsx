@@ -1,4 +1,4 @@
-// frontend/src/App.jsx (UPDATED – role-safe, requests removed)
+// frontend/src/App.jsx (UPDATED – checklist added, role-safe)
 
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -20,6 +20,10 @@ import CleaningHistory from "./pages/Cleaning/CleaningHistory";
 import EquipmentMenu from "./pages/Equipment/index";
 import EquipmentList from "./pages/Equipment/List";
 import EquipmentManage from "./pages/Equipment/Manage";
+
+// --- Checklist ---
+import ChecklistForm from "./pages/Checklist/Form";
+import ChecklistHistory from "./pages/Checklist/History";
 
 // --- Users ---
 import UsersManage from "./pages/Users/Manage";
@@ -103,6 +107,25 @@ export default function App() {
             }
           />
 
+          {/* ================= Checklist ================= */}
+          <Route
+            path="/checklist"
+            element={
+              <ProtectedRoute allowedRoles={["Supervisor", "Mechanic", "Driver"]}>
+                <ChecklistForm />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/checklist/history"
+            element={
+              <ProtectedRoute allowedRoles={["Supervisor", "Mechanic", "Driver"]}>
+                <ChecklistHistory />
+              </ProtectedRoute>
+            }
+          />
+
           {/* ================= Equipment ================= */}
           <Route
             path="/equipment"
@@ -129,9 +152,7 @@ export default function App() {
           <Route
             path="/equipment/manage"
             element={
-              <ProtectedRoute
-                allowedRoles={["Supervisor", "Mechanic"]}
-              >
+              <ProtectedRoute allowedRoles={["Supervisor", "Mechanic"]}>
                 <EquipmentManage />
               </ProtectedRoute>
             }
