@@ -36,14 +36,14 @@ export default function ChecklistForm() {
   const [checklistData, setChecklistData] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  /* ---------------- ACCESS ---------------- */
+  /* ---------------- ACCESS CONTROL ---------------- */
   useEffect(() => {
     if (user?.role === "Cleaning Guy") {
       navigate("/", { replace: true });
     }
   }, [user, navigate]);
 
-  /* ---------------- LOADING ---------------- */
+  /* ---------------- LOADING (SAME AS OTHER PAGES) ---------------- */
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
@@ -52,13 +52,13 @@ export default function ChecklistForm() {
     );
   }
 
-  /* ---------------- FILTER EQUIPMENT ---------------- */
+  /* ---------------- POPULATE DROPDOWNS ---------------- */
   useEffect(() => {
     if (!equipment?.length) return;
 
     if (user?.role === "Driver") {
       const driverEq = equipment.filter(
-        (eq) =>
+        eq =>
           eq["Driver 1"] === user.full_name ||
           eq["Driver 2"] === user.full_name
       );
@@ -70,12 +70,38 @@ export default function ChecklistForm() {
     }
   }, [equipment, user]);
 
+  /* ---------------- MODEL CHANGE ---------------- */
+  useEffect(() => {
+    if (!formData["Model / Type"]) return;
+
+    let filtered = equipment;
+
+    if (user?.role === "Driver") {
+      filtered = equipment.filter(
+        eq =>
+          eq["Model / Type"] === formData["Model / Type"] &&
+          (eq["Driver 1"] === user.full_name ||
+            eq["Driver 2"] === user.full_name)
+      );
+    } else {
+      filtered = equipment.filter(
+        eq => eq["Model / Type"] === formData["Model / Type"]
+      );
+    }
+
+    setPlateOptions(filtered.map(eq => eq["Plate Number"]));
+
+    if (!filtered.some(eq => eq["Plate Number"] === formData["Plate Number"])) {
+      setFormData(prev => ({ ...prev, "Plate Number": "" }));
+    }
+  }, [formData["Model / Type"], equipment, user]);
+
   /* ---------------- PLATE CHANGE ---------------- */
   useEffect(() => {
     if (!formData["Plate Number"]) return;
 
     const found = equipment.find(
-      e => e["Plate Number"] === formData["Plate Number"]
+      eq => eq["Plate Number"] === formData["Plate Number"]
     );
 
     if (found) {
@@ -87,13 +113,14 @@ export default function ChecklistForm() {
     }
   }, [formData["Plate Number"], equipment]);
 
-  /* ---------------- INIT CHECKLIST ---------------- */
+  /* ---------------- INIT CHECKLIST (SAFE) ---------------- */
   useEffect(() => {
-    if (!formData["Equipment Type"]) return;
+    if (!formData["Plate Number"] || !formData["Equipment Type"]) return;
 
     const template = getChecklistTemplate(formData["Equipment Type"]);
-    const initial = {};
+    if (!template.length) return;
 
+    const initial = {};
     template.forEach(section => {
       section.items.forEach(item => {
         const key = `${section.sectionKey}.${item.key}`;
@@ -102,7 +129,7 @@ export default function ChecklistForm() {
     });
 
     setChecklistData(initial);
-  }, [formData["Equipment Type"]]);
+  }, [formData["Plate Number"], formData["Equipment Type"]]);
 
   /* ---------------- HANDLERS ---------------- */
   const handleInputChange = (field, value) => {
@@ -198,116 +225,150 @@ export default function ChecklistForm() {
           {t("common.back")}
         </button>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* BASIC INFO */}
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-            {/* same as your old code – unchanged */}
-          </div>
+        {/* BASIC INFORMATION – ALWAYS VISIBLE */}
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 mb-8">
+          <h2 className="text-lg font-semibold text-cyan-400 mb-4">
+            {t("checklist.form.basicInfo")}
+          </h2>
 
-          {/* CHECKLIST */}
-          {template.length > 0 && (
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 space-y-6">
-              {template.map(section => (
-                <div key={section.sectionKey}>
-                  <h3 className="text-cyan-300 mb-4">
-                    {t(section.titleKey)}
-                  </h3>
+          <div className="grid grid-cols-1 gap-4">
+            <input
+              type="date"
+              value={formData.Date}
+              onChange={e => handleInputChange("Date", e.target.value)}
+              className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+            />
 
-                  {section.items.map(item => {
-                    const key = `${section.sectionKey}.${item.key}`;
-                    const state = checklistData[key];
+            <input
+              value={formData["Full Name"]}
+              onChange={e =>
+                handleInputChange("Full Name", e.target.value)
+              }
+              className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+            />
 
-                    return (
-                      <div
-                        key={key}
-                        className="p-3 bg-gray-900/30 rounded-lg border border-gray-700 mb-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-200">
-                            {t(`checklist.items.${item.key}`)}
-                          </span>
-
-                          <div className="flex gap-2">
-                            <CheckCircle
-                              size={18}
-                              onClick={() => handleStatusChange(key, "OK")}
-                              className={`cursor-pointer ${
-                                state?.status === "OK"
-                                  ? "text-emerald-400"
-                                  : "text-gray-500"
-                              }`}
-                            />
-                            <AlertTriangle
-                              size={18}
-                              onClick={() =>
-                                handleStatusChange(key, "Warning")
-                              }
-                              className={`cursor-pointer ${
-                                state?.status === "Warning"
-                                  ? "text-amber-400"
-                                  : "text-gray-500"
-                              }`}
-                            />
-                            <XCircle
-                              size={18}
-                              onClick={() => handleStatusChange(key, "Fail")}
-                              className={`cursor-pointer ${
-                                state?.status === "Fail"
-                                  ? "text-red-400"
-                                  : "text-gray-500"
-                              }`}
-                            />
-                          </div>
-                        </div>
-
-                        {(state?.status === "Warning" ||
-                          state?.status === "Fail") && (
-                          <div className="mt-3 space-y-2">
-                            <textarea
-                              value={state.comment}
-                              onChange={e =>
-                                handleCommentChange(key, e.target.value)
-                              }
-                              className="w-full p-2 rounded-lg bg-gray-900/70 border border-gray-700"
-                              placeholder={t(
-                                "checklist.form.commentPlaceholder"
-                              )}
-                            />
-
-                            <label className="flex items-center gap-2 text-sm cursor-pointer">
-                              <Camera size={14} />
-                              {t("checklist.form.uploadPhoto")}
-                              <input
-                                type="file"
-                                hidden
-                                onChange={e =>
-                                  e.target.files &&
-                                  handlePhotoUpload(
-                                    key,
-                                    e.target.files[0]
-                                  )
-                                }
-                              />
-                            </label>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+            <select
+              value={formData["Model / Type"]}
+              onChange={e =>
+                handleInputChange("Model / Type", e.target.value)
+              }
+              className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+            >
+              <option value="">
+                {t("checklist.form.selectModel")}
+              </option>
+              {modelOptions.map(m => (
+                <option key={m} value={m}>{m}</option>
               ))}
-            </div>
-          )}
+            </select>
 
-          {/* SUBMIT */}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600"
-          >
-            {submitting ? t("common.submitting") : t("common.submit")}
-          </button>
-        </form>
+            <select
+              value={formData["Plate Number"]}
+              onChange={e =>
+                handleInputChange("Plate Number", e.target.value)
+              }
+              className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+            >
+              <option value="">
+                {t("checklist.form.selectPlate")}
+              </option>
+              {plateOptions.map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+
+            <input
+              readOnly
+              value={formData["Equipment Type"]}
+              className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
+            />
+          </div>
+        </div>
+
+        {/* CHECKLIST SECTION */}
+        {formData["Plate Number"] && formData["Equipment Type"] ? (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {template.map(section => (
+              <div
+                key={section.sectionKey}
+                className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700"
+              >
+                <h3 className="text-cyan-300 mb-4">
+                  {t(section.titleKey)}
+                </h3>
+
+                {section.items.map(item => {
+                  const key = `${section.sectionKey}.${item.key}`;
+                  const state = checklistData[key];
+
+                  return (
+                    <div
+                      key={key}
+                      className="p-3 bg-gray-900/30 rounded-lg border border-gray-700 mb-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{t(`checklist.items.${item.key}`)}</span>
+                        <div className="flex gap-2">
+                          <CheckCircle
+                            size={18}
+                            onClick={() => handleStatusChange(key, "OK")}
+                            className={state?.status === "OK" ? "text-emerald-400" : "text-gray-500"}
+                          />
+                          <AlertTriangle
+                            size={18}
+                            onClick={() => handleStatusChange(key, "Warning")}
+                            className={state?.status === "Warning" ? "text-amber-400" : "text-gray-500"}
+                          />
+                          <XCircle
+                            size={18}
+                            onClick={() => handleStatusChange(key, "Fail")}
+                            className={state?.status === "Fail" ? "text-red-400" : "text-gray-500"}
+                          />
+                        </div>
+                      </div>
+
+                      {(state?.status === "Warning" || state?.status === "Fail") && (
+                        <div className="mt-3 space-y-2">
+                          <textarea
+                            value={state.comment}
+                            onChange={e => handleCommentChange(key, e.target.value)}
+                            className="w-full p-2 rounded-lg bg-gray-900/70 border border-gray-700"
+                            placeholder={t("checklist.form.commentPlaceholder")}
+                          />
+
+                          <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Camera size={14} />
+                            {t("checklist.form.uploadPhoto")}
+                            <input
+                              type="file"
+                              hidden
+                              onChange={e =>
+                                e.target.files &&
+                                handlePhotoUpload(key, e.target.files[0])
+                              }
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600"
+            >
+              {submitting ? t("common.submitting") : t("common.submit")}
+            </button>
+          </form>
+        ) : (
+          <div className="text-center text-gray-400">
+            {t("checklist.form.selectEquipmentHint")}
+          </div>
+        )}
       </div>
     </div>
   );
