@@ -1,4 +1,4 @@
-// frontend/src/App.jsx (UPDATED – role-safe, requests removed)
+// frontend/src/App.jsx
 
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -6,22 +6,27 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// --- Maintenance ---
-import MaintenanceIndex from "./pages/Maintenance/index";
+/* ================= Maintenance ================= */
+import MaintenanceIndex from "./pages/Maintenance";
 import MaintenanceForm from "./pages/Maintenance/Form";
 import MaintenanceHistory from "./pages/Maintenance/History";
 
-// --- Cleaning ---
-import CleaningMenu from "./pages/Cleaning/index";
+/* ================= Cleaning ================= */
+import CleaningMenu from "./pages/Cleaning";
 import CleaningForm from "./pages/Cleaning/CleaningForm";
 import CleaningHistory from "./pages/Cleaning/CleaningHistory";
 
-// --- Equipment ---
-import EquipmentMenu from "./pages/Equipment/index";
+/* ================= Equipment ================= */
+import EquipmentMenu from "./pages/Equipment";
 import EquipmentList from "./pages/Equipment/List";
 import EquipmentManage from "./pages/Equipment/Manage";
 
-// --- Users ---
+/* ================= Checklist ================= */
+import ChecklistMenu from "./pages/Checklist";
+import ChecklistForm from "./pages/Checklist/Form";
+import ChecklistHistory from "./pages/Checklist/History";
+
+/* ================= Users ================= */
 import UsersManage from "./pages/Users/Manage";
 
 export default function App() {
@@ -29,10 +34,10 @@ export default function App() {
     <BrowserRouter>
       <div className="min-h-screen bg-theme-background-primary text-theme-text-primary">
         <Routes>
-          {/* Login */}
+          {/* ================= Auth ================= */}
           <Route path="/login" element={<Login />} />
 
-          {/* Dashboard */}
+          {/* ================= Dashboard ================= */}
           <Route
             path="/"
             element={
@@ -52,7 +57,6 @@ export default function App() {
             }
           />
 
-          {/* Maintenance Form – NO DRIVER */}
           <Route
             path="/maintenance/form"
             element={
@@ -62,7 +66,6 @@ export default function App() {
             }
           />
 
-          {/* Maintenance History – Driver allowed */}
           <Route
             path="/maintenance/history"
             element={
@@ -82,7 +85,6 @@ export default function App() {
             }
           />
 
-          {/* Cleaning Form – NO DRIVER */}
           <Route
             path="/cleaning/form"
             element={
@@ -129,10 +131,42 @@ export default function App() {
           <Route
             path="/equipment/manage"
             element={
-              <ProtectedRoute
-                allowedRoles={["Supervisor", "Mechanic"]}
-              >
+              <ProtectedRoute allowedRoles={["Supervisor", "Mechanic"]}>
                 <EquipmentManage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ================= Checklist ================= */}
+          <Route
+            path="/checklist"
+            element={
+              <ProtectedRoute
+                allowedRoles={["Supervisor", "Mechanic", "Driver"]}
+              >
+                <ChecklistMenu />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/checklist/form"
+            element={
+              <ProtectedRoute
+                allowedRoles={["Supervisor", "Mechanic", "Driver"]}
+              >
+                <ChecklistForm />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/checklist/history"
+            element={
+              <ProtectedRoute
+                allowedRoles={["Supervisor", "Mechanic", "Driver"]}
+              >
+                <ChecklistHistory />
               </ProtectedRoute>
             }
           />
@@ -147,7 +181,7 @@ export default function App() {
             }
           />
 
-          {/* Fallback */}
+          {/* ================= Fallback ================= */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
