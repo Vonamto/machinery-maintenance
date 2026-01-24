@@ -59,6 +59,8 @@
     },
     "form": {
       "title": "Daily Inspection",
+      "subtitle": "Record daily safety and maintenance checks",
+      "basicInfo": "General Information",
       "date": "Date",
       "fullName": "Inspector",
       "model": "Model",
@@ -71,7 +73,14 @@
       "success": "Checklist saved successfully!",
       "chooseModel": "--- Select Model ---",
       "choosePlate": "--- Select Plate ---",
-      "chooseInspector": "--- Select Inspector ---"
+      "chooseInspector": "--- Select Inspector ---",
+      "commentsPlaceholder": "Add any notes or observations here...",
+      "alerts": {
+        "success": "Checklist saved successfully!",
+        "error": "Error saving checklist",
+        "networkError": "Network error submitting checklist",
+        "photoError": "Error processing photo attachment"
+      }
     },
     "history": {
       "title": "Inspection History",
@@ -83,7 +92,9 @@
       "endDate": "End Date",
       "noResults": "No inspection records found",
       "loading": "Loading history...",
-      "reset": "Reset Filters"
+      "reset": "Reset Filters",
+      "details": "Inspection Details",
+      "items": "Items Checked"
     },
     "statusLabels": {
       "OK": "Good / OK",
