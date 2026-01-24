@@ -1,5 +1,3 @@
-// frontend/src/pages/Checklist/History.jsx
-
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { fetchWithAuth } from "../../api/api";
@@ -11,7 +9,7 @@ const ITEMS_PER_PAGE = 10;
 export default function ChecklistHistory() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { equipmentList, loading: cacheLoading } = useCache();
+  const { equipment, loading: cacheLoading } = useCache();
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +24,7 @@ export default function ChecklistHistory() {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRow, setExpandedRow] = useState(null);
 
-  /* ===================== DATA LOAD ===================== */
+  /* ===================== LOAD DATA ===================== */
   useEffect(() => {
     if (cacheLoading) return;
 
@@ -40,16 +38,17 @@ export default function ChecklistHistory() {
           checklist: JSON.parse(row["Checklist Data"] || "{}"),
         }));
 
+        /* Driver restriction */
         if (user.role === "Driver") {
-          const driverPlates = equipmentList
+          const driverPlates = equipment
             .filter(
-              (e) =>
-                e["Driver 1"] === user.fullName ||
-                e["Driver 2"] === user.fullName
+              e =>
+                e["Driver 1"] === user.full_name ||
+                e["Driver 2"] === user.full_name
             )
-            .map((e) => e["Plate Number"]);
+            .map(e => e["Plate Number"]);
 
-          parsed = parsed.filter((r) =>
+          parsed = parsed.filter(r =>
             driverPlates.includes(r["Plate Number"])
           );
         }
@@ -63,20 +62,17 @@ export default function ChecklistHistory() {
     }
 
     loadData();
-  }, [cacheLoading, equipmentList, user]);
+  }, [cacheLoading, equipment, user]);
 
   /* ===================== FILTERING ===================== */
   const filteredRows = useMemo(() => {
-    return rows.filter((r) => {
-      if (
-        filters.plate &&
-        r["Plate Number"] !== filters.plate
-      )
+    return rows.filter(r => {
+      if (filters.plate && r["Plate Number"] !== filters.plate)
         return false;
 
       if (
         filters.model &&
-        r["Model"] !== filters.model
+        r["Model / Type"] !== filters.model
       )
         return false;
 
@@ -106,7 +102,7 @@ export default function ChecklistHistory() {
 
   return (
     <div className="p-4 space-y-4">
-      {/* ===== Header ===== */}
+      {/* Header */}
       <div>
         <h1 className="text-xl font-bold">
           {t("checklist.history.title")}
@@ -116,19 +112,19 @@ export default function ChecklistHistory() {
         </p>
       </div>
 
-      {/* ===== Filters ===== */}
+      {/* Filters */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <select
           value={filters.plate}
-          onChange={(e) =>
+          onChange={e =>
             setFilters({ ...filters, plate: e.target.value })
           }
         >
           <option value="">
             {t("checklist.filters.plate")}
           </option>
-          {[...new Set(rows.map((r) => r["Plate Number"]))].map(
-            (p) => (
+          {[...new Set(rows.map(r => r["Plate Number"]))].map(
+            p => (
               <option key={p} value={p}>
                 {p}
               </option>
@@ -138,24 +134,26 @@ export default function ChecklistHistory() {
 
         <select
           value={filters.model}
-          onChange={(e) =>
+          onChange={e =>
             setFilters({ ...filters, model: e.target.value })
           }
         >
           <option value="">
             {t("checklist.filters.model")}
           </option>
-          {[...new Set(rows.map((r) => r.Model))].map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
+          {[...new Set(rows.map(r => r["Model / Type"]))].map(
+            m => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            )
+          )}
         </select>
 
         <input
           type="date"
           value={filters.from}
-          onChange={(e) =>
+          onChange={e =>
             setFilters({ ...filters, from: e.target.value })
           }
         />
@@ -163,15 +161,15 @@ export default function ChecklistHistory() {
         <input
           type="date"
           value={filters.to}
-          onChange={(e) =>
+          onChange={e =>
             setFilters({ ...filters, to: e.target.value })
           }
         />
       </div>
 
-      {/* ===== Accordion List ===== */}
+      {/* Accordion */}
       <div className="space-y-2">
-        {paginatedRows.map((row) => {
+        {paginatedRows.map(row => {
           const open = expandedRow === row.id;
 
           return (
@@ -186,35 +184,36 @@ export default function ChecklistHistory() {
                 }
               >
                 <span>
-                  {row.Date} — {row["Plate Number"]}
+                  {row.Date} — {row["Plate Number"]} (
+                  {row["Equipment Type"]})
                 </span>
                 <span>{open ? "−" : "+"}</span>
               </button>
 
               {open && (
-                <div className="p-3 space-y-3">
+                <div className="p-3 space-y-4">
                   {Object.entries(row.checklist).map(
-                    ([section, items]) => (
-                      <div key={section}>
-                        <h3 className="font-semibold">
-                          {t(
-                            `checklist.sections.${section}`
-                          )}
+                    ([sectionId, items]) => (
+                      <div key={sectionId}>
+                        <h3 className="font-semibold mb-2">
+                          {t(sectionId)}
                         </h3>
 
                         <ul className="space-y-1">
                           {Object.entries(items).map(
-                            ([itemKey, item]) => (
+                            ([itemId, item]) => (
                               <li
-                                key={itemKey}
+                                key={itemId}
                                 className="flex justify-between items-center"
                               >
+                                <span>{t(itemId)}</span>
                                 <span>
-                                  {t(
-                                    `checklist.items.${itemKey}`
-                                  )}
+                                  {item.status === "ok"
+                                    ? "✅"
+                                    : item.status === "warning"
+                                    ? "⚠️"
+                                    : "❌"}
                                 </span>
-                                <span>{item.status}</span>
                               </li>
                             )
                           )}
@@ -229,7 +228,7 @@ export default function ChecklistHistory() {
         })}
       </div>
 
-      {/* ===== Pagination ===== */}
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center gap-2">
           {Array.from({ length: totalPages }).map((_, i) => (
