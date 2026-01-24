@@ -62,6 +62,9 @@
     "form": {
       "title": "Daily Inspection",
       "modelType": "Model Type",
+      "plateNumber": "Plate Number",
+      "commentPlaceholder" : "Write Your Comments Here",
+      "uploadPhoto" : "Upload a Photo"
       "checklist": "Safety Checklist Items",
       "subtitle": "Record daily safety and maintenance checks",
       "basicInfo": "General Information",
