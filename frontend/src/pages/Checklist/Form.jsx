@@ -1,7 +1,7 @@
 // frontend/src/pages/Checklist/Form.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle, AlertTriangle, XCircle, Camera, Upload } from "lucide-react";
+import { ArrowLeft, CheckCircle, AlertTriangle, XCircle, Camera } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
@@ -17,7 +17,6 @@ export default function ChecklistForm() {
   const [formData, setFormData] = useState({
     Date: new Date().toISOString().split('T')[0],
     "Full Name": user?.full_name || "",
-    Role: user?.role || "",
     "Model / Type": "",
     "Plate Number": "",
     "Equipment Type": "",
@@ -229,7 +228,7 @@ export default function ChecklistForm() {
           initialData[key] = {
             status: null,
             comment: "",
-            photo: ""
+            photo: "" // Store base64 string or URL
           };
         });
       });
@@ -266,16 +265,30 @@ export default function ChecklistForm() {
     }));
   };
 
+  // Convert image to base64 for upload to Google Drive
+  const convertToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  };
+
   const handlePhotoUpload = async (itemId, file) => {
-    // In a real implementation, you would upload to Cloudinary here
-    // For now, we'll store the file object temporarily
-    setChecklistData(prev => ({
-      ...prev,
-      [itemId]: {
-        ...prev[itemId],
-        photo: URL.createObjectURL(file)
-      }
-    }));
+    try {
+      const base64 = await convertToBase64(file);
+      setChecklistData(prev => ({
+        ...prev,
+        [itemId]: {
+          ...prev[itemId],
+          photo: base64 // Store base64 string for submission
+        }
+      }));
+    } catch (error) {
+      console.error('Error converting image to base64:', error);
+      alert(t("checklist.form.alerts.photoError"));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -289,6 +302,7 @@ export default function ChecklistForm() {
       const submitData = {
         ...formData,
         "Checklist Data": checklistJson,
+        Role: user?.role || "",
         Timestamp: new Date().toISOString()
       };
 
@@ -301,14 +315,15 @@ export default function ChecklistForm() {
       });
 
       if (response.ok) {
-        alert(t("checklist.form.successMessage"));
-        navigate('/checklist/history');
+        alert(t("checklist.form.alerts.success"));
+        navigate('/checklist');
       } else {
-        alert(t("checklist.form.errorMessage"));
+        const errorData = await response.json();
+        alert(`${t("checklist.form.alerts.error")}: ${errorData.message || t("checklist.form.alerts.genericError")}`);
       }
     } catch (error) {
       console.error('Error submitting checklist:', error);
-      alert(t("checklist.form.errorMessage"));
+      alert(t("checklist.form.alerts.networkError"));
     } finally {
       setSubmitting(false);
     }
@@ -351,40 +366,40 @@ export default function ChecklistForm() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-6xl mx-auto p-4 md:p-6">
         {/* Back button */}
         <button 
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
+          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-4 md:mb-6 transition group"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-          {t("checklist.form.back")}
+          {t("common.back")}
         </button>
 
         {/* Header */}
-        <div className="mb-8 flex items-center gap-4">
+        <div className="mb-6 md:mb-8 flex items-center gap-4">
           <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-500 shadow-lg shadow-emerald-500/40">
             <CheckCircle className="w-8 h-8 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">
+            <h1 className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">
               {t("checklist.form.title")}
             </h1>
-            <p className="text-gray-400 text-sm mt-1">
+            <p className="text-gray-400 text-sm md:text-base mt-1">
               {t("checklist.form.subtitle")}
             </p>
           </div>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
           {/* Basic Information Section */}
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-            <h2 className="text-xl font-semibold mb-6 text-cyan-400">
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-gray-700">
+            <h2 className="text-lg md:text-xl font-semibold mb-4 md:mb-6 text-cyan-400">
               {t("checklist.form.basicInfo")}
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   {t("checklist.form.date")}
@@ -402,12 +417,13 @@ export default function ChecklistForm() {
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   {t("checklist.form.fullName")}
                 </label>
-                <input
-                  type="text"
+                <select
                   value={formData["Full Name"]}
-                  readOnly
-                  className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400 cursor-not-allowed"
-                />
+                  onChange={(e) => handleInputChange("Full Name", e.target.value)}
+                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                >
+                  <option value={user?.full_name}>{user?.full_name}</option>
+                </select>
               </div>
               
               <div>
@@ -418,7 +434,6 @@ export default function ChecklistForm() {
                   value={formData["Model / Type"]}
                   onChange={(e) => handleInputChange("Model / Type", e.target.value)}
                   className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                  disabled={user?.role === "Driver"}
                 >
                   <option value="">{t("checklist.form.selectModel")}</option>
                   {modelOptions.map(model => (
@@ -435,7 +450,6 @@ export default function ChecklistForm() {
                   value={formData["Plate Number"]}
                   onChange={(e) => handleInputChange("Plate Number", e.target.value)}
                   className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                  disabled={user?.role === "Driver"}
                 >
                   <option value="">{t("checklist.form.selectPlate")}</option>
                   {plateOptions.map(plate => (
@@ -455,46 +469,34 @@ export default function ChecklistForm() {
                   className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400 cursor-not-allowed"
                 />
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {t("checklist.form.role")}
-                </label>
-                <input
-                  type="text"
-                  value={t(`roles.${user?.role}`)}
-                  readOnly
-                  className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400 cursor-not-allowed"
-                />
-              </div>
             </div>
           </div>
 
           {/* Checklist Items */}
           {formData["Equipment Type"] && (
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 space-y-6">
-              <h2 className="text-xl font-semibold mb-6 text-emerald-400">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-gray-700 space-y-4 md:space-y-6">
+              <h2 className="text-lg md:text-xl font-semibold mb-4 md:mb-6 text-emerald-400">
                 {t("checklist.form.checklist")}
               </h2>
               
               {Object.entries(getChecklistTemplate(formData["Equipment Type"])).map(([section, items], sectionIndex) => (
-                <div key={section} className="border border-gray-700 rounded-xl p-4">
-                  <h3 className="text-lg font-medium mb-4 text-cyan-300">
-                    {t(`checklist.sections.${section.replace(/\s+/g, '_').toLowerCase()}`)}
+                <div key={section} className="border border-gray-700 rounded-xl p-3 md:p-4">
+                  <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4 text-cyan-300">
+                    {t(`checklist.sections.${section.replace(/\s+/g, '_').toLowerCase()}`) || section}
                   </h3>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-2 md:space-y-3">
                     {items.map((item, itemIndex) => {
                       const itemId = `${section}_${item}`.replace(/\s+/g, '_').toLowerCase();
                       
                       return (
                         <div key={itemId} className="p-3 bg-gray-900/30 rounded-lg border border-gray-700">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium text-gray-200">
-                              {t(`checklist.items.${itemId}`)}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                            <span className="font-medium text-gray-200 text-sm md:text-base">
+                              {t(`checklist.items.${itemId}`) || item}
                             </span>
                             
-                            <div className="flex gap-2">
+                            <div className="flex gap-1 sm:gap-2 justify-end">
                               <button
                                 type="button"
                                 onClick={() => handleItemStatusChange(itemId, "OK")}
@@ -505,7 +507,7 @@ export default function ChecklistForm() {
                                 }`}
                                 title={t("checklist.status.ok")}
                               >
-                                <CheckCircle size={20} />
+                                <CheckCircle size={16} className="sm:size-20" />
                               </button>
                               
                               <button
@@ -518,7 +520,7 @@ export default function ChecklistForm() {
                                 }`}
                                 title={t("checklist.status.warning")}
                               >
-                                <AlertTriangle size={20} />
+                                <AlertTriangle size={16} className="sm:size-20" />
                               </button>
                               
                               <button
@@ -531,7 +533,7 @@ export default function ChecklistForm() {
                                 }`}
                                 title={t("checklist.status.fail")}
                               >
-                                <XCircle size={20} />
+                                <XCircle size={16} className="sm:size-20" />
                               </button>
                             </div>
                           </div>
@@ -557,7 +559,7 @@ export default function ChecklistForm() {
                                 </label>
                                 <div className="flex gap-2">
                                   <label className="flex items-center gap-1 px-3 py-1 bg-gray-700/50 hover:bg-gray-700 rounded-lg cursor-pointer transition text-sm">
-                                    <Camera size={16} />
+                                    <Camera size={14} />
                                     <span>{t("checklist.form.uploadPhoto")}</span>
                                     <input
                                       type="file"
@@ -567,11 +569,21 @@ export default function ChecklistForm() {
                                     />
                                   </label>
                                   {checklistData[itemId]?.photo && (
-                                    <img 
-                                      src={checklistData[itemId].photo} 
-                                      alt="Preview" 
-                                      className="w-12 h-12 object-cover rounded-lg border border-gray-600"
-                                    />
+                                    <div className="relative">
+                                      {checklistData[itemId].photo.startsWith('data:image') ? (
+                                        <img 
+                                          src={checklistData[itemId].photo} 
+                                          alt="Preview" 
+                                          className="w-12 h-12 object-cover rounded-lg border border-gray-600"
+                                        />
+                                      ) : (
+                                        <img 
+                                          src={checklistData[itemId].photo} 
+                                          alt="Preview" 
+                                          className="w-12 h-12 object-cover rounded-lg border border-gray-600"
+                                        />
+                                      )}
+                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -587,11 +599,11 @@ export default function ChecklistForm() {
           )}
 
           {/* Submit Button */}
-          <div className="flex gap-4 pt-6">
+          <div className="flex flex-col sm:flex-row gap-4 pt-4 md:pt-6">
             <button
               type="submit"
               disabled={submitting || !formData["Equipment Type"]}
-              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white font-medium rounded-xl transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white font-medium rounded-xl transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
             >
               {submitting ? t("common.submitting") : t("common.submit")}
             </button>
@@ -599,7 +611,7 @@ export default function ChecklistForm() {
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-xl transition"
+              className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-xl transition flex-1"
             >
               {t("common.cancel")}
             </button>
