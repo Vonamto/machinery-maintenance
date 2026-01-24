@@ -63,22 +63,29 @@
       "fullName": "Inspector",
       "model": "Model",
       "plate": "Plate Number",
-      "equipmentType": "Type",
-      "comment": "Observations",
+      "equipmentType": "Equipment Type",
+      "comment": "Observations / Comments",
       "photo": "Attach Photo",
       "submit": "Submit Inspection",
-      "success": "Checklist saved successfully!"
+      "submitting": "Submitting Inspection...",
+      "success": "Checklist saved successfully!",
+      "chooseModel": "--- Select Model ---",
+      "choosePlate": "--- Select Plate ---",
+      "chooseInspector": "--- Select Inspector ---"
     },
     "history": {
-      "title": "Checklist History",
-      "search": "Search...",
+      "title": "Inspection History",
+      "subtitle": "View and filter daily machinery inspections",
+      "search": "Search inspections...",
       "filterPlate": "Filter Plate",
       "filterModel": "Filter Model",
       "startDate": "Start Date",
       "endDate": "End Date",
-      "noResults": "No records found"
+      "noResults": "No inspection records found",
+      "loading": "Loading history...",
+      "reset": "Reset Filters"
     },
-    "status": {
+    "statusLabels": {
       "OK": "Good / OK",
       "Warning": "Needs Attention",
       "Fail": "Unsafe / Fail"
@@ -133,7 +140,7 @@
     "description": "Manage and track all equipment maintenance operations",
     "addLog": {
       "title": "Add Maintenance Log",
-      "description": "Fill in a new maintenance record for your equipment"
+      "description": "Fill in a new maintenance record"
     },
     "history": {
       "title": "Maintenance History",
@@ -206,14 +213,8 @@
     "Water Wash": "Water Wash",
     "Full Cleaning (Air & Water)": "Full Cleaning (Air & Water)"
   },
-  "requestTypes": {
-    "Oil Service": "Oil Service",
-    "Grease Service": "Grease Service",
-    "Full Service (Oil + Greasing)": "Full Service (Oil + Greasing)"
-  },
   "cleaning": {
     "menu": {
-      "back": "Back",
       "title": "Cleaning Log",
       "cards": {
         "addLog": {
@@ -227,7 +228,6 @@
       }
     },
     "form": {
-      "back": "Back",
       "title": "Cleaning Log Form",
       "subtitle": "Record a cleaning activity",
       "date": "Date",
@@ -237,8 +237,8 @@
       "cleanedBy": "Cleaned By",
       "cleaningType": "Cleaning Type",
       "comments": "Comments",
-      "photobefore": "Photo Before",
-      "photoafter": "Photo After",
+      "photoBefore": "Photo Before",
+      "photoAfter": "Photo After",
       "chooseModel": "--- Choose Model ---",
       "choosePlate": "--- Choose Plate ---",
       "chooseDriver": "--- Choose Driver ---",
@@ -286,7 +286,6 @@
   },
   "equipment": {
     "menu": {
-      "back": "Back",
       "title": "Equipment Management",
       "subtitle": "View and manage all company vehicles and equipment",
       "cards": {
@@ -301,9 +300,8 @@
       }
     },
     "list": {
-      "back": "Back",
       "title": "Equipment List",
-      "subtitle": "Click on Model, Plate, or Driver to view maintenance history",
+      "subtitle": "Click on Model, Plate, or Driver to view history",
       "loading": "Loading equipment list...",
       "noEquipment": "No equipment found.",
       "table": {
@@ -320,7 +318,6 @@
       "title": "Manage Equipment",
       "subtitle": "Add, edit, or remove equipment entries",
       "addButton": "Add Equipment",
-      "cancelButton": "Cancel",
       "addForm": {
         "title": "Add New Equipment",
         "modelType": "Model / Type *",
@@ -361,7 +358,7 @@
         "deleteSuccess": "Equipment deleted successfully!",
         "error": "Error: {{message}}",
         "networkError": "Network error",
-        "deleteConfirm": "Are you sure you want to PERMANENTLY DELETE equipment \"{{plateNumber}}\"?\n\nThis action cannot be undone."
+        "deleteConfirm": "Are you sure you want to PERMANENTLY DELETE equipment \"{{plateNumber}}\"?"
       }
     }
   },
@@ -370,7 +367,6 @@
       "title": "Manage Users",
       "subtitle": "Add, edit, or remove system users",
       "addButton": "Add User",
-      "cancelButton": "Cancel",
       "addForm": {
         "title": "Add New User",
         "username": "Username *",
@@ -408,7 +404,7 @@
         "editSuccess": "User updated successfully!",
         "error": "Error: {{message}}",
         "networkError": "Network error",
-        "deleteConfirm": "Are you sure you want to delete user \"{{username}}\"?\n\nThis action cannot be undone."
+        "deleteConfirm": "Are you sure you want to delete user \"{{username}}\"?"
       }
     }
   }
