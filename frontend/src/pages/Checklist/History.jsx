@@ -1,436 +1,411 @@
-// frontend/src/pages/Checklist/History.jsx
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronUp, Calendar, Search, Filter, X, Eye, Download } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import { useAuth } from "@/context/AuthContext";
-import { useCache } from "@/context/CacheContext";
-import { fetchWithAuth } from "@/api/api";
-import { useTranslation } from "react-i18next";
-import { getChecklistTemplate } from "@/config/checklistTemplates";
-
-export default function ChecklistHistory() {
-  const { user } = useAuth();
-  const { equipment } = useCache();
-  const navigate = useNavigate();
-  const { t } = useTranslation();
-  
-  const [checklists, setChecklists] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [expandedItems, setExpandedItems] = useState(new Set());
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState({
-    "Plate Number": "",
-    "Model / Type": "",
-    startDate: "",
-    endDate: ""
-  });
-  
-  const itemsPerPage = 10;
-
-  // Load checklist data
-  useEffect(() => {
-    const loadChecklists = async () => {
-      try {
-        const response = await fetchWithAuth('/api/Checklist_Log');
-        if (response.ok) {
-          let data = await response.json();
-          
-          // Sort by date descending
-          data = data.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
-          
-          // Apply driver-specific filtering
-          if (user?.role === "Driver") {
-            const driverEquipment = equipment.filter(eq => 
-              eq["Driver 1"] === user.full_name || eq["Driver 2"] === user.full_name
-            );
-            const allowedPlates = driverEquipment.map(eq => eq["Plate Number"]);
-            data = data.filter(record => allowedPlates.includes(record["Plate Number"]));
-          }
-          
-          setChecklists(data);
-        }
-      } catch (error) {
-        console.error('Error loading checklists:', error);
-      } finally {
-        setLoading(false);
+{
+  "common": {
+    "submit": "Submit",
+    "submitting": "Submitting...",
+    "cancel": "Cancel",
+    "back": "Back",
+    "loading": "Loading...",
+    "yes": "Yes",
+    "no": "No",
+    "upload": "Upload",
+    "camera": "Camera"
+  },
+  "auth": {
+    "loginTitle": "Machinery Maintenance Login",
+    "username": "Username",
+    "password": "Password",
+    "login": "Login",
+    "loggingIn": "Logging in...",
+    "placeholderUsername": "Enter username",
+    "placeholderPassword": "Enter password",
+    "loginSuccess": "Logged in as {{name}}",
+    "loginError": "Invalid username or password",
+    "connectionError": "Connection error",
+    "languageHint": "English / العربية"
+  },
+  "navbar": {
+    "welcome": "Welcome",
+    "dashboard": "Dashboard",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "maintenanceLog": {
+      "title": "Maintenance Log",
+      "description": "Fill or view maintenance operations"
+    },
+    "cleaningLog": {
+      "title": "Cleaning Log",
+      "description": "Record and view cleaning activities"
+    },
+    "checklist": {
+      "title": "Safety Checklist",
+      "description": "Daily inspection for machinery"
+    },
+    "equipmentList": {
+      "title": "Equipment List",
+      "description": "View and manage all vehicles/equipment"
+    },
+    "users": {
+      "title": "Users",
+      "description": "Manage user accounts and roles"
+    }
+  },
+  "checklist": {
+    "menu": {
+      "title": "Safety Checklist",
+      "formTitle": "New Inspection",
+      "historyTitle": "Inspection History"
+    },
+    "form": {
+      "title": "Daily Inspection",
+      "date": "Date",
+      "fullName": "Inspector",
+      "model": "Model",
+      "plate": "Plate Number",
+      "equipmentType": "Equipment Type",
+      "comment": "Observations / Comments",
+      "photo": "Attach Photo",
+      "submit": "Submit Inspection",
+      "submitting": "Submitting Inspection...",
+      "success": "Checklist saved successfully!",
+      "chooseModel": "--- Select Model ---",
+      "choosePlate": "--- Select Plate ---",
+      "chooseInspector": "--- Select Inspector ---"
+    },
+    "history": {
+      "title": "Inspection History",
+      "subtitle": "View and filter daily machinery inspections",
+      "search": "Search inspections...",
+      "filterPlate": "Filter Plate",
+      "filterModel": "Filter Model",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "noResults": "No inspection records found",
+      "loading": "Loading history...",
+      "reset": "Reset Filters"
+    },
+    "statusLabels": {
+      "OK": "Good / OK",
+      "Warning": "Needs Attention",
+      "Fail": "Unsafe / Fail"
+    },
+    "sections": {
+      "general_inspection": "General Inspection",
+      "fluids_check": "Fluids Check",
+      "electrical": "Electrical System",
+      "tires": "Tires Condition",
+      "emergency_equipment": "Emergency Equipment",
+      "hydraulic_system": "Hydraulic System",
+      "lifting_system": "Lifting System"
+    },
+    "items": {
+      "vehicle_cleanliness": "Vehicle Cleanliness",
+      "driver's_seat": "Driver's Seat",
+      "seat_belt": "Seat Belt",
+      "windshield": "Windshield / Glass",
+      "horn": "Horn",
+      "brakes": "Brakes Performance",
+      "mirrors": "Mirrors",
+      "reversing_alarm": "Reversing Alarm",
+      "fuel_level": "Fuel Level",
+      "oil_level": "Oil Level",
+      "water_level": "Water/Coolant Level",
+      "no_warning_lights_on": "No Warning Lights",
+      "headlights": "Headlights",
+      "tail_lights": "Tail Lights",
+      "brake_lights": "Brake Lights",
+      "turn_signals": "Turn Signals",
+      "reverse_lights": "Reverse Lights",
+      "tire_air_pressure": "Tire Pressure",
+      "condition_of_the_tire_rubber": "Tire Rubber Condition",
+      "spare_tire_condition": "Spare Tire",
+      "hydraulic_jack": "Hydraulic Jack",
+      "fire_extinguisher": "Fire Extinguisher",
+      "first_aid_kit": "First Aid Kit",
+      "warning_triangle": "Warning Triangle",
+      "hydraulic_cylinders": "Hydraulic Cylinders",
+      "hydraulic_hose": "Hydraulic Hose",
+      "hydraulic_fittings": "Hydraulic Fittings",
+      "hydraulic_leaks": "Check for Leaks",
+      "lifting_hook": "Lifting Hook & Latch",
+      "anti-two_block_device_for_wire_rope": "Anti-Two Block Device",
+      "lifting_wire_rope": "Wire Rope Condition",
+      "boom,_pins,_bolting": "Boom, Pins & Bolting",
+      "sheaves": "Sheaves / Pulleys"
+    }
+  },
+  "maintenance": {
+    "title": "Maintenance Management",
+    "description": "Manage and track all equipment maintenance operations",
+    "addLog": {
+      "title": "Add Maintenance Log",
+      "description": "Fill in a new maintenance record"
+    },
+    "history": {
+      "title": "Maintenance History",
+      "subtitle": "View and filter completed maintenance logs",
+      "loading": "Loading maintenance history...",
+      "noResults": "No records match your filters.",
+      "filters": {
+        "model": "Model",
+        "plate": "Plate",
+        "driver": "Driver",
+        "performedBy": "Performed By",
+        "reset": "Reset Filters"
+      },
+      "table": {
+        "index": "#",
+        "date": "Date",
+        "model": "Model / Type",
+        "plate": "Plate Number",
+        "driver": "Driver",
+        "performedBy": "Performed By",
+        "description": "Description",
+        "completionDate": "Completion Date",
+        "comments": "Comments",
+        "photoBefore": "Photo Before",
+        "photoAfter": "Photo After",
+        "photoProblem": "Photo Repair / Problem"
       }
-    };
-
-    loadChecklists();
-  }, [user, equipment]);
-
-  // Filter and search logic
-  const filteredChecklists = checklists.filter(record => {
-    const matchesSearch = record["Full Name"].toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         record["Plate Number"].toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesPlate = !filters["Plate Number"] || record["Plate Number"] === filters["Plate Number"];
-    const matchesModel = !filters["Model / Type"] || record["Model / Type"] === filters["Model / Type"];
-    
-    const recordDate = new Date(record.Date);
-    const startFilter = filters.startDate ? new Date(filters.startDate) : null;
-    const endFilter = filters.endDate ? new Date(filters.endDate) : null;
-    
-    const matchesDate = (!startFilter || recordDate >= startFilter) && 
-                       (!endFilter || recordDate <= endFilter);
-
-    return matchesSearch && matchesPlate && matchesModel && matchesDate;
-  });
-
-  // Pagination
-  const totalPages = Math.ceil(filteredChecklists.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedChecklists = filteredChecklists.slice(startIndex, startIndex + itemsPerPage);
-
-  // Toggle item expansion
-  const toggleExpand = (id) => {
-    const newExpanded = new Set(expandedItems);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
+    },
+    "form": {
+      "title": "Maintenance Work Log",
+      "subtitle": "Record completed maintenance or repairs",
+      "date": "Date",
+      "model": "Model / Type",
+      "plate": "Plate Number",
+      "driver": "Driver",
+      "description": "Description of Work",
+      "performedBy": "Performed By",
+      "comments": "Comments",
+      "chooseModel": "--- Choose Model ---",
+      "choosePlate": "--- Choose Plate ---",
+      "chooseDriver": "--- Choose Driver ---",
+      "descriptionPlaceholder": "Describe the maintenance performed...",
+      "otherOption": "Other",
+      "photoBefore": "Photo Before",
+      "photoAfter": "Photo After",
+      "photoProblem": "Photo Repair / Problem",
+      "submit": "Submit Maintenance Log",
+      "alerts": {
+        "missingAsset": "Please choose at least Model, Plate Number, or Driver.",
+        "missingDescription": "Please enter a description of work.",
+        "success": "Maintenance log added successfully.",
+        "error": "Error",
+        "networkError": "Network error submitting form."
+      }
     }
-    setExpandedItems(newExpanded);
-  };
-
-  // Handle filter changes
-  const handleFilterChange = (field, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    setCurrentPage(1); // Reset to first page when filters change
-  };
-
-  // Reset all filters
-  const resetFilters = () => {
-    setFilters({
-      "Plate Number": "",
-      "Model / Type": "",
-      startDate: "",
-      endDate: ""
-    });
-    setSearchTerm("");
-    setCurrentPage(1);
-  };
-
-  // Get status icon
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "OK":
-        return <span className="text-emerald-400">✅</span>;
-      case "Warning":
-        return <span className="text-amber-400">⚠️</span>;
-      case "Fail":
-        return <span className="text-red-400">❌</span>;
-      default:
-        return <span className="text-gray-400">-</span>;
+  },
+  "roles": {
+    "Supervisor": "Supervisor",
+    "Mechanic": "Mechanic",
+    "Driver": "Driver",
+    "Cleaning Guy": "Cleaning Guy"
+  },
+  "status": {
+    "Active": "Active",
+    "Inactive": "Inactive",
+    "Maintenance": "Maintenance"
+  },
+  "cleaningTypes": {
+    "Blow Cleaning": "Blow Cleaning",
+    "Water Wash": "Water Wash",
+    "Full Cleaning (Air & Water)": "Full Cleaning (Air & Water)"
+  },
+  "cleaning": {
+    "menu": {
+      "title": "Cleaning Log",
+      "cards": {
+        "addLog": {
+          "title": "Add Cleaning Log",
+          "description": "Record a new cleaning activity"
+        },
+        "history": {
+          "title": "Cleaning History",
+          "description": "View all past cleaning records"
+        }
+      }
+    },
+    "form": {
+      "title": "Cleaning Log Form",
+      "subtitle": "Record a cleaning activity",
+      "date": "Date",
+      "model": "Model / Type",
+      "plate": "Plate Number",
+      "driver": "Driver",
+      "cleanedBy": "Cleaned By",
+      "cleaningType": "Cleaning Type",
+      "comments": "Comments",
+      "photoBefore": "Photo Before",
+      "photoAfter": "Photo After",
+      "chooseModel": "--- Choose Model ---",
+      "choosePlate": "--- Choose Plate ---",
+      "chooseDriver": "--- Choose Driver ---",
+      "selectCleaner": "--- Select Cleaner ---",
+      "selectCleaningType": "--- Select Cleaning Type ---",
+      "submit": "Submit Cleaning Log",
+      "submitting": "Submitting...",
+      "alerts": {
+        "missingAsset": "Please choose at least Model, Plate Number, or Driver.",
+        "missingCleaner": "Please select who cleaned the equipment.",
+        "missingCleaningType": "Please select a cleaning type.",
+        "success": "Cleaning log added successfully.",
+        "error": "Error",
+        "networkError": "Network error submitting form."
+      }
+    },
+    "history": {
+      "title": "Cleaning History",
+      "subtitle": "View and filter all cleaning records",
+      "loading": "Loading cleaning history...",
+      "noResults": "No records match your filters.",
+      "filters": {
+        "model": "Model",
+        "plate": "Plate",
+        "driver": "Driver",
+        "cleanedBy": "Cleaned By",
+        "cleaningType": "Cleaning Type",
+        "from": "From",
+        "to": "To",
+        "reset": "Reset Filters"
+      },
+      "table": {
+        "index": "#",
+        "date": "Date",
+        "model": "Model / Type",
+        "plate": "Plate Number",
+        "driver": "Driver",
+        "cleanedBy": "Cleaned By",
+        "cleaningType": "Cleaning Type",
+        "comments": "Comments",
+        "photoBefore": "Photo Before",
+        "photoAfter": "Photo After"
+      }
     }
-  };
-
-  // Get equipment type specific checklist template
-  const getEquipmentChecklistTemplate = (equipmentType) => {
-    return getChecklistTemplate(equipmentType) || [];
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500 mb-4"></div>
-          <p className="text-lg">{t("common.loading")}</p>
-        </div>
-      </div>
-    );
+  },
+  "equipment": {
+    "menu": {
+      "title": "Equipment Management",
+      "subtitle": "View and manage all company vehicles and equipment",
+      "cards": {
+        "list": {
+          "title": "View Equipment List",
+          "description": "Browse all vehicles and equipment"
+        },
+        "manage": {
+          "title": "Manage Equipment",
+          "description": "Add or remove equipment entries"
+        }
+      }
+    },
+    "list": {
+      "title": "Equipment List",
+      "subtitle": "Click on Model, Plate, or Driver to view history",
+      "loading": "Loading equipment list...",
+      "noEquipment": "No equipment found.",
+      "table": {
+        "index": "#",
+        "model": "Model / Type",
+        "plate": "Plate Number",
+        "driver1": "Driver 1",
+        "driver2": "Driver 2",
+        "status": "Status",
+        "notes": "Notes"
+      }
+    },
+    "manage": {
+      "title": "Manage Equipment",
+      "subtitle": "Add, edit, or remove equipment entries",
+      "addButton": "Add Equipment",
+      "addForm": {
+        "title": "Add New Equipment",
+        "modelType": "Model / Type *",
+        "plateNumber": "Plate Number *",
+        "driver1": "Driver 1",
+        "driver2": "Driver 2",
+        "status": "Status",
+        "notes": "Notes",
+        "addEquipment": "Add Equipment",
+        "adding": "Adding...",
+        "placeholderModel": "e.g., Mercedes, MAN, Toyota",
+        "placeholderPlate": "e.g., ABC-123"
+      },
+      "editForm": {
+        "title": "Edit Equipment",
+        "saveChanges": "Save Changes",
+        "saving": "Saving...",
+        "cancel": "Cancel"
+      },
+      "table": {
+        "index": "#",
+        "model": "Model / Type",
+        "plate": "Plate Number",
+        "driver1": "Driver 1",
+        "driver2": "Driver 2",
+        "status": "Status",
+        "notes": "Notes",
+        "actions": "Actions"
+      },
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "alerts": {
+        "missingFields": "Please fill in Model/Type and Plate Number.",
+        "addSuccess": "Equipment added successfully!",
+        "editSuccess": "Equipment updated successfully!",
+        "deleteSuccess": "Equipment deleted successfully!",
+        "error": "Error: {{message}}",
+        "networkError": "Network error",
+        "deleteConfirm": "Are you sure you want to PERMANENTLY DELETE equipment \"{{plateNumber}}\"?"
+      }
+    }
+  },
+  "users": {
+    "manage": {
+      "title": "Manage Users",
+      "subtitle": "Add, edit, or remove system users",
+      "addButton": "Add User",
+      "addForm": {
+        "title": "Add New User",
+        "username": "Username *",
+        "password": "Password *",
+        "fullName": "Full Name *",
+        "role": "Role",
+        "addUser": "Add User",
+        "saving": "Saving...",
+        "placeholders": {
+          "username": "Enter username",
+          "password": "Enter password",
+          "fullName": "Enter full name"
+        }
+      },
+      "editForm": {
+        "title": "Edit User",
+        "saveChanges": "Save Changes",
+        "cancel": "Cancel"
+      },
+      "table": {
+        "index": "#",
+        "username": "Username",
+        "fullName": "Full Name",
+        "role": "Role",
+        "actions": "Actions"
+      },
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "alerts": {
+        "missingFields": "Please fill in Username, Password, and Full Name.",
+        "addSuccess": "User added successfully!",
+        "deleteSuccess": "User deleted successfully!",
+        "editSuccess": "User updated successfully!",
+        "error": "Error: {{message}}",
+        "networkError": "Network error",
+        "deleteConfirm": "Are you sure you want to delete user \"{{username}}\"?"
+      }
+    }
   }
-
-  // Don't allow Cleaning Guys to access this page
-  if (user?.role === "Cleaning Guy") {
-    navigate("/", { replace: true });
-    return null;
-  }
-
-  // Get unique plate numbers and models for filters
-  const plateNumbers = [...new Set(equipment.map(eq => eq["Plate Number"]))];
-  const models = [...new Set(equipment.map(eq => eq["Model / Type"]))];
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
-      <Navbar user={user} />
-      <div className="max-w-6xl mx-auto p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-500 shadow-lg shadow-purple-500/40">
-              <Eye className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500">
-                {t("checklist.history.title")}
-              </h1>
-              <p className="text-gray-400 text-sm mt-1">
-                {t("checklist.history.subtitle")}
-              </p>
-            </div>
-          </div>
-
-          {/* Search and Filters */}
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="lg:col-span-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                  <input
-                    type="text"
-                    placeholder={t("checklist.history.searchPlaceholder")}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <select
-                  value={filters["Plate Number"]}
-                  onChange={(e) => handleFilterChange("Plate Number", e.target.value)}
-                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                >
-                  <option value="">{t("checklist.history.filterPlate")}</option>
-                  {plateNumbers.map(plate => (
-                    <option key={plate} value={plate}>{plate}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <select
-                  value={filters["Model / Type"]}
-                  onChange={(e) => handleFilterChange("Model / Type", e.target.value)}
-                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                >
-                  <option value="">{t("checklist.history.filterModel")}</option>
-                  {models.map(model => (
-                    <option key={model} value={model}>{model}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={resetFilters}
-                  className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition flex items-center justify-center gap-2"
-                >
-                  <X size={18} />
-                  {t("common.reset")}
-                </button>
-              </div>
-            </div>
-            
-            {/* Date Range Filter */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                  <Calendar size={16} />
-                  {t("checklist.history.startDate")}
-                </label>
-                <input
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => handleFilterChange("startDate", e.target.value)}
-                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                  <Calendar size={16} />
-                  {t("checklist.history.endDate")}
-                </label>
-                <input
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => handleFilterChange("endDate", e.target.value)}
-                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Results Summary */}
-        <div className="flex justify-between items-center mb-6">
-          <p className="text-gray-400">
-            {t("checklist.history.results", { count: filteredChecklists.length })}
-          </p>
-        </div>
-
-        {/* Checklist Items */}
-        {paginatedChecklists.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-500 text-lg mb-2">
-              {t("checklist.history.noResults")}
-            </div>
-            <p className="text-gray-600">{t("checklist.history.noResultsDescription")}</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {paginatedChecklists.map((record, index) => {
-              const recordDate = new Date(record.Date);
-              const checklistData = JSON.parse(record["Checklist Data"] || "{}");
-              const equipmentType = record["Equipment Type"] || record["Model / Type"];
-              const checklistTemplate = getEquipmentChecklistTemplate(equipmentType);
-              
-              return (
-                <div key={`${record.Timestamp}-${index}`} className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 overflow-hidden">
-                  {/* Collapsed View */}
-                  <div 
-                    className="p-6 cursor-pointer hover:bg-gray-700/30 transition"
-                    onClick={() => toggleExpand(`${record.Timestamp}-${index}`)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="text-gray-400" size={18} />
-                          <span className="font-medium text-white">
-                            {recordDate.toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-400">{t("checklist.history.plate")}:</span>
-                          <span className="font-medium text-cyan-400">{record["Plate Number"]}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-400">{t("checklist.history.equipmentType")}:</span>
-                          <span className="font-medium text-purple-400">{equipmentType}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <ChevronDown 
-                          className={`transform transition-transform ${expandedItems.has(`${record.Timestamp}-${index}`) ? 'rotate-180' : ''}`}
-                          size={20}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="mt-3 text-sm text-gray-400">
-                      <span>{t("checklist.history.performedBy")} {record["Full Name"]} ({t(`roles.${record.Role}`)})</span>
-                    </div>
-                  </div>
-                  
-                  {/* Expanded View */}
-                  {expandedItems.has(`${record.Timestamp}-${index}`) && (
-                    <div className="border-t border-gray-700 p-6 bg-gray-900/20">
-                      <div className="space-y-6">
-                        {checklistTemplate.map((section, sectionIndex) => (
-                          <div key={section.section} className="border border-gray-700 rounded-xl p-4">
-                            <h3 className="text-lg font-medium mb-4 text-cyan-300">
-                              {t(`checklist.sections.${section.section}.${section.title}`)}
-                            </h3>
-                            
-                            <div className="space-y-3">
-                              {section.items.map((item) => {
-                                const itemData = checklistData[item.id];
-                                if (!itemData) return null;
-                                
-                                return (
-                                  <div key={item.id} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-                                    <div className="flex items-center justify-between">
-                                      <span className="font-medium text-gray-200">
-                                        {t(`checklist.items.${item.id}.${item.label}`)}
-                                      </span>
-                                      <div className="flex items-center gap-3">
-                                        <span className="text-lg">
-                                          {getStatusIcon(itemData.status)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    
-                                    {itemData.comment && (
-                                      <div className="mt-2 text-sm text-gray-400 pl-6">
-                                        <strong>{t("checklist.history.comment")}:</strong> {itemData.comment}
-                                      </div>
-                                    )}
-                                    
-                                    {itemData.photo && (
-                                      <div className="mt-2 pl-6">
-                                        <img 
-                                          src={itemData.photo} 
-                                          alt="Item photo" 
-                                          className="w-20 h-20 object-cover rounded-lg border border-gray-600"
-                                        />
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      
-                      <div className="mt-6 pt-4 border-t border-gray-700 flex justify-end">
-                        <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition flex items-center gap-2">
-                          <Download size={16} />
-                          {t("checklist.history.export")}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-8">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              {t("common.previous")}
-            </button>
-            
-            <div className="flex gap-1">
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                const pageNum = currentPage <= 3 ? i + 1 : 
-                               currentPage >= totalPages - 2 ? totalPages - 4 + i : 
-                               currentPage - 2 + i;
-                
-                if (pageNum < 1 || pageNum > totalPages) return null;
-                
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setCurrentPage(pageNum)}
-                    className={`px-4 py-2 rounded-lg transition ${
-                      currentPage === pageNum
-                        ? "bg-purple-600 text-white"
-                        : "bg-gray-700 hover:bg-gray-600 text-white"
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-            </div>
-            
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              {t("common.next")}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 }
