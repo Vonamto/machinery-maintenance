@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, Droplets, Truck, Users } from "lucide-react";
+import { Wrench, Droplets, Truck, Users, CheckCircle, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export default function Dashboard() {
@@ -33,6 +33,18 @@ export default function Dashboard() {
       allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
       glow: "shadow-[0_0_15px_2px_rgba(56,189,248,0.6)]",
       gradient: "from-sky-600 to-indigo-500",
+    },
+
+    // NEW CARD FOR CHECKLIST MENU
+    {
+      title: t("dashboard.checklist.title"),
+      description: t("dashboard.checklist.description"),
+      icon: <CheckCircle className="w-8 h-8 text-white drop-shadow-md" />,
+      link: "/checklist",
+      // Driver CAN see checklist (both form and history)
+      allowed: ["Supervisor", "Mechanic", "Driver"],
+      glow: "shadow-[0_0_15px_2px_rgba(16,185,129,0.6)]",
+      gradient: "from-emerald-600 to-teal-500",
     },
 
     {
