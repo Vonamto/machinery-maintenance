@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -17,7 +17,13 @@ import { getChecklistTemplate } from "@/config/checklistTemplates";
 
 export default function ChecklistForm() {
   const { user } = useAuth();
-  const { equipment, loading } = useCache();
+  const {
+    equipment,
+    usernames,
+    loadingEquipment,
+    loadingUsernames
+  } = useCache();
+
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -27,14 +33,15 @@ export default function ChecklistForm() {
     "Full Name": user?.full_name || "",
     "Model / Type": "",
     "Plate Number": "",
-    "Equipment Type": "",
-    "Checklist Data": ""
+    "Equipment Type": ""
   });
 
-  const [modelOptions, setModelOptions] = useState([]);
-  const [plateOptions, setPlateOptions] = useState([]);
   const [checklistData, setChecklistData] = useState({});
   const [submitting, setSubmitting] = useState(false);
+
+  const isDriver = user?.role === "Driver";
+  const isSupervisorOrMechanic =
+    user?.role === "Supervisor" || user?.role === "Mechanic";
 
   /* ---------------- ACCESS CONTROL ---------------- */
   useEffect(() => {
@@ -43,65 +50,46 @@ export default function ChecklistForm() {
     }
   }, [user, navigate]);
 
-  /* ---------------- LOADING (SAME AS OTHER PAGES) ---------------- */
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500" />
-      </div>
+  /* ---------------- DRIVER AUTO-FILL ---------------- */
+  useEffect(() => {
+    if (!isDriver || !equipment.length) return;
+
+    const assigned = equipment.find(
+      e =>
+        e["Driver 1"] === user.full_name ||
+        e["Driver 2"] === user.full_name
     );
-  }
 
-  /* ---------------- POPULATE DROPDOWNS ---------------- */
-  useEffect(() => {
-    if (!equipment?.length) return;
-
-    if (user?.role === "Driver") {
-      const driverEq = equipment.filter(
-        eq =>
-          eq["Driver 1"] === user.full_name ||
-          eq["Driver 2"] === user.full_name
-      );
-      setModelOptions([...new Set(driverEq.map(e => e["Model / Type"]))]);
-      setPlateOptions(driverEq.map(e => e["Plate Number"]));
-    } else {
-      setModelOptions([...new Set(equipment.map(e => e["Model / Type"]))]);
-      setPlateOptions(equipment.map(e => e["Plate Number"]));
+    if (assigned) {
+      setFormData(prev => ({
+        ...prev,
+        "Model / Type": assigned["Model / Type"],
+        "Plate Number": assigned["Plate Number"],
+        "Equipment Type": assigned["Equipment Type"]
+      }));
     }
-  }, [equipment, user]);
+  }, [isDriver, equipment, user]);
 
-  /* ---------------- MODEL CHANGE ---------------- */
-  useEffect(() => {
-    if (!formData["Model / Type"]) return;
+  /* ---------------- OPTIONS ---------------- */
+  const modelOptions = useMemo(() => {
+    if (isDriver) return [];
+    return [...new Set(equipment.map(e => e["Model / Type"]).filter(Boolean))];
+  }, [equipment, isDriver]);
 
-    let filtered = equipment;
-
-    if (user?.role === "Driver") {
-      filtered = equipment.filter(
-        eq =>
-          eq["Model / Type"] === formData["Model / Type"] &&
-          (eq["Driver 1"] === user.full_name ||
-            eq["Driver 2"] === user.full_name)
-      );
-    } else {
-      filtered = equipment.filter(
-        eq => eq["Model / Type"] === formData["Model / Type"]
-      );
-    }
-
-    setPlateOptions(filtered.map(eq => eq["Plate Number"]));
-
-    if (!filtered.some(eq => eq["Plate Number"] === formData["Plate Number"])) {
-      setFormData(prev => ({ ...prev, "Plate Number": "" }));
-    }
-  }, [formData["Model / Type"], equipment, user]);
+  const plateOptions = useMemo(() => {
+    if (isDriver) return [];
+    if (!formData["Model / Type"]) return [];
+    return equipment
+      .filter(e => e["Model / Type"] === formData["Model / Type"])
+      .map(e => e["Plate Number"]);
+  }, [equipment, formData["Model / Type"], isDriver]);
 
   /* ---------------- PLATE CHANGE ---------------- */
   useEffect(() => {
     if (!formData["Plate Number"]) return;
 
     const found = equipment.find(
-      eq => eq["Plate Number"] === formData["Plate Number"]
+      e => e["Plate Number"] === formData["Plate Number"]
     );
 
     if (found) {
@@ -113,9 +101,9 @@ export default function ChecklistForm() {
     }
   }, [formData["Plate Number"], equipment]);
 
-  /* ---------------- INIT CHECKLIST (SAFE) ---------------- */
+  /* ---------------- INIT CHECKLIST ---------------- */
   useEffect(() => {
-    if (!formData["Plate Number"] || !formData["Equipment Type"]) return;
+    if (!formData["Equipment Type"]) return;
 
     const template = getChecklistTemplate(formData["Equipment Type"]);
     if (!template.length) return;
@@ -129,13 +117,9 @@ export default function ChecklistForm() {
     });
 
     setChecklistData(initial);
-  }, [formData["Plate Number"], formData["Equipment Type"]]);
+  }, [formData["Equipment Type"]]);
 
   /* ---------------- HANDLERS ---------------- */
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
   const handleStatusChange = (key, status) => {
     setChecklistData(prev => ({
       ...prev,
@@ -166,14 +150,10 @@ export default function ChecklistForm() {
   };
 
   /* ---------------- SUBMIT ---------------- */
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
 
-    const hasUnchecked = Object.values(checklistData).some(
-      item => item.status === null
-    );
-
-    if (hasUnchecked) {
+    if (Object.values(checklistData).some(i => i.status === null)) {
       alert(t("checklist.form.alerts.uncheckedItems"));
       return;
     }
@@ -188,15 +168,15 @@ export default function ChecklistForm() {
         "Checklist Data": JSON.stringify(checklistData)
       };
 
-      const response = await fetchWithAuth("/api/add/Checklist_Log", {
+      const res = await fetchWithAuth("/api/add/Checklist_Log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
-      const result = await response.json();
+      const json = await res.json();
 
-      if (result.status === "success") {
+      if (json.status === "success") {
         alert(t("checklist.form.alerts.success"));
         navigate("/checklist");
       } else {
@@ -219,15 +199,15 @@ export default function ChecklistForm() {
       <div className="max-w-6xl mx-auto p-4 md:p-6">
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6"
+          className="inline-flex items-center gap-2 text-cyan-400 mb-6"
         >
           <ArrowLeft size={18} />
           {t("common.back")}
         </button>
 
-        {/* BASIC INFORMATION – ALWAYS VISIBLE */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 mb-8">
-          <h2 className="text-lg font-semibold text-cyan-400 mb-4">
+        {/* BASIC INFO */}
+        <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700 mb-8">
+          <h2 className="text-cyan-400 font-semibold mb-4">
             {t("checklist.form.basicInfo")}
           </h2>
 
@@ -235,63 +215,93 @@ export default function ChecklistForm() {
             <input
               type="date"
               value={formData.Date}
-              onChange={e => handleInputChange("Date", e.target.value)}
-              className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+              disabled={isDriver}
+              onChange={e =>
+                setFormData(prev => ({ ...prev, Date: e.target.value }))
+              }
+              className="p-3 rounded-xl bg-gray-900/70 border border-gray-700"
             />
 
-            <input
-              value={formData["Full Name"]}
-              onChange={e =>
-                handleInputChange("Full Name", e.target.value)
-              }
-              className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700"
-            />
+            {isSupervisorOrMechanic && (
+              <select
+                value={formData["Full Name"]}
+                onChange={e =>
+                  setFormData(prev => ({
+                    ...prev,
+                    "Full Name": e.target.value
+                  }))
+                }
+                className="p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+              >
+                <option value="">
+                  {t("checklist.form.chooseInspector")}
+                </option>
+                {usernames.map(u => (
+                  <option key={u.Name} value={u.Name}>
+                    {u.Name}
+                  </option>
+                ))}
+              </select>
+            )}
 
-            <select
-              value={formData["Model / Type"]}
-              onChange={e =>
-                handleInputChange("Model / Type", e.target.value)
-              }
-              className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700"
-            >
-              <option value="">
-                {t("checklist.form.selectModel")}
-              </option>
-              {modelOptions.map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
+            {isDriver && (
+              <input
+                value={formData["Full Name"]}
+                disabled
+                className="p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
+              />
+            )}
 
-            <select
-              value={formData["Plate Number"]}
-              onChange={e =>
-                handleInputChange("Plate Number", e.target.value)
-              }
-              className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700"
-            >
-              <option value="">
-                {t("checklist.form.selectPlate")}
-              </option>
-              {plateOptions.map(p => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
+            {!isDriver && (
+              <>
+                <select
+                  value={formData["Model / Type"]}
+                  onChange={e =>
+                    setFormData(prev => ({
+                      ...prev,
+                      "Model / Type": e.target.value,
+                      "Plate Number": ""
+                    }))
+                  }
+                  className="p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+                >
+                  <option value="">
+                    {t("checklist.form.chooseModel")}
+                  </option>
+                  {modelOptions.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
 
-            <input
-              readOnly
-              value={formData["Equipment Type"]}
-              className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
-            />
+                <select
+                  value={formData["Plate Number"]}
+                  onChange={e =>
+                    setFormData(prev => ({
+                      ...prev,
+                      "Plate Number": e.target.value
+                    }))
+                  }
+                  className="p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+                >
+                  <option value="">
+                    {t("checklist.form.choosePlate")}
+                  </option>
+                  {plateOptions.map(p => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </>
+            )}
           </div>
         </div>
 
-        {/* CHECKLIST SECTION */}
-        {formData["Plate Number"] && formData["Equipment Type"] ? (
+        {/* CHECKLIST */}
+        {formData["Equipment Type"] && !loadingEquipment ? (
           <form onSubmit={handleSubmit} className="space-y-6">
             {template.map(section => (
               <div
                 key={section.sectionKey}
-                className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700"
+                className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700"
               >
                 <h3 className="text-cyan-300 mb-4">
                   {t(section.titleKey)}
@@ -306,7 +316,7 @@ export default function ChecklistForm() {
                       key={key}
                       className="p-3 bg-gray-900/30 rounded-lg border border-gray-700 mb-3"
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex justify-between items-center">
                         <span>{t(`checklist.items.${item.key}`)}</span>
                         <div className="flex gap-2">
                           <CheckCircle
@@ -331,16 +341,19 @@ export default function ChecklistForm() {
                         <div className="mt-3 space-y-2">
                           <textarea
                             value={state.comment}
-                            onChange={e => handleCommentChange(key, e.target.value)}
+                            onChange={e =>
+                              handleCommentChange(key, e.target.value)
+                            }
                             className="w-full p-2 rounded-lg bg-gray-900/70 border border-gray-700"
                             placeholder={t("checklist.form.commentPlaceholder")}
                           />
 
-                          <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <label className="flex items-center gap-2 cursor-pointer text-sm">
                             <Camera size={14} />
                             {t("checklist.form.uploadPhoto")}
                             <input
                               type="file"
+                              accept="image/*"
                               hidden
                               onChange={e =>
                                 e.target.files &&
@@ -348,6 +361,14 @@ export default function ChecklistForm() {
                               }
                             />
                           </label>
+
+                          {state.photo && (
+                            <img
+                              src={state.photo}
+                              alt="Preview"
+                              className="w-24 h-24 object-cover rounded-lg border border-gray-600"
+                            />
+                          )}
                         </div>
                       )}
                     </div>
@@ -359,7 +380,7 @@ export default function ChecklistForm() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500"
             >
               {submitting ? t("common.submitting") : t("common.submit")}
             </button>
