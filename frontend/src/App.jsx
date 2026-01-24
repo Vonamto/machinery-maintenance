@@ -16,6 +16,11 @@ import CleaningMenu from "./pages/Cleaning/index";
 import CleaningForm from "./pages/Cleaning/CleaningForm";
 import CleaningHistory from "./pages/Cleaning/CleaningHistory";
 
+// --- Checklist ---
+import ChecklistMenu from "./pages/Checklist/index";
+import ChecklistForm from "./pages/Checklist/Form";
+import ChecklistHistory from "./pages/Checklist/History";
+
 // --- Equipment ---
 import EquipmentMenu from "./pages/Equipment/index";
 import EquipmentList from "./pages/Equipment/List";
@@ -99,6 +104,40 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <CleaningHistory />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ================= Checklist ================= */}
+          <Route
+            path="/checklist"
+            element={
+              <ProtectedRoute
+                allowedRoles={["Supervisor", "Mechanic", "Driver"]}
+              >
+                <ChecklistMenu />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/checklist/form"
+            element={
+              <ProtectedRoute
+                allowedRoles={["Supervisor", "Mechanic", "Driver"]}
+              >
+                <ChecklistForm />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/checklist/history"
+            element={
+              <ProtectedRoute
+                allowedRoles={["Supervisor", "Mechanic", "Driver"]}
+              >
+                <ChecklistHistory />
               </ProtectedRoute>
             }
           />
