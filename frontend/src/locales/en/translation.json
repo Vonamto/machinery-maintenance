@@ -60,7 +60,7 @@
       "historyDescription": "View and review previously submitted machinery checklists"
     },
     "form": {
-      "title": "Daily Inspection",
+      "title": "Daily Checklist",
       "modelType": "Model Type",
       "plateNumber": "Plate Number",
       "commentPlaceholder" : "Write Your Comments Here",
@@ -69,7 +69,7 @@
       "subtitle": "Record daily safety and maintenance checks",
       "basicInfo": "General Information",
       "date": "Date",
-      "fullName": "Inspector",
+      "fullName": "Driver",
       "model": "Model",
       "plate": "Plate Number",
       "equipmentType": "Equipment Type",
@@ -80,7 +80,7 @@
       "success": "Checklist saved successfully!",
       "chooseModel": "--- Select Model ---",
       "choosePlate": "--- Select Plate ---",
-      "chooseInspector": "--- Select Inspector ---",
+      "chooseInspector": "--- Driver ---",
       "commentsPlaceholder": "Add any notes or observations here...",
       "alerts": {
         "success": "Checklist saved successfully!",
