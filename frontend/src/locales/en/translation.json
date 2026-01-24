@@ -10,7 +10,6 @@
     "upload": "Upload",
     "camera": "Camera"
   },
-
   "auth": {
     "loginTitle": "Machinery Maintenance Login",
     "username": "Username",
@@ -24,13 +23,11 @@
     "connectionError": "Connection error",
     "languageHint": "English / العربية"
   },
-
   "navbar": {
     "welcome": "Welcome",
     "dashboard": "Dashboard",
     "logout": "Logout"
   },
-
   "dashboard": {
     "title": "Dashboard",
     "maintenanceLog": {
@@ -41,6 +38,10 @@
       "title": "Cleaning Log",
       "description": "Record and view cleaning activities"
     },
+    "checklist": {
+      "title": "Safety Checklist",
+      "description": "Daily inspection for machinery"
+    },
     "equipmentList": {
       "title": "Equipment List",
       "description": "View and manage all vehicles/equipment"
@@ -50,22 +51,95 @@
       "description": "Manage user accounts and roles"
     }
   },
-
+  "checklist": {
+    "menu": {
+      "title": "Safety Checklist",
+      "formTitle": "New Inspection",
+      "historyTitle": "Inspection History"
+    },
+    "form": {
+      "title": "Daily Inspection",
+      "date": "Date",
+      "fullName": "Inspector",
+      "model": "Model",
+      "plate": "Plate Number",
+      "equipmentType": "Type",
+      "comment": "Observations",
+      "photo": "Attach Photo",
+      "submit": "Submit Inspection",
+      "success": "Checklist saved successfully!"
+    },
+    "history": {
+      "title": "Checklist History",
+      "search": "Search...",
+      "filterPlate": "Filter Plate",
+      "filterModel": "Filter Model",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "noResults": "No records found"
+    },
+    "status": {
+      "OK": "Good / OK",
+      "Warning": "Needs Attention",
+      "Fail": "Unsafe / Fail"
+    },
+    "sections": {
+      "general_inspection": "General Inspection",
+      "fluids_check": "Fluids Check",
+      "electrical": "Electrical System",
+      "tires": "Tires Condition",
+      "emergency_equipment": "Emergency Equipment",
+      "hydraulic_system": "Hydraulic System",
+      "lifting_system": "Lifting System"
+    },
+    "items": {
+      "vehicle_cleanliness": "Vehicle Cleanliness",
+      "driver's_seat": "Driver's Seat",
+      "seat_belt": "Seat Belt",
+      "windshield": "Windshield / Glass",
+      "horn": "Horn",
+      "brakes": "Brakes Performance",
+      "mirrors": "Mirrors",
+      "reversing_alarm": "Reversing Alarm",
+      "fuel_level": "Fuel Level",
+      "oil_level": "Oil Level",
+      "water_level": "Water/Coolant Level",
+      "no_warning_lights_on": "No Warning Lights",
+      "headlights": "Headlights",
+      "tail_lights": "Tail Lights",
+      "brake_lights": "Brake Lights",
+      "turn_signals": "Turn Signals",
+      "reverse_lights": "Reverse Lights",
+      "tire_air_pressure": "Tire Pressure",
+      "condition_of_the_tire_rubber": "Tire Rubber Condition",
+      "spare_tire_condition": "Spare Tire",
+      "hydraulic_jack": "Hydraulic Jack",
+      "fire_extinguisher": "Fire Extinguisher",
+      "first_aid_kit": "First Aid Kit",
+      "warning_triangle": "Warning Triangle",
+      "hydraulic_cylinders": "Hydraulic Cylinders",
+      "hydraulic_hose": "Hydraulic Hose",
+      "hydraulic_fittings": "Hydraulic Fittings",
+      "hydraulic_leaks": "Check for Leaks",
+      "lifting_hook": "Lifting Hook & Latch",
+      "anti-two_block_device_for_wire_rope": "Anti-Two Block Device",
+      "lifting_wire_rope": "Wire Rope Condition",
+      "boom,_pins,_bolting": "Boom, Pins & Bolting",
+      "sheaves": "Sheaves / Pulleys"
+    }
+  },
   "maintenance": {
     "title": "Maintenance Management",
     "description": "Manage and track all equipment maintenance operations",
-
     "addLog": {
       "title": "Add Maintenance Log",
       "description": "Fill in a new maintenance record for your equipment"
     },
-
     "history": {
       "title": "Maintenance History",
       "subtitle": "View and filter completed maintenance logs",
       "loading": "Loading maintenance history...",
       "noResults": "No records match your filters.",
-
       "filters": {
         "model": "Model",
         "plate": "Plate",
@@ -73,7 +147,6 @@
         "performedBy": "Performed By",
         "reset": "Reset Filters"
       },
-
       "table": {
         "index": "#",
         "date": "Date",
@@ -89,7 +162,6 @@
         "photoProblem": "Photo Repair / Problem"
       }
     },
-
     "form": {
       "title": "Maintenance Work Log",
       "subtitle": "Record completed maintenance or repairs",
@@ -100,20 +172,15 @@
       "description": "Description of Work",
       "performedBy": "Performed By",
       "comments": "Comments",
-
       "chooseModel": "--- Choose Model ---",
       "choosePlate": "--- Choose Plate ---",
       "chooseDriver": "--- Choose Driver ---",
-
       "descriptionPlaceholder": "Describe the maintenance performed...",
       "otherOption": "Other",
-
       "photoBefore": "Photo Before",
       "photoAfter": "Photo After",
       "photoProblem": "Photo Repair / Problem",
-
       "submit": "Submit Maintenance Log",
-
       "alerts": {
         "missingAsset": "Please choose at least Model, Plate Number, or Driver.",
         "missingDescription": "Please enter a description of work.",
@@ -123,32 +190,27 @@
       }
     }
   },
-
   "roles": {
     "Supervisor": "Supervisor",
     "Mechanic": "Mechanic",
     "Driver": "Driver",
     "Cleaning Guy": "Cleaning Guy"
   },
-
   "status": {
     "Active": "Active",
     "Inactive": "Inactive",
     "Maintenance": "Maintenance"
   },
-
   "cleaningTypes": {
     "Blow Cleaning": "Blow Cleaning",
     "Water Wash": "Water Wash",
     "Full Cleaning (Air & Water)": "Full Cleaning (Air & Water)"
   },
-
   "requestTypes": {
     "Oil Service": "Oil Service",
     "Grease Service": "Grease Service",
     "Full Service (Oil + Greasing)": "Full Service (Oil + Greasing)"
   },
-
   "cleaning": {
     "menu": {
       "back": "Back",
@@ -164,7 +226,6 @@
         }
       }
     },
-
     "form": {
       "back": "Back",
       "title": "Cleaning Log Form",
@@ -176,19 +237,15 @@
       "cleanedBy": "Cleaned By",
       "cleaningType": "Cleaning Type",
       "comments": "Comments",
-
       "photobefore": "Photo Before",
       "photoafter": "Photo After",
-
       "chooseModel": "--- Choose Model ---",
       "choosePlate": "--- Choose Plate ---",
       "chooseDriver": "--- Choose Driver ---",
       "selectCleaner": "--- Select Cleaner ---",
       "selectCleaningType": "--- Select Cleaning Type ---",
-
       "submit": "Submit Cleaning Log",
       "submitting": "Submitting...",
-
       "alerts": {
         "missingAsset": "Please choose at least Model, Plate Number, or Driver.",
         "missingCleaner": "Please select who cleaned the equipment.",
@@ -198,13 +255,11 @@
         "networkError": "Network error submitting form."
       }
     },
-
     "history": {
       "title": "Cleaning History",
       "subtitle": "View and filter all cleaning records",
       "loading": "Loading cleaning history...",
       "noResults": "No records match your filters.",
-
       "filters": {
         "model": "Model",
         "plate": "Plate",
@@ -215,7 +270,6 @@
         "to": "To",
         "reset": "Reset Filters"
       },
-
       "table": {
         "index": "#",
         "date": "Date",
@@ -230,7 +284,6 @@
       }
     }
   },
-
   "equipment": {
     "menu": {
       "back": "Back",
@@ -247,14 +300,12 @@
         }
       }
     },
-
     "list": {
       "back": "Back",
       "title": "Equipment List",
       "subtitle": "Click on Model, Plate, or Driver to view maintenance history",
       "loading": "Loading equipment list...",
       "noEquipment": "No equipment found.",
-
       "table": {
         "index": "#",
         "model": "Model / Type",
@@ -265,14 +316,11 @@
         "notes": "Notes"
       }
     },
-
     "manage": {
       "title": "Manage Equipment",
       "subtitle": "Add, edit, or remove equipment entries",
-
       "addButton": "Add Equipment",
       "cancelButton": "Cancel",
-
       "addForm": {
         "title": "Add New Equipment",
         "modelType": "Model / Type *",
@@ -286,14 +334,12 @@
         "placeholderModel": "e.g., Mercedes, MAN, Toyota",
         "placeholderPlate": "e.g., ABC-123"
       },
-
       "editForm": {
         "title": "Edit Equipment",
         "saveChanges": "Save Changes",
         "saving": "Saving...",
         "cancel": "Cancel"
       },
-
       "table": {
         "index": "#",
         "model": "Model / Type",
@@ -304,12 +350,10 @@
         "notes": "Notes",
         "actions": "Actions"
       },
-
       "actions": {
         "edit": "Edit",
         "delete": "Delete"
       },
-
       "alerts": {
         "missingFields": "Please fill in Model/Type and Plate Number.",
         "addSuccess": "Equipment added successfully!",
@@ -321,15 +365,12 @@
       }
     }
   },
-
   "users": {
     "manage": {
       "title": "Manage Users",
       "subtitle": "Add, edit, or remove system users",
-
       "addButton": "Add User",
       "cancelButton": "Cancel",
-
       "addForm": {
         "title": "Add New User",
         "username": "Username *",
@@ -338,20 +379,17 @@
         "role": "Role",
         "addUser": "Add User",
         "saving": "Saving...",
-
         "placeholders": {
           "username": "Enter username",
           "password": "Enter password",
           "fullName": "Enter full name"
         }
       },
-
       "editForm": {
         "title": "Edit User",
         "saveChanges": "Save Changes",
         "cancel": "Cancel"
       },
-
       "table": {
         "index": "#",
         "username": "Username",
@@ -359,12 +397,10 @@
         "role": "Role",
         "actions": "Actions"
       },
-
       "actions": {
         "edit": "Edit",
         "delete": "Delete"
       },
-
       "alerts": {
         "missingFields": "Please fill in Username, Password, and Full Name.",
         "addSuccess": "User added successfully!",
