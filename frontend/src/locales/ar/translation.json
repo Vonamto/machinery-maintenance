@@ -10,7 +10,6 @@
     "upload": "رفع",
     "camera": "الكاميرا"
   },
-
   "auth": {
     "loginTitle": "تسجيل الدخول إلى نظام الصيانة",
     "username": "اسم المستخدم",
@@ -24,13 +23,11 @@
     "connectionError": "خطأ في الاتصال",
     "languageHint": "English / العربية"
   },
-
   "navbar": {
     "welcome": "مرحباً",
     "dashboard": "لوحة التحكم",
     "logout": "تسجيل الخروج"
   },
-
   "dashboard": {
     "title": "لوحة التحكم",
     "maintenanceLog": {
@@ -41,6 +38,10 @@
       "title": "سجل التنظيف",
       "description": "تسجيل وعرض عمليات التنظيف"
     },
+    "checklist": {
+      "title": "قائمة السلامة",
+      "description": "الفحص اليومي للمعدات"
+    },
     "equipmentList": {
       "title": "قائمة المعدات",
       "description": "عرض وإدارة جميع المركبات والمعدات"
@@ -50,22 +51,149 @@
       "description": "إدارة حسابات المستخدمين والصلاحيات"
     }
   },
-
+  "checklist": {
+    "menu": {
+      "title": "قائمة السلامة",
+      "formTitle": "فحص جديد",
+      "formDescription": "إكمال فحص السلامة والصيانة اليومي الجديد",
+      "historyTitle": "سجل الفحص",
+      "historyDescription": "عرض ومراجعة قوائم فحص المعدات المقدمة سابقاً"
+    },
+    "form": {
+      "title": "الفحص اليومي",
+      "checklist": "بنود قائمة السلامة",
+      "subtitle": "تسجيل فحوصات السلامة والصيانة اليومية",
+      "basicInfo": "معلومات عامة",
+      "date": "التاريخ",
+      "fullName": "المفتش",
+      "model": "الطراز",
+      "plate": "رقم اللوحة",
+      "equipmentType": "نوع المعدة",
+      "comment": "الملاحظات",
+      "photo": "إرفاق صورة",
+      "submit": "إرسال الفحص",
+      "submitting": "جاري إرسال الفحص...",
+      "success": "تم حفظ القائمة بنجاح!",
+      "chooseModel": "--- اختر الطراز ---",
+      "choosePlate": "--- اختر رقم اللوحة ---",
+      "chooseInspector": "--- اختر المفتش ---",
+      "commentsPlaceholder": "أضف أي ملاحظات هنا...",
+      "alerts": {
+        "success": "تم حفظ القائمة بنجاح!",
+        "error": "خطأ في حفظ القائمة",
+        "networkError": "خطأ في الشبكة أثناء الإرسال",
+        "photoError": "خطأ في معالجة الصورة المرفقة"
+      }
+    },
+    "history": {
+      "title": "سجل الفحص",
+      "subtitle": "عرض وتصفية فحوصات المعدات اليومية",
+      "search": "البحث في الفحوصات...",
+      "filterPlate": "تصفية حسب اللوحة",
+      "filterModel": "تصفية حسب الطراز",
+      "startDate": "تاريخ البدء",
+      "endDate": "تاريخ الانتهاء",
+      "noResults": "لم يتم العثور على سجلات فحص",
+      "loading": "جاري تحميل السجل...",
+      "reset": "إعادة التصفية",
+      "details": "تفاصيل الفحص",
+      "items": "البنود التي تم فحصها"
+    },
+    "statusLabels": {
+      "OK": "جيد / سليم",
+      "Warning": "يحتاج إلى صيانة",
+      "Fail": "غير آمن / عطل"
+    },
+    "sections": {
+      "general_inspection": "الفحص العام",
+      "fluids_check": "فحص السوائل",
+      "electrical": "النظام الكهربائي",
+      "tires": "حالة الإطارات",
+      "emergency_equipment": "معدات الطوارئ",
+      "hydraulic_system": "النظام الهيدروليكي",
+      "lifting_system": "نظام الرفع"
+    },
+    "items": {
+      "vehicle_cleanliness": "نظافة المركبة",
+      "driver's_seat": "مقعد السائق",
+      "seat_belt": "حزام الأمان",
+      "windshield": "الزجاج الأمامي",
+      "horn": "المنبه (البوق)",
+      "brakes": "أداء الفرامل",
+      "mirrors": "المرايا",
+      "reversing_alarm": "منبه الرجوع للخلف",
+      "fuel_level": "مستوى الوقود",
+      "oil_level": "مستوى الزيت",
+      "water_level": "مستوى الماء / المبرد",
+      "no_warning_lights_on": "لا توجد أضواء تحذيرية",
+      "headlights": "الأضواء الأمامية",
+      "tail_lights": "الأضواء الخلفية",
+      "brake_lights": "أضواء الفرامل",
+      "turn_signals": "إشارات الانعطاف",
+      "reverse_lights": "أضواء الرجوع للخلف",
+      "tire_air_pressure": "ضغط هواء الإطارات",
+      "condition_of_the_tire_rubber": "حالة مطاط الإطارات",
+      "spare_tire_condition": "الإطار الاحتياطي",
+      "hydraulic_jack": "الرافعة الهيدروليكية",
+      "fire_extinguisher": "طفاية الحريق",
+      "first_aid_kit": "حقيبة الإسعافات الأولية",
+      "warning_triangle": "مثلث التحذير",
+      "hydraulic_cylinders": "الأسطوانات الهيدروليكية",
+      "hydraulic_hose": "الخراطيم الهيدروليكية",
+      "hydraulic_fittings": "التوصيلات الهيدروليكية",
+      "hydraulic_leaks": "فحص التسريبات",
+      "lifting_hook": "خطاف الرفع والقفل",
+      "anti-two_block_device_for_wire_rope": "جهاز منع الاصطدام (Anti-Two Block)",
+      "lifting_wire_rope": "حالة حبل السلك (الواير)",
+      "boom,_pins,_bolting": "الذراع، المسامير، والبراغي",
+      "sheaves": "البكرات",
+      "general_inspection_vehicle_cleanliness": "نظافة المركبة",
+      "general_inspection_driver's_seat": "مقعد السائق",
+      "general_inspection_seat_belt": "حزام الأمان",
+      "general_inspection_windshield": "الزجاج الأمامي",
+      "general_inspection_horn": "المنبه",
+      "general_inspection_brakes": "أداء الفرامل",
+      "general_inspection_mirrors": "المرايا",
+      "general_inspection_reversing_alarm": "منبه الرجوع",
+      "fluids_check_fuel_level": "مستوى الوقود",
+      "fluids_check_oil_level": "مستوى الزيت",
+      "fluids_check_water_level": "مستوى الماء",
+      "fluids_check_no_warning_lights_on": "الأضواء التحذيرية",
+      "electrical_headlights": "الأضواء الأمامية",
+      "electrical_tail_lights": "الأضواء الخلفية",
+      "electrical_brake_lights": "أضواء الفرامل",
+      "electrical_turn_signals": "إشارات الانعطاف",
+      "electrical_reverse_lights": "أضواء الرجوع",
+      "tires_tire_air_pressure": "ضغط الإطارات",
+      "tires_condition_of_the_tire_rubber": "حالة الإطارات",
+      "tires_spare_tire_condition": "حالة الإطار الاحتياطي",
+      "emergency_equipment_hydraulic_jack": "الرافعة الهيدروليكية",
+      "emergency_equipment_fire_extinguisher": "طفاية الحريق",
+      "emergency_equipment_first_aid_kit": "حقيبة الإسعافات",
+      "emergency_equipment_warning_triangle": "مثلث التحذير",
+      "hydraulic_system_hydraulic_cylinders": "الأسطوانات الهيدروليكية",
+      "hydraulic_system_hydraulic_hose": "الخراطيم الهيدروليكية",
+      "hydraulic_system_hydraulic_fittings": "التوصيلات الهيدروليكية",
+      "hydraulic_system_hydraulic_leaks": "التسريبات الهيدروليكية",
+      "lifting_system_lifting_hook": "خطاف الرفع",
+      "lifting_system_anti-two_block_device_for_wire_rope": "جهاز منع الاصطدام",
+      "lifting_system_lifting_wire_rope": "حالة حبل السلك",
+      "lifting_system_boom,_pins,_bolting": "الذراع والمسامير",
+      "lifting_system_sheaves": "البكرات"
+    }
+  },
   "maintenance": {
     "title": "إدارة الصيانة",
     "description": "إدارة وتتبع جميع عمليات صيانة المعدات",
-
     "addLog": {
       "title": "إضافة سجل صيانة",
       "description": "إدخال سجل صيانة جديد للمعدات"
     },
-
     "history": {
       "title": "سجل الصيانة",
       "subtitle": "عرض وتصفية سجلات الصيانة المكتملة",
       "loading": "جارٍ تحميل سجل الصيانة...",
       "noResults": "لا توجد سجلات مطابقة للتصفية.",
-
       "filters": {
         "model": "الطراز",
         "plate": "رقم اللوحة",
@@ -73,7 +201,6 @@
         "performedBy": "تم التنفيذ بواسطة",
         "reset": "إعادة التصفية"
       },
-
       "table": {
         "index": "#",
         "date": "التاريخ",
@@ -89,7 +216,6 @@
         "photoProblem": "صورة العطل / المشكلة"
       }
     },
-
     "form": {
       "title": "سجل أعمال الصيانة",
       "subtitle": "تسجيل أعمال الصيانة أو الإصلاح المنجزة",
@@ -100,20 +226,15 @@
       "description": "وصف العمل",
       "performedBy": "تم التنفيذ بواسطة",
       "comments": "ملاحظات",
-
       "chooseModel": "--- اختر الطراز ---",
       "choosePlate": "--- اختر رقم اللوحة ---",
       "chooseDriver": "--- اختر السائق ---",
-
       "descriptionPlaceholder": "صف أعمال الصيانة المنجزة...",
       "otherOption": "خيار آخر",
-
       "photoBefore": "صورة قبل",
       "photoAfter": "صورة بعد",
       "photoProblem": "صورة العطل / المشكلة",
-
       "submit": "إرسال سجل الصيانة",
-
       "alerts": {
         "missingAsset": "يرجى اختيار الطراز أو رقم اللوحة أو السائق.",
         "missingDescription": "يرجى إدخال وصف العمل.",
@@ -123,35 +244,24 @@
       }
     }
   },
-
   "roles": {
     "Supervisor": "مشرف",
     "Mechanic": "ميكانيكي",
     "Driver": "سائق",
     "Cleaning Guy": "عامل نظافة"
   },
-
   "status": {
     "Active": "نشط",
     "Inactive": "غير نشط",
     "Maintenance": "تحت الصيانة"
   },
-
   "cleaningTypes": {
     "Blow Cleaning": "تنظيف بالهواء",
     "Water Wash": "غسل بالماء",
     "Full Cleaning (Air & Water)": "تنظيف كامل (هواء وماء)"
   },
-
-  "requestTypes": {
-    "Oil Service": "تغيير زيت",
-    "Grease Service": "تشحيم",
-    "Full Service (Oil + Greasing)": "خدمة كاملة (زيت + تشحيم)"
-  },
-
   "cleaning": {
     "menu": {
-      "back": "رجوع",
       "title": "سجل التنظيف",
       "cards": {
         "addLog": {
@@ -164,9 +274,7 @@
         }
       }
     },
-
     "form": {
-      "back": "رجوع",
       "title": "نموذج سجل التنظيف",
       "subtitle": "تسجيل نشاط تنظيف",
       "date": "التاريخ",
@@ -176,19 +284,15 @@
       "cleanedBy": "تم التنظيف بواسطة",
       "cleaningType": "نوع التنظيف",
       "comments": "ملاحظات",
-
-      "photobefore": "صورة قبل",
-      "photoafter": "صورة بعد",
-
+      "photoBefore": "صورة قبل",
+      "photoAfter": "صورة بعد",
       "chooseModel": "--- اختر الطراز ---",
       "choosePlate": "--- اختر رقم اللوحة ---",
       "chooseDriver": "--- اختر السائق ---",
       "selectCleaner": "--- اختر المنظف ---",
       "selectCleaningType": "--- اختر نوع التنظيف ---",
-
       "submit": "إرسال سجل التنظيف",
       "submitting": "جاري الإرسال...",
-
       "alerts": {
         "missingAsset": "يرجى اختيار الطراز أو رقم اللوحة أو السائق.",
         "missingCleaner": "يرجى اختيار من قام بتنظيف المعدات.",
@@ -198,13 +302,11 @@
         "networkError": "خطأ في الشبكة أثناء إرسال النموذج."
       }
     },
-
     "history": {
       "title": "سجل التنظيف",
       "subtitle": "عرض وتصفية جميع سجلات التنظيف",
       "loading": "جارٍ تحميل سجل التنظيف...",
       "noResults": "لا توجد سجلات مطابقة للتصفية.",
-
       "filters": {
         "model": "الطراز",
         "plate": "رقم اللوحة",
@@ -215,7 +317,6 @@
         "to": "إلى",
         "reset": "إعادة التصفية"
       },
-
       "table": {
         "index": "#",
         "date": "التاريخ",
@@ -230,10 +331,8 @@
       }
     }
   },
-
   "equipment": {
     "menu": {
-      "back": "رجوع",
       "title": "إدارة المعدات",
       "subtitle": "عرض وإدارة جميع المركبات والمعدات",
       "cards": {
@@ -247,14 +346,11 @@
         }
       }
     },
-
     "list": {
-      "back": "رجوع",
       "title": "قائمة المعدات",
-      "subtitle": "انقر على الطراز أو رقم اللوحة أو السائق لعرض سجل الصيانة",
+      "subtitle": "انقر على الطراز أو اللوحة أو السائق لعرض السجل",
       "loading": "جارٍ تحميل قائمة المعدات...",
       "noEquipment": "لا توجد معدات.",
-
       "table": {
         "index": "#",
         "model": "الطراز / النوع",
@@ -265,14 +361,10 @@
         "notes": "ملاحظات"
       }
     },
-
     "manage": {
       "title": "إدارة المعدات",
       "subtitle": "إضافة أو تعديل أو إزالة مدخلات المعدات",
-
       "addButton": "إضافة معدات",
-      "cancelButton": "إلغاء",
-
       "addForm": {
         "title": "إضافة معدات جديدة",
         "modelType": "الطراز / النوع *",
@@ -286,14 +378,12 @@
         "placeholderModel": "مثال: مرسيدس، مان، تويوتا",
         "placeholderPlate": "مثال: ABC-123"
       },
-
       "editForm": {
         "title": "تعديل المعدات",
         "saveChanges": "حفظ التغييرات",
         "saving": "جاري الحفظ...",
         "cancel": "إلغاء"
       },
-
       "table": {
         "index": "#",
         "model": "الطراز / النوع",
@@ -304,12 +394,10 @@
         "notes": "ملاحظات",
         "actions": "الإجراءات"
       },
-
       "actions": {
         "edit": "تعديل",
         "delete": "حذف"
       },
-
       "alerts": {
         "missingFields": "يرجى ملء الطراز / النوع ورقم اللوحة.",
         "addSuccess": "تمت إضافة المعدات بنجاح!",
@@ -317,19 +405,15 @@
         "deleteSuccess": "تم حذف المعدات بنجاح!",
         "error": "خطأ: {{message}}",
         "networkError": "خطأ في الشبكة",
-        "deleteConfirm": "هل أنت متأكد من رغبتك في حذف المعدات \"{{plateNumber}}\" بشكل دائم؟\n\nلا يمكن التراجع عن هذا الإجراء."
+        "deleteConfirm": "هل أنت متأكد من رغبتك في حذف المعدات \"{{plateNumber}}\" بشكل دائم؟"
       }
     }
   },
-
   "users": {
     "manage": {
       "title": "إدارة المستخدمين",
       "subtitle": "إضافة أو تعديل أو إزالة مستخدمي النظام",
-
       "addButton": "إضافة مستخدم",
-      "cancelButton": "إلغاء",
-
       "addForm": {
         "title": "إضافة مستخدم جديد",
         "username": "اسم المستخدم *",
@@ -338,20 +422,17 @@
         "role": "الدور",
         "addUser": "إضافة مستخدم",
         "saving": "جاري الحفظ...",
-
         "placeholders": {
           "username": "أدخل اسم المستخدم",
           "password": "أدخل كلمة المرور",
           "fullName": "أدخل الاسم الكامل"
         }
       },
-
       "editForm": {
         "title": "تعديل المستخدم",
         "saveChanges": "حفظ التغييرات",
         "cancel": "إلغاء"
       },
-
       "table": {
         "index": "#",
         "username": "اسم المستخدم",
@@ -359,12 +440,10 @@
         "role": "الدور",
         "actions": "الإجراءات"
       },
-
       "actions": {
         "edit": "تعديل",
         "delete": "حذف"
       },
-
       "alerts": {
         "missingFields": "يرجى ملء اسم المستخدم وكلمة المرور والاسم الكامل.",
         "addSuccess": "تمت إضافة المستخدم بنجاح!",
@@ -372,7 +451,7 @@
         "editSuccess": "تم تحديث بيانات المستخدم بنجاح!",
         "error": "خطأ: {{message}}",
         "networkError": "خطأ في الشبكة",
-        "deleteConfirm": "هل أنت متأكد من رغبتك في حذف المستخدم \"{{username}}\"؟\n\nلا يمكن التراجع عن هذا الإجراء."
+        "deleteConfirm": "هل أنت متأكد من رغبتك في حذف المستخدم \"{{username}}\"؟"
       }
     }
   }
