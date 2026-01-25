@@ -1,538 +1,480 @@
-// frontend/src/pages/Maintenance/History.jsx
-
-import React, { useEffect, useState, useMemo } from "react";
-import {
-  ArrowLeft,
-  History as HistoryIcon,
-  Wrench,
-  ExternalLink,
+// frontend/src/pages/Checklist/History.jsx
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { 
+  ChevronDown, 
+  ChevronUp, 
+  Calendar, 
+  Search, 
+  X, 
+  Eye,
+  CheckCircle,
+  AlertTriangle,
   XCircle,
+  Camera,
+  Loader2,
+  ExternalLink
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
-import { useNavigate } from "react-router-dom";
-import CONFIG from "@/config";
+import { fetchWithAuth } from "@/api/api";
 import { useTranslation } from "react-i18next";
+import { getChecklistTemplate } from "@/config/checklistTemplates";
 
-/* ---------------- Helpers ---------------- */
-
-const getThumbnailUrl = (url) => {
-  if (!url) return null;
-  const match = url.match(/id=([^&]+)/);
-  if (match) {
-    const fileId = match[1];
-    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w200`;
-  }
-  return url;
-};
-
-/* ---------------- Component ---------------- */
-
-export default function MaintenanceHistory() {
+export default function ChecklistHistory() {
   const { user } = useAuth();
-  const cache = useCache();
-  const { t } = useTranslation();
+  const { equipment } = useCache();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
-  const [rows, setRows] = useState([]);
+  const [checklists, setChecklists] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedIndex, setExpandedIndex] = useState(null);
-
+  const [expandedItems, setExpandedItems] = useState(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
-    model: "",
-    plate: "",
-    driver: "",
-    performedBy: "",
-    from: "",
-    to: "",
+    "Plate Number": "",
+    "Model / Type": "",
+    startDate: "",
+    endDate: ""
   });
 
-  /* ---------------- Load Maintenance Log ---------------- */
+  const itemsPerPage = 10;
 
+  /* -------------------- ACCESS CONTROL -------------------- */
   useEffect(() => {
-    async function load() {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(`${CONFIG.BACKEND_URL}/api/Maintenance_Log`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        if (Array.isArray(data)) setRows(data.reverse());
-      } catch (err) {
-        console.error("Error loading maintenance history:", err);
-      }
+    if (user?.role === "Cleaning Guy") {
+      navigate("/", { replace: true });
     }
-    load();
-  }, []);
+  }, [user, navigate]);
 
-  /* ---------------- Ensure Equipment Cache ---------------- */
-
+  /* -------------------- LOAD CHECKLIST DATA -------------------- */
   useEffect(() => {
-    const ensureEquipmentLoaded = async () => {
-      const hasEquipment =
-        cache.getEquipment && cache.getEquipment().length > 0;
-      if (!hasEquipment) {
-        await cache.forceRefreshEquipment?.();
+    const loadChecklists = async () => {
+      try {
+        const response = await fetchWithAuth('/api/Checklist_Log');
+        if (response.ok) {
+          let data = await response.json();
+          
+          // Sort by date descending
+          data = data.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+
+          // Apply driver-specific filtering
+          if (user?.role === "Driver") {
+            const driverEquipment = equipment.filter(eq =>
+              eq["Driver 1"] === user.full_name || eq["Driver 2"] === user.full_name
+            );
+            const allowedPlates = driverEquipment.map(eq => eq["Plate Number"]);
+            data = data.filter(record => allowedPlates.includes(record["Plate Number"]));
+          }
+
+          setChecklists(data);
+        }
+      } catch (error) {
+        console.error('Error loading checklists:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
-    ensureEquipmentLoaded();
-  }, [cache]);
 
-  /* ---------------- Driver → Allowed Plates ---------------- */
+    loadChecklists();
+  }, [user, equipment]);
 
-  const driverAllowedPlates = useMemo(() => {
-    if (user?.role !== "Driver") return null;
-    const equipment = cache.getEquipment?.() || [];
-    if (!equipment.length) return null;
+  /* -------------------- FILTER AND SEARCH LOGIC -------------------- */
+  const filteredChecklists = checklists.filter(record => {
+    const matchesSearch = 
+      record["Full Name"]?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record["Plate Number"]?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return equipment
-      .filter(
-        (e) =>
-          e["Driver"] === user.full_name ||
-          e["Driver 1"] === user.full_name ||
-          e["Driver 2"] === user.full_name
-      )
-      .map((e) => e["Plate Number"])
-      .filter(Boolean);
-  }, [user, cache]);
+    const matchesPlate = !filters["Plate Number"] || record["Plate Number"] === filters["Plate Number"];
+    const matchesModel = !filters["Model / Type"] || record["Model / Type"] === filters["Model / Type"];
 
-  /* ---------------- Filter options ---------------- */
+    const recordDate = new Date(record.Date);
+    const startFilter = filters.startDate ? new Date(filters.startDate) : null;
+    const endFilter = filters.endDate ? new Date(filters.endDate) : null;
 
-  const modelOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(rows.map((r) => r["Model / Type"]).filter(Boolean))
-      ).sort(),
-    [rows]
-  );
+    const matchesDate = 
+      (!startFilter || recordDate >= startFilter) &&
+      (!endFilter || recordDate <= endFilter);
 
-  const plateOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(rows.map((r) => r["Plate Number"]).filter(Boolean))
-      ).sort(),
-    [rows]
-  );
+    return matchesSearch && matchesPlate && matchesModel && matchesDate;
+  });
 
-  const driverOptions = useMemo(
-    () =>
-      Array.from(new Set(rows.map((r) => r["Driver"]).filter(Boolean))).sort(),
-    [rows]
-  );
+  /* -------------------- PAGINATION -------------------- */
+  const totalPages = Math.ceil(filteredChecklists.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedChecklists = filteredChecklists.slice(startIndex, startIndex + itemsPerPage);
 
-  const performedByOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(rows.map((r) => r["Performed By"]).filter(Boolean))
-      ).sort(),
-    [rows]
-  );
-
-  /* ---------------- Apply filters ---------------- */
-
-  const filteredRows = useMemo(() => {
-    return rows.filter((r) => {
-      const date = r["Date"];
-      const model = r["Model / Type"] || "";
-      const plate = r["Plate Number"] || "";
-      const driver = r["Driver"] || "";
-      const performedBy = r["Performed By"] || "";
-
-      if (
-        user?.role === "Driver" &&
-        Array.isArray(driverAllowedPlates) &&
-        !driverAllowedPlates.includes(plate)
-      ) {
-        return false;
-      }
-
-      const matchModel = !filters.model || model === filters.model;
-      const matchPlate = !filters.plate || plate === filters.plate;
-      const matchDriver = !filters.driver || driver === filters.driver;
-      const matchPerformedBy =
-        !filters.performedBy || performedBy === filters.performedBy;
-
-      let matchDate = true;
-      if (filters.from && date < filters.from) matchDate = false;
-      if (filters.to && date > filters.to) matchDate = false;
-
-      return (
-        matchModel &&
-        matchPlate &&
-        matchDriver &&
-        matchPerformedBy &&
-        matchDate
-      );
-    });
-  }, [rows, filters, user, driverAllowedPlates]);
-
-  const resetFilters = () =>
-    setFilters({
-      model: "",
-      plate: "",
-      driver: "",
-      performedBy: "",
-      from: "",
-      to: "",
-    });
-
-  /* ---------------- Description translation ---------------- */
-
-  const translateDescription = (value) => {
-    if (!value) return "---";
-
-    const cleaningKey = `cleaningTypes.${value}`;
-    const cleaningTranslated = t(cleaningKey);
-    if (cleaningTranslated !== cleaningKey) return cleaningTranslated;
-
-    const requestKey = `requestTypes.${value}`;
-    const requestTranslated = t(requestKey);
-    if (requestTranslated !== requestKey) return requestTranslated;
-
-    return value;
+  /* -------------------- TOGGLE EXPANSION -------------------- */
+  const toggleExpand = (id) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedItems(newExpanded);
   };
 
-  /* ---------------- Loading ---------------- */
+  /* -------------------- FILTER HANDLERS -------------------- */
+  const handleFilterChange = (field, value) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
+    setCurrentPage(1);
+  };
 
-  if (loading && rows.length === 0) {
+  const resetFilters = () => {
+    setFilters({
+      "Plate Number": "",
+      "Model / Type": "",
+      startDate: "",
+      endDate: ""
+    });
+    setSearchTerm("");
+    setCurrentPage(1);
+  };
+
+  /* -------------------- STATUS ICON -------------------- */
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "OK":
+        return <CheckCircle className="w-5 h-5 text-emerald-400" />;
+      case "Warning":
+        return <AlertTriangle className="w-5 h-5 text-amber-400" />;
+      case "Fail":
+        return <XCircle className="w-5 h-5 text-red-400" />;
+      default:
+        return <span className="text-gray-500 text-sm">-</span>;
+    }
+  };
+
+  /* -------------------- THUMBNAIL URL -------------------- */
+  const getThumbnailUrl = (url) => {
+    if (!url) return null;
+    const match = url.match(/id=([^&]+)/);
+    if (match) {
+      const fileId = match[1];
+      return `https://drive.google.com/thumbnail?id=${fileId}&sz=w200`;
+    }
+    return url;
+  };
+
+  /* -------------------- FILTER OPTIONS -------------------- */
+  const plateNumbers = [...new Set(equipment.map(eq => eq["Plate Number"]))];
+  const models = [...new Set(equipment.map(eq => eq["Model / Type"]))];
+
+  /* -------------------- LOADING SCREEN -------------------- */
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mb-4" />
-          <p className="text-lg">{t("maintenance.history.loading")}</p>
+          <Loader2 className="inline-block animate-spin h-12 w-12 text-purple-500 mb-4" />
+          <p className="text-lg">{t("checklist.history.loading")}</p>
         </div>
       </div>
     );
   }
 
-  /* ---------------- UI ---------------- */
-
+  /* -------------------- RENDER -------------------- */
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
-
-      <div className="max-w-7xl mx-auto p-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
-        >
-          <ArrowLeft
-            size={18}
-            className="group-hover:-translate-x-1 transition-transform"
-          />
-          {t("common.back")}
-        </button>
-
-        <div className="mb-8 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-green-600 to-emerald-500 shadow-lg shadow-emerald-500/40">
-            <Wrench className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">
-              {t("maintenance.history.title")}
-            </h1>
-            <p className="text-gray-400 text-sm mt-1">
-              {t("maintenance.history.subtitle")}
-            </p>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-4 mb-8 shadow-lg">
-          <div className="grid md:grid-cols-6 sm:grid-cols-2 gap-4">
-            <select
-              value={filters.model}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, model: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            >
-              <option value="">{t("maintenance.history.filters.model")}</option>
-              {modelOptions.map((m) => (
-                <option key={m}>{m}</option>
-              ))}
-            </select>
-
-            <select
-              value={filters.plate}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, plate: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            >
-              <option value="">{t("maintenance.history.filters.plate")}</option>
-              {plateOptions.map((p) => (
-                <option key={p}>{p}</option>
-              ))}
-            </select>
-
-            <select
-              value={filters.driver}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, driver: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            >
-              <option value="">{t("maintenance.history.filters.driver")}</option>
-              {driverOptions.map((d) => (
-                <option key={d}>{d}</option>
-              ))}
-            </select>
-
-            <select
-              value={filters.performedBy}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, performedBy: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            >
-              <option value="">
-                {t("maintenance.history.filters.performedBy")}
-              </option>
-              {performedByOptions.map((p) => (
-                <option key={p}>{p}</option>
-              ))}
-            </select>
-
-            <input
-              type="date"
-              value={filters.from}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, from: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            />
-
-            <input
-              type="date"
-              value={filters.to}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, to: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
-            />
+      <div className="max-w-6xl mx-auto p-6">
+        
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-500 shadow-lg shadow-purple-500/40">
+              <Eye className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500">
+                {t("checklist.history.title")}
+              </h1>
+              <p className="text-gray-400 text-sm mt-1">
+                {t("checklist.history.subtitle")}
+              </p>
+            </div>
           </div>
 
-          <div className="flex justify-end mt-4">
-            <button
-              onClick={resetFilters}
-              className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium"
-            >
-              <XCircle size={14} />
-              {t("maintenance.history.filters.reset")}
-            </button>
+          {/* Search and Filters */}
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* Search */}
+              <div className="lg:col-span-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                  <input
+                    type="text"
+                    placeholder={t("checklist.history.search")}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Plate Filter */}
+              <div>
+                <select
+                  value={filters["Plate Number"]}
+                  onChange={(e) => handleFilterChange("Plate Number", e.target.value)}
+                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                >
+                  <option value="">{t("checklist.history.filterPlate")}</option>
+                  {plateNumbers.map(plate => (
+                    <option key={plate} value={plate}>{plate}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Model Filter */}
+              <div>
+                <select
+                  value={filters["Model / Type"]}
+                  onChange={(e) => handleFilterChange("Model / Type", e.target.value)}
+                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                >
+                  <option value="">{t("checklist.history.filterModel")}</option>
+                  {models.map(model => (
+                    <option key={model} value={model}>{model}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Reset Button */}
+              <div className="flex gap-2">
+                <button
+                  onClick={resetFilters}
+                  className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition flex items-center justify-center gap-2"
+                >
+                  <X size={18} />
+                  {t("checklist.history.reset")}
+                </button>
+              </div>
+            </div>
+
+            {/* Date Range Filter */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+                  <Calendar size={16} />
+                  {t("checklist.history.startDate")}
+                </label>
+                <input
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => handleFilterChange("startDate", e.target.value)}
+                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+                  <Calendar size={16} />
+                  {t("checklist.history.endDate")}
+                </label>
+                <input
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => handleFilterChange("endDate", e.target.value)}
+                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Empty */}
-        {filteredRows.length === 0 ? (
-          <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
-            <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">
-              {t("maintenance.history.noResults")}
-            </p>
+        {/* Results Summary */}
+        <div className="flex justify-between items-center mb-6">
+          <p className="text-gray-400">
+            {filteredChecklists.length} {t("checklist.history.results") || "results found"}
+          </p>
+        </div>
+
+        {/* Checklist Items */}
+        {paginatedChecklists.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-500 text-lg mb-2">
+              {t("checklist.history.noResults")}
+            </div>
+            <p className="text-gray-600">{t("checklist.history.noResultsDescription") || "Try adjusting your filters"}</p>
           </div>
         ) : (
-          <>
-            {/* Mobile Cards */}
-            <div className="md:hidden space-y-4">
-              {filteredRows.map((r, i) => (
-                <div
-                   key={i}
-                   onClick={() =>
-                     setExpandedIndex(expandedIndex === i ? null : i)
-                   }
-                   className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg cursor-pointer"
+          <div className="space-y-4">
+            {paginatedChecklists.map((record, index) => {
+              const recordId = `${record.Timestamp}-${index}`;
+              const isExpanded = expandedItems.has(recordId);
+              const recordDate = new Date(record.Date);
+              
+              let checklistData = {};
+              try {
+                checklistData = JSON.parse(record["Checklist Data"] || "{}");
+              } catch (e) {
+                console.error("Failed to parse checklist data:", e);
+              }
+
+              const equipmentType = record["Equipment Type"] || record["Model / Type"];
+              const checklistTemplate = getChecklistTemplate(equipmentType);
+
+              return (
+                <div 
+                  key={recordId}
+                  className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 overflow-hidden hover:border-purple-500/50 transition-all"
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="text-lg font-semibold text-emerald-400">
-                        {r["Plate Number"]}
-                      </p>
-                      <p className="text-sm text-gray-400">
-                        {r["Model / Type"]}
-                      </p>
+                  {/* Collapsed View */}
+                  <div
+                    className="p-6 cursor-pointer hover:bg-gray-700/30 transition"
+                    onClick={() => toggleExpand(recordId)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="text-gray-400" size={18} />
+                          <span className="font-medium text-white">
+                            {recordDate.toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400">{t("checklist.history.plate") || "Plate"}:</span>
+                          <span className="font-medium text-cyan-400">{record["Plate Number"]}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400">{t("checklist.history.model") || "Model"}:</span>
+                          <span className="font-medium text-purple-400">{record["Model / Type"]}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400">{t("checklist.history.equipmentType") || "Type"}:</span>
+                          <span className="font-medium text-emerald-400">{equipmentType}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        {isExpanded ? (
+                          <ChevronUp className="text-purple-400" size={20} />
+                        ) : (
+                          <ChevronDown className="text-gray-400" size={20} />
+                        )}
+                      </div>
                     </div>
-                    <span className="text-xs font-semibold text-gray-300">
-                      {r["Date"]}
-                    </span>
+                    <div className="mt-3 text-sm text-gray-400">
+                      <span>{t("checklist.history.performedBy") || "Driver"}: {record["Full Name"]} ({t(`roles.${record.Role}`)})</span>
+                    </div>
                   </div>
 
-                  <div className="text-sm space-y-1">
-                    <p>
-                      <span className="text-gray-400">
-                        {t("maintenance.history.table.description")}:
-                      </span>{" "}
-                      {translateDescription(r["Description of Work"])}
-                    </p>
-                    <p>
-                      <span className="text-gray-400">
-                        {t("maintenance.history.table.performedBy")}:
-                      </span>{" "}
-                      {r["Performed By"]}
-                    </p>
-                    <p>
-                      <span className="text-gray-400">
-                        {t("maintenance.history.table.driver")}:
-                      </span>{" "}
-                      {r["Driver"]}
-                    </p>
-                    <p>
-                      <span className="text-gray-400">
-                        {t("maintenance.history.table.completionDate")}:
-                      </span>{" "}
-                      {r["Completion Date"] || "---"}
-                    </p>
-                  </div>
+                  {/* Expanded View */}
+                  {isExpanded && (
+                    <div className="border-t border-gray-700 p-6 bg-gray-900/20">
+                      <div className="space-y-6">
+                        {checklistTemplate.map((section) => {
+                          const sectionItems = section.items.map(item => {
+                            const itemKey = `${section.sectionKey}.${item.key}`;
+                            const itemData = checklistData[itemKey];
+                            return { ...item, key: itemKey, data: itemData };
+                          }).filter(item => item.data); // Only show items that have data
 
-                  {expandedIndex === i && (
-  <>
-    {/* Comments */}
-    <div className="mt-3 text-sm">
-      <span className="text-gray-400">
-        {t("maintenance.history.table.comments")}:
-      </span>{" "}
-      {r["Comments"] || "---"}
-    </div>
+                          if (sectionItems.length === 0) return null;
 
-    {/* Photos */}
-    <div className="flex gap-3 mt-3">
-  {[
-    {
-      field: "Photo Before",
-      label: t("maintenance.history.table.photoBefore"),
-    },
-    {
-      field: "Photo After",
-      label: t("maintenance.history.table.photoAfter"),
-    },
-    {
-      field: "Photo Repair/Problem",
-      label: t("maintenance.history.table.photoProblem"),
-    },
-  ].map(
-    ({ field, label }) =>
-      r[field] ? (
-        <div
-          key={field}
-          className="flex flex-col items-center gap-1"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <a
-            href={r[field]}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="relative group"
-          >
-            <img
-              src={getThumbnailUrl(r[field])}
-              alt={label}
-              className="h-16 w-16 object-cover rounded-lg border border-gray-600"
-            />
-            <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-              <ExternalLink className="w-5 h-5 text-emerald-400" />
-            </div>
-          </a>
-          <span className="text-[11px] text-gray-400 text-center">
-            {label}
-          </span>
-        </div>
-      ) : null
-  )}
-</div>
-  </>
-)}
+                          return (
+                            <div key={section.sectionKey} className="border border-gray-700 rounded-xl p-4 bg-gray-800/30">
+                              <h3 className="text-lg font-medium mb-4 text-cyan-300 flex items-center gap-2">
+                                {t(section.titleKey)}
+                              </h3>
+                              <div className="space-y-3">
+                                {sectionItems.map((item) => {
+                                  const itemData = item.data;
+                                  return (
+                                    <div key={item.key} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="font-medium text-gray-200">
+                                          {t(`checklist.items.${item.key}`)}
+                                        </span>
+                                        <div className="flex items-center gap-3">
+                                          {getStatusIcon(itemData.status)}
+                                          <span className="text-sm text-gray-400">
+                                            {t(`checklist.statusLabels.${itemData.status}`) || itemData.status}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      {itemData.comment && (
+                                        <div className="mt-2 text-sm text-gray-400 pl-4 border-l-2 border-amber-500/30">
+                                          <strong className="text-amber-400">{t("checklist.history.comment") || "Comment"}:</strong> {itemData.comment}
+                                        </div>
+                                      )}
+                                      {itemData.photo && (
+                                        <div className="mt-3 pl-4">
+                                          
+                                            href={itemData.photo}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-block relative group"
+                                          >
+                                            <img
+                                              src={getThumbnailUrl(itemData.photo)}
+                                              alt="Item photo"
+                                              className="w-24 h-24 object-cover rounded-lg border border-gray-600 group-hover:border-purple-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
+                                            />
+                                            <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                                              <ExternalLink className="w-6 h-6 text-purple-400" />
+                                            </div>
+                                          </a>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              );
+            })}
+          </div>
+        )}
 
-            {/* Desktop Table */}
-            <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
-              <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
-                <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
-                  <tr>
-                    {[
-                      "index",
-                      "date",
-                      "model",
-                      "plate",
-                      "driver",
-                      "performedBy",
-                      "description",
-                      "completionDate",
-                      "comments",
-                      "photoBefore",
-                      "photoAfter",
-                      "photoProblem",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="p-4 text-left text-sm font-semibold text-gray-300"
-                      >
-                        {t(`maintenance.history.table.${h}`)}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRows.map((r, i) => (
-                    <tr
-                      key={i}
-                      className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
-                        i % 2 === 0 ? "bg-white/[0.02]" : ""
-                      }`}
-                    >
-                      <td className="p-4 text-sm text-gray-400">{i + 1}</td>
-                      <td className="p-4 text-sm">{r["Date"]}</td>
-                      <td className="p-4 text-sm">{r["Model / Type"]}</td>
-                      <td className="p-4 text-sm font-mono">
-                        {r["Plate Number"]}
-                      </td>
-                      <td className="p-4 text-sm">{r["Driver"]}</td>
-                      <td className="p-4 text-sm">{r["Performed By"]}</td>
-                      <td className="p-4 text-sm">
-                        {translateDescription(r["Description of Work"])}
-                      </td>
-                      <td className="p-4 text-sm">
-                        {r["Completion Date"] || "---"}
-                      </td>
-                      <td className="p-4 text-sm max-w-xs truncate">
-                        {r["Comments"] || "---"}
-                      </td>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-2 mt-8">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              {t("common.previous") || "Previous"}
+            </button>
+            <div className="flex gap-1">
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                const pageNum = currentPage <= 3 ? i + 1 :
+                  currentPage >= totalPages - 2 ? totalPages - 4 + i :
+                  currentPage - 2 + i;
 
-                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
-                        (field) => (
-                          <td key={field} className="p-4">
-                            {r[field] ? (
-                              <a
-                                href={r[field]}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="relative group block"
-                              >
-                                <img
-                                  src={getThumbnailUrl(r[field])}
-                                  alt={field}
-                                  className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-emerald-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
-                                />
-                                <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                                  <ExternalLink className="w-6 h-6 text-emerald-400" />
-                                </div>
-                              </a>
-                            ) : (
-                              <span className="text-gray-500 text-sm">---</span>
-                            )}
-                          </td>
-                        )
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                if (pageNum < 1 || pageNum > totalPages) return null;
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`px-4 py-2 rounded-lg transition ${
+                      currentPage === pageNum
+                        ? "bg-purple-600 text-white"
+                        : "bg-gray-700 hover:bg-gray-600 text-white"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
             </div>
-          </>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              {t("common.next") || "Next"}
+            </button>
+          </div>
         )}
       </div>
     </div>
