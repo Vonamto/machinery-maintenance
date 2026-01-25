@@ -5,11 +5,13 @@ import {
   ChevronDown, 
   ChevronUp, 
   Calendar, 
+  Search, 
   X, 
   Eye,
   CheckCircle,
   AlertTriangle,
   XCircle,
+  Camera,
   Loader2,
   ExternalLink
 } from "lucide-react";
@@ -28,13 +30,12 @@ export default function ChecklistHistory() {
 
   const [checklists, setChecklists] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedCard, setExpandedCard] = useState(null);
-  const [expandedSections, setExpandedSections] = useState(new Set());
+  const [expandedItems, setExpandedItems] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
-    driver: "",
-    "Model / Type": "",
     "Plate Number": "",
+    "Model / Type": "",
     startDate: "",
     endDate: ""
   });
@@ -80,9 +81,12 @@ export default function ChecklistHistory() {
     loadChecklists();
   }, [user, equipment]);
 
-  /* -------------------- FILTER LOGIC -------------------- */
+  /* -------------------- FILTER AND SEARCH LOGIC -------------------- */
   const filteredChecklists = checklists.filter(record => {
-    const matchesDriver = !filters.driver || record["Full Name"] === filters.driver;
+    const matchesSearch = 
+      record["Full Name"]?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record["Plate Number"]?.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesPlate = !filters["Plate Number"] || record["Plate Number"] === filters["Plate Number"];
     const matchesModel = !filters["Model / Type"] || record["Model / Type"] === filters["Model / Type"];
 
@@ -94,7 +98,7 @@ export default function ChecklistHistory() {
       (!startFilter || recordDate >= startFilter) &&
       (!endFilter || recordDate <= endFilter);
 
-    return matchesDriver && matchesPlate && matchesModel && matchesDate;
+    return matchesSearch && matchesPlate && matchesModel && matchesDate;
   });
 
   /* -------------------- PAGINATION -------------------- */
@@ -102,26 +106,15 @@ export default function ChecklistHistory() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedChecklists = filteredChecklists.slice(startIndex, startIndex + itemsPerPage);
 
-  /* -------------------- TOGGLE CARD EXPANSION -------------------- */
-  const toggleCard = (id) => {
-    if (expandedCard === id) {
-      setExpandedCard(null);
-      setExpandedSections(new Set());
+  /* -------------------- TOGGLE EXPANSION -------------------- */
+  const toggleExpand = (id) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
     } else {
-      setExpandedCard(id);
-      setExpandedSections(new Set());
+      newExpanded.add(id);
     }
-  };
-
-  /* -------------------- TOGGLE SECTION EXPANSION -------------------- */
-  const toggleSection = (sectionKey) => {
-    const newExpanded = new Set(expandedSections);
-    if (newExpanded.has(sectionKey)) {
-      newExpanded.delete(sectionKey);
-    } else {
-      newExpanded.add(sectionKey);
-    }
-    setExpandedSections(newExpanded);
+    setExpandedItems(newExpanded);
   };
 
   /* -------------------- FILTER HANDLERS -------------------- */
@@ -132,40 +125,27 @@ export default function ChecklistHistory() {
 
   const resetFilters = () => {
     setFilters({
-      driver: "",
-      "Model / Type": "",
       "Plate Number": "",
+      "Model / Type": "",
       startDate: "",
       endDate: ""
     });
+    setSearchTerm("");
     setCurrentPage(1);
   };
 
   /* -------------------- STATUS ICON -------------------- */
-  const getStatusIcon = (status, size = "w-5 h-5") => {
+  const getStatusIcon = (status) => {
     switch (status) {
       case "OK":
-        return <CheckCircle className={`${size} text-emerald-400`} />;
+        return <CheckCircle className="w-5 h-5 text-emerald-400" />;
       case "Warning":
-        return <AlertTriangle className={`${size} text-amber-400`} />;
+        return <AlertTriangle className="w-5 h-5 text-amber-400" />;
       case "Fail":
-        return <XCircle className={`${size} text-red-400`} />;
+        return <XCircle className="w-5 h-5 text-red-400" />;
       default:
         return <span className="text-gray-500 text-sm">-</span>;
     }
-  };
-
-  /* -------------------- CALCULATE SUMMARY -------------------- */
-  const calculateSummary = (checklistData) => {
-    const summary = { OK: 0, Warning: 0, Fail: 0 };
-    
-    Object.values(checklistData).forEach(item => {
-      if (item.status && summary.hasOwnProperty(item.status)) {
-        summary[item.status]++;
-      }
-    });
-
-    return summary;
   };
 
   /* -------------------- THUMBNAIL URL -------------------- */
@@ -180,9 +160,8 @@ export default function ChecklistHistory() {
   };
 
   /* -------------------- FILTER OPTIONS -------------------- */
-  const plateNumbers = [...new Set(equipment.map(eq => eq["Plate Number"]))];
-  const models = [...new Set(equipment.map(eq => eq["Model / Type"]))];
-  const drivers = [...new Set(checklists.map(record => record["Full Name"]).filter(Boolean))];
+  const plateNumbers = [...new Set(equipment.map(eq => eq["Plate Number"]))]
+  const models = [...new Set(equipment.map(eq => eq["Model / Type"]))]
 
   /* -------------------- LOADING SCREEN -------------------- */
   if (loading) {
@@ -218,19 +197,33 @@ export default function ChecklistHistory() {
             </div>
           </div>
 
-          {/* Filters */}
+          {/* Search and Filters */}
           <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Driver Filter */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* Search */}
+              <div className="lg:col-span-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                  <input
+                    type="text"
+                    placeholder={t("checklist.history.search")}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Plate Filter */}
               <div>
                 <select
-                  value={filters.driver}
-                  onChange={(e) => handleFilterChange("driver", e.target.value)}
+                  value={filters["Plate Number"]}
+                  onChange={(e) => handleFilterChange("Plate Number", e.target.value)}
                   className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                 >
-                  <option value="">{t("checklist.history.filterDriver") || "Filter by Driver"}</option>
-                  {drivers.map(driver => (
-                    <option key={driver} value={driver}>{driver}</option>
+                  <option value="">{t("checklist.history.filterPlate")}</option>
+                  {plateNumbers.map(plate => (
+                    <option key={plate} value={plate}>{plate}</option>
                   ))}
                 </select>
               </div>
@@ -249,18 +242,15 @@ export default function ChecklistHistory() {
                 </select>
               </div>
 
-              {/* Plate Filter */}
-              <div>
-                <select
-                  value={filters["Plate Number"]}
-                  onChange={(e) => handleFilterChange("Plate Number", e.target.value)}
-                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+              {/* Reset Button */}
+              <div className="flex gap-2">
+                <button
+                  onClick={resetFilters}
+                  className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition flex items-center justify-center gap-2"
                 >
-                  <option value="">{t("checklist.history.filterPlate")}</option>
-                  {plateNumbers.map(plate => (
-                    <option key={plate} value={plate}>{plate}</option>
-                  ))}
-                </select>
+                  <X size={18} />
+                  {t("checklist.history.reset")}
+                </button>
               </div>
             </div>
 
@@ -291,17 +281,6 @@ export default function ChecklistHistory() {
                 />
               </div>
             </div>
-
-            {/* Reset Button */}
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={resetFilters}
-                className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium transition"
-              >
-                <X size={14} />
-                {t("maintenance.history.filters.reset")}
-              </button>
-            </div>
           </div>
         </div>
 
@@ -324,7 +303,7 @@ export default function ChecklistHistory() {
           <div className="space-y-4">
             {paginatedChecklists.map((record, index) => {
               const recordId = `${record.Timestamp}-${index}`;
-              const isCardExpanded = expandedCard === recordId;
+              const isExpanded = expandedItems.has(recordId);
               const recordDate = new Date(record.Date);
               
               let checklistData = {};
@@ -334,8 +313,8 @@ export default function ChecklistHistory() {
                 console.error("Failed to parse checklist data:", e);
               }
 
-              const summary = calculateSummary(checklistData);
-              const checklistTemplate = getChecklistTemplate(record["Equipment Type"] || record["Model / Type"]);
+              const equipmentType = record["Equipment Type"] || record["Model / Type"];
+              const checklistTemplate = getChecklistTemplate(equipmentType);
 
               return (
                 <div 
@@ -345,7 +324,7 @@ export default function ChecklistHistory() {
                   {/* Collapsed View */}
                   <div
                     className="p-6 cursor-pointer hover:bg-gray-700/30 transition"
-                    onClick={() => toggleCard(recordId)}
+                    onClick={() => toggleExpand(recordId)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 flex-1">
@@ -363,125 +342,86 @@ export default function ChecklistHistory() {
                           <span className="text-gray-400">{t("checklist.history.model") || "Model"}:</span>
                           <span className="font-medium text-purple-400">{record["Model / Type"]}</span>
                         </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400">{t("checklist.history.equipmentType") || "Type"}:</span>
+                          <span className="font-medium text-emerald-400">{equipmentType}</span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
-                        {isCardExpanded ? (
+                        {isExpanded ? (
                           <ChevronUp className="text-purple-400" size={20} />
                         ) : (
                           <ChevronDown className="text-gray-400" size={20} />
                         )}
                       </div>
                     </div>
-                    
-                    {/* Driver Name and Summary */}
-                    <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
-                      <span className="text-sm text-gray-400">
-                        {t("checklist.history.performedBy") || "Driver"}: <span className="text-white font-medium">{record["Full Name"]}</span>
-                      </span>
-                      
-                      {/* Summary */}
-                      <div className="flex items-center gap-3 text-sm">
-                        <span className="text-gray-400">{t("checklist.history.summary") || "Summary"}:</span>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1">
-                            <span className="text-emerald-400 font-semibold">{summary.OK}</span>
-                            {getStatusIcon("OK", "w-4 h-4")}
-                          </div>
-                          <span className="text-gray-600">/</span>
-                          <div className="flex items-center gap-1">
-                            <span className="text-amber-400 font-semibold">{summary.Warning}</span>
-                            {getStatusIcon("Warning", "w-4 h-4")}
-                          </div>
-                          <span className="text-gray-600">/</span>
-                          <div className="flex items-center gap-1">
-                            <span className="text-red-400 font-semibold">{summary.Fail}</span>
-                            {getStatusIcon("Fail", "w-4 h-4")}
-                          </div>
-                        </div>
-                      </div>
+                    <div className="mt-3 text-sm text-gray-400">
+                      <span>{t("checklist.history.performedBy") || "Driver"}: {record["Full Name"]} ({t(`roles.${record.Role}`)})</span>
                     </div>
                   </div>
 
                   {/* Expanded View */}
-                  {isCardExpanded && (
+                  {isExpanded && (
                     <div className="border-t border-gray-700 p-6 bg-gray-900/20">
-                      <div className="space-y-4">
+                      <div className="space-y-6">
                         {checklistTemplate.map((section) => {
                           const sectionItems = section.items.map(item => {
                             const itemKey = `${section.sectionKey}.${item.key}`;
                             const itemData = checklistData[itemKey];
                             return { ...item, key: itemKey, data: itemData };
-                          }).filter(item => item.data);
+                          }).filter(item => item.data); // Only show items that have data
 
                           if (sectionItems.length === 0) return null;
 
-                          const sectionId = `${recordId}-${section.sectionKey}`;
-                          const isSectionExpanded = expandedSections.has(sectionId);
-
                           return (
-                            <div key={section.sectionKey} className="border border-gray-700 rounded-xl overflow-hidden bg-gray-800/30">
-                              {/* Section Header */}
-                              <div
-                                className="p-4 cursor-pointer hover:bg-gray-700/30 transition flex items-center justify-between"
-                                onClick={() => toggleSection(sectionId)}
-                              >
-                                <h3 className="text-lg font-medium text-cyan-300 flex items-center gap-2">
-                                  {t(section.titleKey)}
-                                </h3>
-                                {isSectionExpanded ? (
-                                  <ChevronUp className="text-cyan-400" size={18} />
-                                ) : (
-                                  <ChevronDown className="text-gray-400" size={18} />
-                                )}
-                              </div>
-
-                              {/* Section Items */}
-                              {isSectionExpanded && (
-                                <div className="p-4 pt-0 space-y-3">
-                                  {sectionItems.map((item) => {
-                                    const itemData = item.data;
-                                    return (
-                                      <div key={item.key} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-                                        <div className="flex items-center justify-between mb-2">
-                                          <span className="font-medium text-gray-200">
-                                            {t(`checklist.items.${item.key}`)}
+                            <div key={section.sectionKey} className="border border-gray-700 rounded-xl p-4 bg-gray-800/30">
+                              <h3 className="text-lg font-medium mb-4 text-cyan-300 flex items-center gap-2">
+                                {t(section.titleKey)}
+                              </h3>
+                              <div className="space-y-3">
+                                {sectionItems.map((item) => {
+                                  const itemData = item.data;
+                                  return (
+                                    <div key={item.key} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="font-medium text-gray-200">
+                                          {t(`checklist.items.${item.key}`)}
+                                        </span>
+                                        <div className="flex items-center gap-3">
+                                          {getStatusIcon(itemData.status)}
+                                          <span className="text-sm text-gray-400">
+                                            {t(`checklist.statusLabels.${itemData.status}`) || itemData.status}
                                           </span>
-                                          <div className="flex items-center gap-3">
-                                            {getStatusIcon(itemData.status)}
-                                            <span className="text-sm text-gray-400">
-                                              {t(`checklist.statusLabels.${itemData.status}`) || itemData.status}
-                                            </span>
-                                          </div>
                                         </div>
-                                        {itemData.comment && (
-                                          <div className="mt-2 text-sm text-gray-400 pl-4 border-l-2 border-amber-500/30">
-                                            <strong className="text-amber-400">{t("checklist.history.comment") || "Comment"}:</strong> {itemData.comment}
-                                          </div>
-                                        )}
-                                        {itemData.photo && (
-                                          <div className="mt-3 pl-4">
-                                            
-                                              href={itemData.photo}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="inline-block relative group"
-                                            >
-                                              <img
-                                                src={getThumbnailUrl(itemData.photo)}
-                                                alt="Item photo"
-                                                className="w-24 h-24 object-cover rounded-lg border border-gray-600 group-hover:border-purple-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
-                                              />
-                                              <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                                                <ExternalLink className="w-6 h-6 text-purple-400" />
-                                              </div>
-                                            </a>
-                                          </div>
-                                        )}
                                       </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
+                                      {itemData.comment && (
+                                        <div className="mt-2 text-sm text-gray-400 pl-4 border-l-2 border-amber-500/30">
+                                          <strong className="text-amber-400">{t("checklist.history.comment") || "Comment"}:</strong> {itemData.comment}
+                                        </div>
+                                      )}
+                                      {itemData.photo && (
+                                        <div className="mt-3 pl-4">
+                                          <a
+                                            href={itemData.photo}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-block relative group"
+                                          >
+                                            <img
+                                              src={getThumbnailUrl(itemData.photo)}
+                                              alt="Item photo"
+                                              className="w-24 h-24 object-cover rounded-lg border border-gray-600 group-hover:border-purple-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
+                                            />
+                                            <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                                              <ExternalLink className="w-6 h-6 text-purple-400" />
+                                            </div>
+                                          </a>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
                           );
                         })}
