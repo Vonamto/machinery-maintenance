@@ -49,6 +49,10 @@
     "users": {
       "title": " المستخدمون ",
       "description": " إدارة حسابات المستخدمين والصلاحيات "
+    },
+    "checklist": {
+      "title": " قائمة السلامة ",
+      "description": " قائمة التحقق اليومية للسلامة "
     }
   },
   "maintenance": {
@@ -103,6 +107,7 @@
       "photoBefore": " صورة قبل ",
       "photoAfter": " صورة بعد ",
       "photoProblem": " صورة العطل / المشكلة ",
+      "otherOption": " أخرى ",
       "submit": " إرسال سجل الصيانة ",
       "alerts": {
         "missingAsset": " يرجى اختيار الطراز أو رقم اللوحة أو السائق .",
@@ -112,6 +117,124 @@
         "error": " خطأ ",
         "networkError": " خطأ في الشبكة أثناء إرسال النموذج ."
       }
+    }
+  },
+  "checklist": {
+    "menu": {
+      "title": " قائمة التحقق اليومية للسلامة ",
+      "formTitle": " فحص جديد ",
+      "formDescription": " إكمال فحص يومي جديد للسلامة والصيانة ",
+      "historyTitle": " سجل قائمة التحقق اليومية ",
+      "historyDescription": " عرض ومراجعة قوائم الفحص المقدمة مسبقًا "
+    },
+    "form": {
+      "commentPlaceholder": " اكتب تعليقاتك هنا ",
+      "uploadPhoto": " رفع صورة ",
+      "checklist": " عناصر قائمة السلامة ",
+      "basicInfo": " معلومات الآلة و السائق / المشغل ",
+      "fullName": " السائق ",
+      "equipmentType": " نوع المعدات ",
+      "photo": " إرفاق صورة ",
+      "submitting": " جاري التقديم ...",
+      "chooseInspector": "--- السائق ---",
+      "commentsPlaceholder": " أضف أي ملاحظات أو ملاحظات هنا ...",
+      "alerts": {
+        "photoError": " خطأ في معالجة مرفق الصورة "
+      }
+    },
+    "statusLabels": {
+      "OK": " جيدة / مقبولة ",
+      "Warning": " تحتاج انتباه ",
+      "Fail": " غير آمنة / فشل "
+    },
+    "sections": {
+      "general_inspection": " الفحص العام ",
+      "fluids_check": " فحص السوائل ",
+      "electrical": " النظام الكهربائي ",
+      "tires": " حالة الإطارات ",
+      "emergency_equipment": " معدات الطوارئ ",
+      "hydraulic_system": " النظام الهيدروليكي ",
+      "lifting_system": " نظام الرفع "
+    },
+    "items": {
+      "vehicle_cleanliness": " نظافة المركبة ",
+      "driver's_seat": " مقعد السائق ",
+      "seat_belt": " حزام الأمان ",
+      "windshield": " الزجاج الأمامي / الزجاج ",
+      "horn": " البوق ",
+      "brakes": " أداء المكابح ",
+      "mirrors": " المرايا ",
+      "reversing_alarm": " إنذار الرجوع للخلف ",
+      "fuel_level": " مستوى الوقود ",
+      "oil_level": " مستوى الزيت ",
+      "water_level": " مستوى الماء/السائل ",
+      "no_warning_lights_on": " لا يوجد أضواء تحذيرية ",
+      "headlights": " المصابيح الأمامية ",
+      "tail_lights": " المصابيح الخلفية ",
+      "brake_lights": " مصابيح المكابح ",
+      "turn_signals": " إشارات التوجيه ",
+      "reverse_lights": " مصابيح الرجوع ",
+      "tire_air_pressure": " ضغط هواء الإطارات ",
+      "condition_of_the_tire_rubber": " حالة مطاط الإطارات ",
+      "spare_tire_condition": " الإطار الاحتياطي ",
+      "hydraulic_jack": " الرافعة الهيدروليكية ",
+      "fire_extinguisher": " طفاية الحريق ",
+      "first_aid_kit": " صندوق الإسعافات الأولية ",
+      "warning_triangle": " مثلث التحذير ",
+      "hydraulic_cylinders": " الأسطوانات الهيدروليكية ",
+      "hydraulic_hose": " خرطوم الهيدروليك ",
+      "hydraulic_fittings": " وصلات الهيدروليك ",
+      "hydraulic_leaks": " التسريبات الهيدروليكية ",
+      "lifting_hook": " خطاف الرفع وقفله ",
+      "anti-two_block_device_for_wire_rope": " جهاز منع الاصطدام ",
+      "lifting_wire_rope": "  حالة سلك الرفع ",
+      "boom,_pins,_bolting": " المسامير، والبراغي ",
+      "sheaves": " البكرات / العجلات ",
+      "general_inspection_vehicle_cleanliness": " نظافة المركبة ",
+      "general_inspection_driver's_seat": " مقعد السائق ",
+      "general_inspection_seat_belt": " حزام الأمان ",
+      "general_inspection_windshield": " الزجاج الأمامي / الزجاج ",
+      "general_inspection_horn": " البوق ",
+      "general_inspection_brakes": " أداء المكابح ",
+      "general_inspection_mirrors": " المرايا ",
+      "general_inspection_reversing_alarm": " إنذار الرجوع للخلف ",
+      "fluids_check_fuel_level": " مستوى الوقود ",
+      "fluids_check_oil_level": " مستوى الزيت ",
+      "fluids_check_water_level": " مستوى الماء/السائل ",
+      "fluids_check_no_warning_lights_on": " لا يوجد أضواء تحذيرية ",
+      "electrical_headlights": " المصابيح الأمامية ",
+      "electrical_tail_lights": " المصابيح الخلفية ",
+      "electrical_brake_lights": " مصابيح المكابح ",
+      "electrical_turn_signals": " إشارات التوجيه ",
+      "electrical_reverse_lights": " مصابيح الرجوع ",
+      "tires_tire_air_pressure": " ضغط هواء الإطارات ",
+      "tires_condition_of_the_tire_rubber": " حالة مطاط الإطارات ",
+      "tires_spare_tire_condition": " حالة الإطار الاحتياطي ",
+      "emergency_equipment_hydraulic_jack": " الرافعة الهيدروليكية ",
+      "emergency_equipment_fire_extinguisher": " طفاية الحريق ",
+      "emergency_equipment_first_aid_kit": " صندوق الإسعافات الأولية ",
+      "emergency_equipment_warning_triangle": " مثلث التحذير ",
+      "hydraulic_system_hydraulic_cylinders": " الأسطوانات الهيدروليكية ",
+      "hydraulic_system_hydraulic_hose": " خرطوم الهيدروليك ",
+      "hydraulic_system_hydraulic_fittings": " وصلات الهيدروليك ",
+      "hydraulic_system_hydraulic_leaks": " التسريبات الهيدروليكية ",
+      "lifting_system_lifting_hook": " خطاف الرفع وقفله ",
+      "lifting_system_anti-two_block_device_for_wire_rope": " جهاز منع الاصطدام ",
+      "lifting_system_lifting_wire_rope": " حالة سلك الرفع ",
+      "lifting_system_boom,_pins,_bolting": " المسامير، والبراغي ",
+      "lifting_system_sheaves": " البكرات / العجلات "
+    },
+    "history": {
+      "search": " البحث في القوائم ...",
+      "filterPlate": " البحث حسب رقم اللوحة ",
+      "filterModel": " البحث حسب طراز المركبة ",
+      "startDate": " تاريخ البدء ",
+      "endDate": " تاريخ الانتهاء ",
+      "noResults": " لم يتم العثور على سجلات فحص ",
+      "loading": " جاري التحميل ...",
+      "reset": " إعادة التعيين ",
+      "details": " تفاصيل الفحص ",
+      "items": " العناصر المفحوصة "
     }
   },
   "roles": {
