@@ -27,10 +27,6 @@ export default function ChecklistForm() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const isDriver = user?.role === "Driver";
-  const isSupervisorOrMechanic =
-    user?.role === "Supervisor" || user?.role === "Mechanic";
-
   /* ---------------- STATE ---------------- */
   const [formData, setFormData] = useState({
     Date: new Date().toISOString().split("T")[0],
@@ -43,21 +39,16 @@ export default function ChecklistForm() {
   const [checklistData, setChecklistData] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
+  const isDriver = user?.role === "Driver";
+  const isSupervisorOrMechanic =
+    user?.role === "Supervisor" || user?.role === "Mechanic";
+
   /* ---------------- ACCESS CONTROL ---------------- */
   useEffect(() => {
     if (user?.role === "Cleaning Guy") {
       navigate("/", { replace: true });
     }
   }, [user, navigate]);
-
-  /* ---------------- BLOCK PAGE UNTIL CACHE READY ---------------- */
-  if (loadingEquipment || loadingUsernames) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500" />
-      </div>
-    );
-  }
 
   /* ---------------- DRIVER AUTO-FILL ---------------- */
   useEffect(() => {
@@ -221,7 +212,6 @@ export default function ChecklistForm() {
           </h2>
 
           <div className="grid grid-cols-1 gap-4">
-            {/* DATE – FULL WIDTH */}
             <input
               type="date"
               value={formData.Date}
@@ -229,11 +219,10 @@ export default function ChecklistForm() {
               onChange={e =>
                 setFormData(prev => ({ ...prev, Date: e.target.value }))
               }
-              className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+              className="p-3 rounded-xl bg-gray-900/70 border border-gray-700"
             />
 
-            {/* FULL NAME */}
-            {isSupervisorOrMechanic ? (
+            {isSupervisorOrMechanic && (
               <select
                 value={formData["Full Name"]}
                 onChange={e =>
@@ -242,7 +231,7 @@ export default function ChecklistForm() {
                     "Full Name": e.target.value
                   }))
                 }
-                className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+                className="p-3 rounded-xl bg-gray-900/70 border border-gray-700"
               >
                 <option value="">
                   {t("checklist.form.chooseInspector")}
@@ -253,44 +242,61 @@ export default function ChecklistForm() {
                   </option>
                 ))}
               </select>
-            ) : (
+            )}
+
+            {isDriver && (
               <input
                 value={formData["Full Name"]}
                 disabled
-                className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
+                className="p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
               />
             )}
 
-            {/* MODEL */}
-            <input
-              value={formData["Model / Type"]}
-              disabled={isDriver}
-              onChange={e =>
-                setFormData(prev => ({
-                  ...prev,
-                  "Model / Type": e.target.value
-                }))
-              }
-              className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700"
-            />
+            {!isDriver && (
+              <>
+                <select
+                  value={formData["Model / Type"]}
+                  onChange={e =>
+                    setFormData(prev => ({
+                      ...prev,
+                      "Model / Type": e.target.value,
+                      "Plate Number": ""
+                    }))
+                  }
+                  className="p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+                >
+                  <option value="">
+                    {t("checklist.form.chooseModel")}
+                  </option>
+                  {modelOptions.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
 
-            {/* PLATE */}
-            <input
-              value={formData["Plate Number"]}
-              disabled={isDriver}
-              onChange={e =>
-                setFormData(prev => ({
-                  ...prev,
-                  "Plate Number": e.target.value
-                }))
-              }
-              className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700"
-            />
+                <select
+                  value={formData["Plate Number"]}
+                  onChange={e =>
+                    setFormData(prev => ({
+                      ...prev,
+                      "Plate Number": e.target.value
+                    }))
+                  }
+                  className="p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+                >
+                  <option value="">
+                    {t("checklist.form.choosePlate")}
+                  </option>
+                  {plateOptions.map(p => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </>
+            )}
           </div>
         </div>
 
         {/* CHECKLIST */}
-        {formData["Equipment Type"] && (
+        {formData["Equipment Type"] && !loadingEquipment ? (
           <form onSubmit={handleSubmit} className="space-y-6">
             {template.map(section => (
               <div
@@ -379,6 +385,10 @@ export default function ChecklistForm() {
               {submitting ? t("common.submitting") : t("common.submit")}
             </button>
           </form>
+        ) : (
+          <div className="text-center text-gray-400">
+            {t("checklist.form.selectEquipmentHint")}
+          </div>
         )}
       </div>
     </div>
