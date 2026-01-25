@@ -5,7 +5,8 @@ import {
   CheckCircle,
   AlertTriangle,
   XCircle,
-  Camera
+  Camera,
+  Loader2
 } from "lucide-react";
 
 import Navbar from "@/components/Navbar";
@@ -17,17 +18,16 @@ import { getChecklistTemplate } from "@/config/checklistTemplates";
 
 export default function ChecklistForm() {
   const { user } = useAuth();
-  const {
-    equipment,
-    usernames,
-    loadingEquipment,
-    loadingUsernames
-  } = useCache();
-
+  const { refreshCache } = useCache();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
   /* ---------------- STATE ---------------- */
+  const [loading, setLoading] = useState(true);
+  const [equipmentList, setEquipmentList] = useState([]);
+  const [usernamesList, setUsernamesList] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+
   const [formData, setFormData] = useState({
     Date: new Date().toISOString().split("T")[0],
     "Full Name": user?.full_name || "",
@@ -37,11 +37,31 @@ export default function ChecklistForm() {
   });
 
   const [checklistData, setChecklistData] = useState({});
-  const [submitting, setSubmitting] = useState(false);
 
   const isDriver = user?.role === "Driver";
   const isSupervisorOrMechanic =
     user?.role === "Supervisor" || user?.role === "Mechanic";
+
+  /* ---------------- INITIAL DATA FETCH (SPINNER) ---------------- */
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        // Refresh cache on every load to ensure fresh data (Logic from Maintenance/Form.jsx)
+        const [freshEquipment, freshUsers] = await Promise.all([
+          refreshCache("Equipment_List"),
+          refreshCache("Users")
+        ]);
+        setEquipmentList(freshEquipment || []);
+        setUsernamesList(freshUsers || []);
+      } catch (error) {
+        console.error("Error refreshing checklist data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   /* ---------------- ACCESS CONTROL ---------------- */
   useEffect(() => {
@@ -50,11 +70,11 @@ export default function ChecklistForm() {
     }
   }, [user, navigate]);
 
-  /* ---------------- DRIVER AUTO-FILL ---------------- */
+  /* ---------------- DRIVER AUTO-FILL & LOCK ---------------- */
   useEffect(() => {
-    if (!isDriver || !equipment.length) return;
+    if (!isDriver || !equipmentList.length) return;
 
-    const assigned = equipment.find(
+    const assigned = equipmentList.find(
       e =>
         e["Driver 1"] === user.full_name ||
         e["Driver 2"] === user.full_name
@@ -68,45 +88,77 @@ export default function ChecklistForm() {
         "Equipment Type": assigned["Equipment Type"]
       }));
     }
-  }, [isDriver, equipment, user]);
+  }, [isDriver, equipmentList, user]);
 
-  /* ---------------- OPTIONS ---------------- */
-  const modelOptions = useMemo(() => {
-    if (isDriver) return [];
-    return [...new Set(equipment.map(e => e["Model / Type"]).filter(Boolean))];
-  }, [equipment, isDriver]);
+  /* ---------------- SUPERVISOR/MECHANIC LINKED LOGIC ---------------- */
+  
+  // 1. Dynamic Drivers List
+  const availableDrivers = useMemo(() => {
+    if (!isSupervisorOrMechanic) return [];
+    // If a plate is selected, only show the 1 or 2 drivers assigned to it
+    if (formData["Plate Number"]) {
+      const machine = equipmentList.find(e => e["Plate Number"] === formData["Plate Number"]);
+      if (machine) {
+        const d1 = machine["Driver 1"];
+        const d2 = machine["Driver 2"];
+        return usernamesList.filter(u => u.Name === d1 || u.Name === d2);
+      }
+    }
+    // Otherwise show all drivers
+    return usernamesList.filter(u => u.Role === "Driver" || u.Role === "Supervisor" || u.Role === "Mechanic");
+  }, [isSupervisorOrMechanic, formData["Plate Number"], equipmentList, usernamesList]);
 
+  // 2. Dynamic Plate Options
   const plateOptions = useMemo(() => {
     if (isDriver) return [];
-    if (!formData["Model / Type"]) return [];
-    return equipment
-      .filter(e => e["Model / Type"] === formData["Model / Type"])
-      .map(e => e["Plate Number"]);
-  }, [equipment, formData["Model / Type"], isDriver]);
+    let filtered = equipmentList;
+    
+    // If Driver is selected, filter plates assigned to them
+    if (formData["Full Name"] && isSupervisorOrMechanic) {
+       filtered = filtered.filter(e => 
+        e["Driver 1"] === formData["Full Name"] || e["Driver 2"] === formData["Full Name"]
+       );
+    }
+    
+    // If Model is selected, filter by model
+    if (formData["Model / Type"]) {
+      filtered = filtered.filter(e => e["Model / Type"] === formData["Model / Type"]);
+    }
 
-  /* ---------------- PLATE CHANGE ---------------- */
-  useEffect(() => {
-    if (!formData["Plate Number"]) return;
+    return [...new Set(filtered.map(e => e["Plate Number"]))];
+  }, [equipmentList, formData["Full Name"], formData["Model / Type"], isDriver, isSupervisorOrMechanic]);
 
-    const found = equipment.find(
-      e => e["Plate Number"] === formData["Plate Number"]
-    );
+  // 3. Dynamic Model Options
+  const modelOptions = useMemo(() => {
+    if (isDriver) return [];
+    let filtered = equipmentList;
+    if (formData["Full Name"]) {
+      filtered = filtered.filter(e => e["Driver 1"] === formData["Full Name"] || e["Driver 2"] === formData["Full Name"]);
+    }
+    return [...new Set(filtered.map(e => e["Model / Type"]))];
+  }, [equipmentList, formData["Full Name"], isDriver]);
 
+  /* ---------------- AUTO-SET DATA ON PLATE CHANGE ---------------- */
+  const handlePlateChange = (plate) => {
+    const found = equipmentList.find(e => e["Plate Number"] === plate);
     if (found) {
       setFormData(prev => ({
         ...prev,
+        "Plate Number": plate,
         "Model / Type": found["Model / Type"],
         "Equipment Type": found["Equipment Type"]
       }));
+    } else {
+      setFormData(prev => ({ ...prev, "Plate Number": plate }));
     }
-  }, [formData["Plate Number"], equipment]);
+  };
 
   /* ---------------- INIT CHECKLIST ---------------- */
   useEffect(() => {
     if (!formData["Equipment Type"]) return;
 
     const template = getChecklistTemplate(formData["Equipment Type"]);
-    if (!template.length) return;
+    if (!template || !template.length) return;
 
     const initial = {};
     template.forEach(section => {
@@ -192,6 +244,15 @@ export default function ChecklistForm() {
   const template = getChecklistTemplate(formData["Equipment Type"]);
 
   /* ---------------- RENDER ---------------- */
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-cyan-400">
+        <Loader2 className="w-12 h-12 animate-spin mb-4" />
+        <p className="text-lg font-medium">{t("common.loading")}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
@@ -211,92 +272,92 @@ export default function ChecklistForm() {
             {t("checklist.form.basicInfo")}
           </h2>
 
-          <div className="grid grid-cols-1 gap-4">
-            <input
-              type="date"
-              value={formData.Date}
-              disabled={isDriver}
-              onChange={e =>
-                setFormData(prev => ({ ...prev, Date: e.target.value }))
-              }
-              className="p-3 rounded-xl bg-gray-900/70 border border-gray-700"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Date Field - Locked for Driver */}
+            <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-400 px-1">{t("form.date") || "Date"}</label>
+                <input
+                    type="date"
+                    value={formData.Date}
+                    disabled={isDriver}
+                    onChange={e => setFormData(prev => ({ ...prev, Date: e.target.value }))}
+                    className="p-3 rounded-xl bg-gray-900/70 border border-gray-700 disabled:opacity-50"
+                />
+            </div>
 
-            {isSupervisorOrMechanic && (
-              <select
-                value={formData["Full Name"]}
-                onChange={e =>
-                  setFormData(prev => ({
-                    ...prev,
-                    "Full Name": e.target.value
-                  }))
-                }
-                className="p-3 rounded-xl bg-gray-900/70 border border-gray-700"
-              >
-                <option value="">
-                  {t("checklist.form.chooseInspector")}
-                </option>
-                {usernames.map(u => (
-                  <option key={u.Name} value={u.Name}>
-                    {u.Name}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            {isDriver && (
-              <input
-                value={formData["Full Name"]}
-                disabled
-                className="p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
-              />
-            )}
-
-            {!isDriver && (
-              <>
+            {/* Full Name / Driver Field */}
+            <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-400 px-1">{t("form.driver") || "Driver Name"}</label>
+                {isSupervisorOrMechanic ? (
                 <select
-                  value={formData["Model / Type"]}
-                  onChange={e =>
-                    setFormData(prev => ({
-                      ...prev,
-                      "Model / Type": e.target.value,
-                      "Plate Number": ""
-                    }))
-                  }
-                  className="p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+                    value={formData["Full Name"]}
+                    onChange={e => setFormData(prev => ({ ...prev, "Full Name": e.target.value }))}
+                    className="p-3 rounded-xl bg-gray-900/70 border border-gray-700"
                 >
-                  <option value="">
-                    {t("checklist.form.chooseModel")}
-                  </option>
-                  {modelOptions.map(m => (
+                    <option value="">{t("checklist.form.chooseInspector")}</option>
+                    {availableDrivers.map(u => (
+                    <option key={u.Name} value={u.Name}>{u.Name}</option>
+                    ))}
+                </select>
+                ) : (
+                <input
+                    value={formData["Full Name"]}
+                    disabled
+                    className="p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
+                />
+                )}
+            </div>
+
+            {/* Model Field */}
+            <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-400 px-1">{t("form.model") || "Model"}</label>
+                {isSupervisorOrMechanic ? (
+                <select
+                    value={formData["Model / Type"]}
+                    onChange={e => setFormData(prev => ({ ...prev, "Model / Type": e.target.value, "Plate Number": "" }))}
+                    className="p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+                >
+                    <option value="">{t("checklist.form.chooseModel")}</option>
+                    {modelOptions.map(m => (
                     <option key={m} value={m}>{m}</option>
-                  ))}
+                    ))}
                 </select>
+                ) : (
+                <input
+                    value={formData["Model / Type"]}
+                    disabled
+                    className="p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
+                />
+                )}
+            </div>
 
+            {/* Plate Number Field */}
+            <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-400 px-1">{t("form.plate") || "Plate Number"}</label>
+                {isSupervisorOrMechanic ? (
                 <select
-                  value={formData["Plate Number"]}
-                  onChange={e =>
-                    setFormData(prev => ({
-                      ...prev,
-                      "Plate Number": e.target.value
-                    }))
-                  }
-                  className="p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+                    value={formData["Plate Number"]}
+                    onChange={e => handlePlateChange(e.target.value)}
+                    className="p-3 rounded-xl bg-gray-900/70 border border-gray-700"
                 >
-                  <option value="">
-                    {t("checklist.form.choosePlate")}
-                  </option>
-                  {plateOptions.map(p => (
+                    <option value="">{t("checklist.form.choosePlate")}</option>
+                    {plateOptions.map(p => (
                     <option key={p} value={p}>{p}</option>
-                  ))}
+                    ))}
                 </select>
-              </>
-            )}
+                ) : (
+                <input
+                    value={formData["Plate Number"]}
+                    disabled
+                    className="p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
+                />
+                )}
+            </div>
           </div>
         </div>
 
-        {/* CHECKLIST */}
-        {formData["Equipment Type"] && !loadingEquipment ? (
+        {/* CHECKLIST SECTION */}
+        {formData["Equipment Type"] ? (
           <form onSubmit={handleSubmit} className="space-y-6">
             {template.map(section => (
               <div
@@ -322,17 +383,17 @@ export default function ChecklistForm() {
                           <CheckCircle
                             size={18}
                             onClick={() => handleStatusChange(key, "OK")}
-                            className={state?.status === "OK" ? "text-emerald-400" : "text-gray-500"}
+                            className={`cursor-pointer transition-colors ${state?.status === "OK" ? "text-emerald-400" : "text-gray-500"}`}
                           />
                           <AlertTriangle
                             size={18}
                             onClick={() => handleStatusChange(key, "Warning")}
-                            className={state?.status === "Warning" ? "text-amber-400" : "text-gray-500"}
+                            className={`cursor-pointer transition-colors ${state?.status === "Warning" ? "text-amber-400" : "text-gray-500"}`}
                           />
                           <XCircle
                             size={18}
                             onClick={() => handleStatusChange(key, "Fail")}
-                            className={state?.status === "Fail" ? "text-red-400" : "text-gray-500"}
+                            className={`cursor-pointer transition-colors ${state?.status === "Fail" ? "text-red-400" : "text-gray-500"}`}
                           />
                         </div>
                       </div>
@@ -341,14 +402,12 @@ export default function ChecklistForm() {
                         <div className="mt-3 space-y-2">
                           <textarea
                             value={state.comment}
-                            onChange={e =>
-                              handleCommentChange(key, e.target.value)
-                            }
-                            className="w-full p-2 rounded-lg bg-gray-900/70 border border-gray-700"
+                            onChange={e => handleCommentChange(key, e.target.value)}
+                            className="w-full p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-sm"
                             placeholder={t("checklist.form.commentPlaceholder")}
                           />
 
-                          <label className="flex items-center gap-2 cursor-pointer text-sm">
+                          <label className="flex items-center gap-2 cursor-pointer text-sm text-cyan-400 hover:text-cyan-300">
                             <Camera size={14} />
                             {t("checklist.form.uploadPhoto")}
                             <input
@@ -366,7 +425,7 @@ export default function ChecklistForm() {
                             <img
                               src={state.photo}
                               alt="Preview"
-                              className="w-24 h-24 object-cover rounded-lg border border-gray-600"
+                              className="w-24 h-24 object-cover rounded-lg border border-gray-600 mt-2"
                             />
                           )}
                         </div>
@@ -380,13 +439,13 @@ export default function ChecklistForm() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 font-bold hover:shadow-lg hover:shadow-emerald-900/20 transition-all disabled:opacity-50"
             >
               {submitting ? t("common.submitting") : t("common.submit")}
             </button>
           </form>
         ) : (
-          <div className="text-center text-gray-400">
+          <div className="text-center text-gray-400 py-10 bg-gray-800/20 rounded-2xl border border-dashed border-gray-700">
             {t("checklist.form.selectEquipmentHint")}
           </div>
         )}
