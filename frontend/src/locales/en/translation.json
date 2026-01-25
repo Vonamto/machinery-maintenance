@@ -49,6 +49,10 @@
     "users": {
       "title": "Users",
       "description": "Manage user accounts and roles"
+    },
+    "checklist": {
+      "title": "Safety Checklist",
+      "description": "Daily Checklist For Machinery"
     }
   },
   "maintenance": {
@@ -103,6 +107,7 @@
       "photoBefore": "Photo Before",
       "photoAfter": "Photo After",
       "photoProblem": "Photo Repair / Problem",
+      "otherOption": "Other",
       "submit": "Submit Maintenance Log",
       "alerts": {
         "missingAsset": "Please choose at least Model, Plate Number, or Driver.",
@@ -112,6 +117,124 @@
         "error": "Error",
         "networkError": "Network error submitting form."
       }
+    }
+  },
+  "checklist": {
+    "menu": {
+      "title": "Safety Checklist",
+      "formTitle": "New Inspection",
+      "formDescription": "Complete a new daily safety and maintenance inspection",
+      "historyTitle": "Inspection History",
+      "historyDescription": "View and review previously submitted machinery checklists"
+    },
+    "form": {
+      "commentPlaceholder": "Write Your Comments Here",
+      "uploadPhoto": "Upload a Photo",
+      "checklist": "Safety Checklist Items",
+      "basicInfo": "General Information",
+      "fullName": "Driver",
+      "equipmentType": "Equipment Type",
+      "photo": "Attach Photo",
+      "submitting": "Submitting Inspection...",
+      "chooseInspector": "--- Driver ---",
+      "commentsPlaceholder": "Add any notes or observations here...",
+      "alerts": {
+        "photoError": "Error processing photo attachment"
+      }
+    },
+    "statusLabels": {
+      "OK": "Good / OK",
+      "Warning": "Needs Attention",
+      "Fail": "Unsafe / Fail"
+    },
+    "sections": {
+      "general_inspection": "General Inspection",
+      "fluids_check": "Fluids Check",
+      "electrical": "Electrical System",
+      "tires": "Tires Condition",
+      "emergency_equipment": "Emergency Equipment",
+      "hydraulic_system": "Hydraulic System",
+      "lifting_system": "Lifting System"
+    },
+    "items": {
+      "vehicle_cleanliness": "Vehicle Cleanliness",
+      "driver's_seat": "Driver's Seat",
+      "seat_belt": "Seat Belt",
+      "windshield": "Windshield / Glass",
+      "horn": "Horn",
+      "brakes": "Brakes Performance",
+      "mirrors": "Mirrors",
+      "reversing_alarm": "Reversing Alarm",
+      "fuel_level": "Fuel Level",
+      "oil_level": "Oil Level",
+      "water_level": "Water/Coolant Level",
+      "no_warning_lights_on": "No Warning Lights",
+      "headlights": "Headlights",
+      "tail_lights": "Tail Lights",
+      "brake_lights": "Brake Lights",
+      "turn_signals": "Turn Signals",
+      "reverse_lights": "Reverse Lights",
+      "tire_air_pressure": "Tire Pressure",
+      "condition_of_the_tire_rubber": "Tire Rubber Condition",
+      "spare_tire_condition": "Spare Tire",
+      "hydraulic_jack": "Hydraulic Jack",
+      "fire_extinguisher": "Fire Extinguisher",
+      "first_aid_kit": "First Aid Kit",
+      "warning_triangle": "Warning Triangle",
+      "hydraulic_cylinders": "Hydraulic Cylinders",
+      "hydraulic_hose": "Hydraulic Hose",
+      "hydraulic_fittings": "Hydraulic Fittings",
+      "hydraulic_leaks": "Hydraulic Leaks",
+      "lifting_hook": "Lifting Hook & Latch",
+      "anti-two_block_device_for_wire_rope": "Anti-Two Block Device",
+      "lifting_wire_rope": "Wire Rope Condition",
+      "boom,_pins,_bolting": "Boom, Pins & Bolting",
+      "sheaves": "Sheaves / Pulleys",
+      "general_inspection_vehicle_cleanliness": "Vehicle Cleanliness",
+      "general_inspection_driver's_seat": "Driver's Seat",
+      "general_inspection_seat_belt": "Seat Belt",
+      "general_inspection_windshield": "Windshield / Glass",
+      "general_inspection_horn": "Horn",
+      "general_inspection_brakes": "Brakes Performance",
+      "general_inspection_mirrors": "Mirrors",
+      "general_inspection_reversing_alarm": "Reversing Alarm",
+      "fluids_check_fuel_level": "Fuel Level",
+      "fluids_check_oil_level": "Oil Level",
+      "fluids_check_water_level": "Water/Coolant Level",
+      "fluids_check_no_warning_lights_on": "No Warning Lights",
+      "electrical_headlights": "Headlights",
+      "electrical_tail_lights": "Tail Lights",
+      "electrical_brake_lights": "Brake Lights",
+      "electrical_turn_signals": "Turn Signals",
+      "electrical_reverse_lights": "Reverse Lights",
+      "tires_tire_air_pressure": "Tire Pressure",
+      "tires_condition_of_the_tire_rubber": "Tire Rubber Condition",
+      "tires_spare_tire_condition": "Spare Tire Condition",
+      "emergency_equipment_hydraulic_jack": "Hydraulic Jack",
+      "emergency_equipment_fire_extinguisher": "Fire Extinguisher",
+      "emergency_equipment_first_aid_kit": "First Aid Kit",
+      "emergency_equipment_warning_triangle": "Warning Triangle",
+      "hydraulic_system_hydraulic_cylinders": "Hydraulic Cylinders",
+      "hydraulic_system_hydraulic_hose": "Hydraulic Hose",
+      "hydraulic_system_hydraulic_fittings": "Hydraulic Fittings",
+      "hydraulic_system_hydraulic_leaks": "Hydraulic Leaks",
+      "lifting_system_lifting_hook": "Lifting Hook & Latch",
+      "lifting_system_anti-two_block_device_for_wire_rope": "Anti-Two Block Device",
+      "lifting_system_lifting_wire_rope": "Wire Rope Condition",
+      "lifting_system_boom,_pins,_bolting": "Boom, Pins & Bolting",
+      "lifting_system_sheaves": "Sheaves / Pulleys"
+    },
+    "history": {
+      "search": "Search Checklists...",
+      "filterPlate": "Filter by Plate Number",
+      "filterModel": "Filter by Model",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "noResults": "No Checklists records found",
+      "loading": "Loading history...",
+      "reset": "Reset Filters",
+      "details": "Checklist Details",
+      "items": "Items Checked"
     }
   },
   "roles": {
