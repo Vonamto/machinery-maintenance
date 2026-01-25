@@ -410,7 +410,7 @@ export default function ChecklistHistory() {
                           const sectionItems = section.items.map(item => {
                             const itemKey = `${section.sectionKey}.${item.key}`;
                             const itemData = checklistData[itemKey];
-                            return { ...item, key: itemKey, data: itemData };
+                            return { ...item, data: itemData, fullKey: itemKey };
                           }).filter(item => item.data);
 
                           if (sectionItems.length === 0) return null;
@@ -441,7 +441,7 @@ export default function ChecklistHistory() {
                                   {sectionItems.map((item) => {
                                     const itemData = item.data;
                                     return (
-                                      <div key={item.key} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                                      <div key={item.fullKey} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
                                         <div className="flex items-center justify-between mb-2">
                                           <span className="font-medium text-gray-200">
                                             {t(`checklist.items.${item.key}`)}
