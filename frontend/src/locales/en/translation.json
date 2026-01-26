@@ -138,8 +138,17 @@
       "submitting": "Submitting Inspection...",
       "chooseInspector": "--- Driver ---",
       "commentsPlaceholder": "Add any notes or observations here...",
+      "selectEquipmentHint": "Please select equipment to load checklist",
+      "date": "Date",
+      "chooseModel": "--- Select Model ---",
+      "choosePlate": "--- Select Plate ---",
+      "plate": "Plate Number",
+      "model": "Model / Type",
       "alerts": {
-        "photoError": "Error processing photo attachment"
+        "photoError": "Error processing photo attachment",
+        "error": "Error saving checklist",
+        "success": "Checklist saved successfully!",
+        "networkError": "Network error submitting checklist"
       }
     },
     "statusLabels": {
@@ -228,13 +237,21 @@
       "search": "Search Checklists...",
       "filterPlate": "Filter by Plate Number",
       "filterModel": "Filter by Model",
+      "filterDriver": "Filter by Driver Name",
       "startDate": "Start Date",
       "endDate": "End Date",
+      "results": "results found",
       "noResults": "No Checklists records found",
+      "noResultsDescription": "No Checklist records found matching your criteria",
       "loading": "Loading history...",
       "reset": "Reset Filters",
       "details": "Checklist Details",
-      "items": "Items Checked"
+      "items": "Items Checked",
+      "plate": "Plate Number",
+      "model": "Model / Type",
+      "performedBy": "Driver",
+      "summary": "Summary",
+      "comment": "Comment"
     }
   },
   "roles": {
