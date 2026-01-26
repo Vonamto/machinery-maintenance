@@ -71,6 +71,7 @@
         "model": "Model",
         "plate": "Plate",
         "driver": "Driver",
+        "performedBy" : "Performed By"
         "reset": "Reset Filters"
       },
       "table": {
