@@ -7,6 +7,9 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 
+// 🔐 Centralized permissions
+import { PAGE_PERMISSIONS } from "@/config/roles";
+
 export default function Maintenance() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -22,7 +25,7 @@ export default function Maintenance() {
       link: "/maintenance/form",
       gradient: "from-blue-600 to-cyan-500",
       glow: "shadow-[0_0_20px_3px_rgba(59,130,246,0.5)]",
-      allowedRoles: ["Supervisor", "Mechanic"], // 🚫 Driver hidden
+      allowedRoles: PAGE_PERMISSIONS.MAINTENANCE_FORM, // 🚫 Driver hidden
     },
     {
       title: t("maintenance.history.title"),
@@ -31,7 +34,7 @@ export default function Maintenance() {
       link: "/maintenance/history",
       gradient: "from-emerald-600 to-green-500",
       glow: "shadow-[0_0_20px_3px_rgba(34,197,94,0.5)]",
-      allowedRoles: ["Supervisor", "Mechanic", "Driver"], // ✅ Driver allowed
+      allowedRoles: PAGE_PERMISSIONS.MAINTENANCE_HISTORY, // ✅ Driver allowed
     },
   ];
 
