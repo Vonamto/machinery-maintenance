@@ -4,22 +4,24 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, Droplets, Truck, Users, CheckCircle, Eye } from "lucide-react";
+import { Wrench, Droplets, Truck, Users, CheckCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
+
+// 🔐 Centralized roles & permissions
+import { PAGE_PERMISSIONS } from "@/config/roles";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const role = user?.role || "Guest";
   const { t } = useTranslation();
-  
+
   const cards = [
     {
       title: t("dashboard.maintenanceLog.title"),
       description: t("dashboard.maintenanceLog.description"),
       icon: <Wrench className="w-8 h-8 text-white drop-shadow-md" />,
       link: "/maintenance",
-      // Driver CAN see maintenance history
-      allowed: ["Supervisor", "Mechanic", "Driver"],
+      allowed: PAGE_PERMISSIONS.MAINTENANCE,
       glow: "shadow-[0_0_15px_2px_rgba(59,130,246,0.6)]",
       gradient: "from-blue-600 to-cyan-500",
     },
@@ -29,20 +31,17 @@ export default function Dashboard() {
       description: t("dashboard.cleaningLog.description"),
       icon: <Droplets className="w-8 h-8 text-white drop-shadow-md" />,
       link: "/cleaning",
-      // Driver CAN see cleaning history
-      allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
+      allowed: PAGE_PERMISSIONS.CLEANING,
       glow: "shadow-[0_0_15px_2px_rgba(56,189,248,0.6)]",
       gradient: "from-sky-600 to-indigo-500",
     },
 
-    // NEW CARD FOR CHECKLIST MENU
     {
       title: t("dashboard.checklist.title"),
       description: t("dashboard.checklist.description"),
       icon: <CheckCircle className="w-8 h-8 text-white drop-shadow-md" />,
       link: "/checklist",
-      // Driver CAN see checklist (both form and history)
-      allowed: ["Supervisor", "Mechanic", "Driver"],
+      allowed: PAGE_PERMISSIONS.CHECKLIST,
       glow: "shadow-[0_0_15px_2px_rgba(16,185,129,0.6)]",
       gradient: "from-emerald-600 to-teal-500",
     },
@@ -52,8 +51,7 @@ export default function Dashboard() {
       description: t("dashboard.equipmentList.description"),
       icon: <Truck className="w-8 h-8 text-white drop-shadow-md" />,
       link: "/equipment",
-      // 🚫 Driver must NOT see Equipment at all
-      allowed: ["Supervisor", "Mechanic", "Cleaning Guy"],
+      allowed: PAGE_PERMISSIONS.EQUIPMENT,
       glow: "shadow-[0_0_15px_2px_rgba(251,146,60,0.6)]",
       gradient: "from-orange-600 to-yellow-500",
     },
@@ -63,7 +61,7 @@ export default function Dashboard() {
       description: t("dashboard.users.description"),
       icon: <Users className="w-8 h-8 text-white drop-shadow-md" />,
       link: "/users",
-      allowed: ["Supervisor"],
+      allowed: PAGE_PERMISSIONS.USERS,
       glow: "shadow-[0_0_15px_2px_rgba(168,85,247,0.6)]",
       gradient: "from-purple-600 to-pink-500",
     },
