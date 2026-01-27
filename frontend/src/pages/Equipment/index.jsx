@@ -7,10 +7,15 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 
+// 🔐 Centralized permissions
+import { PAGE_PERMISSIONS } from "@/config/roles";
+
 export default function EquipmentMenu() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  const role = user?.role;
 
   const cards = [
     {
@@ -20,7 +25,7 @@ export default function EquipmentMenu() {
       link: "/equipment/list",
       gradient: "from-orange-600 to-yellow-500",
       glow: "shadow-[0_0_20px_3px_rgba(251,146,60,0.5)]",
-      allowed: ["Supervisor", "Mechanic", "Driver", "Cleaning Guy"],
+      allowedRoles: PAGE_PERMISSIONS.EQUIPMENT_LIST,
     },
     {
       title: t("equipment.menu.cards.manage.title"),
@@ -29,12 +34,12 @@ export default function EquipmentMenu() {
       link: "/equipment/manage",
       gradient: "from-red-600 to-orange-500",
       glow: "shadow-[0_0_20px_3px_rgba(239,68,68,0.5)]",
-      allowed: ["Supervisor"],
+      allowedRoles: PAGE_PERMISSIONS.EQUIPMENT_MANAGE,
     },
   ];
 
   const visibleCards = cards.filter((card) =>
-    card.allowed.includes(user?.role)
+    card.allowedRoles.includes(role)
   );
 
   return (
@@ -72,7 +77,7 @@ export default function EquipmentMenu() {
         {/* Cards */}
         <div className="grid gap-8 sm:grid-cols-2">
           {visibleCards.map((card) => (
-            <Link to={card.link} key={card.title}>
+            <Link to={card.link} key={card.link}>
               <Card
                 className={`rounded-2xl bg-gradient-to-br ${card.gradient} ${card.glow} hover:scale-[1.04] hover:brightness-110 transition-all duration-300 border border-white/10 backdrop-blur-md`}
               >
