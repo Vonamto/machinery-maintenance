@@ -7,6 +7,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FileText, History, ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+// 🔐 Centralized permissions
+import { PAGE_PERMISSIONS } from "@/config/roles";
+
 export default function ChecklistMenu() {
   const { user } = useAuth();
   const role = user?.role || "Guest";
@@ -19,7 +22,7 @@ export default function ChecklistMenu() {
       description: t("checklist.menu.formDescription"),
       icon: <FileText className="w-8 h-8 text-white drop-shadow-md" />,
       link: "/checklist/form",
-      allowed: ["Supervisor", "Mechanic", "Driver"],
+      allowedRoles: PAGE_PERMISSIONS.CHECKLIST_FORM,
       glow: "shadow-[0_0_15px_2px_rgba(16,185,129,0.6)]",
       gradient: "from-emerald-600 to-teal-500",
     },
@@ -28,17 +31,17 @@ export default function ChecklistMenu() {
       description: t("checklist.menu.historyDescription"),
       icon: <History className="w-8 h-8 text-white drop-shadow-md" />,
       link: "/checklist/history",
-      allowed: ["Supervisor", "Mechanic", "Driver"],
+      allowedRoles: PAGE_PERMISSIONS.CHECKLIST_HISTORY,
       glow: "shadow-[0_0_15px_2px_rgba(147,51,234,0.6)]",
       gradient: "from-purple-600 to-indigo-500",
-    }
+    },
   ];
 
   const visibleCards = cards.filter((card) =>
-    card.allowed.includes(role)
+    card.allowedRoles.includes(role)
   );
 
-  // Redirect if user doesn't have permission
+  // Redirect / message if user doesn't have permission
   if (visibleCards.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white flex items-center justify-center">
@@ -57,14 +60,17 @@ export default function ChecklistMenu() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white">
       <Navbar user={user} />
-      
+
       <div className="p-6">
         {/* Back button */}
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+          <ArrowLeft
+            size={18}
+            className="group-hover:-translate-x-1 transition-transform"
+          />
           {t("common.back")}
         </button>
 
