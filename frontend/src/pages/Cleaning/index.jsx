@@ -8,6 +8,9 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 
+// 🔐 Centralized permissions
+import { PAGE_PERMISSIONS } from "@/config/roles";
+
 export default function CleaningMenu() {
   const { user } = useAuth();
   const role = user?.role;
@@ -22,7 +25,7 @@ export default function CleaningMenu() {
       link: "/cleaning/form",
       gradient: "from-sky-600 to-indigo-500",
       glow: "shadow-[0_0_15px_2px_rgba(56,189,248,0.6)]",
-      allowedRoles: ["Supervisor", "Mechanic", "Cleaning Guy"],
+      allowedRoles: PAGE_PERMISSIONS.CLEANING_FORM,
     },
     {
       title: t("cleaning.menu.cards.history.title"),
@@ -31,7 +34,7 @@ export default function CleaningMenu() {
       link: "/cleaning/history",
       gradient: "from-indigo-600 to-purple-500",
       glow: "shadow-[0_0_15px_2px_rgba(99,102,241,0.6)]",
-      allowedRoles: ["Supervisor", "Mechanic", "Cleaning Guy", "Driver"],
+      allowedRoles: PAGE_PERMISSIONS.CLEANING_HISTORY,
     },
   ];
 
