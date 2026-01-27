@@ -1,0 +1,43 @@
+// frontend/src/config/roles.js
+// Single source of truth for roles & page permissions
+// ⚠️ This file changes NOTHING yet — used later step by step
+
+/* ================= Roles ================= */
+
+export const ROLES = {
+  SUPERVISOR: "Supervisor",
+  MECHANIC: "Mechanic",
+  DRIVER: "Driver",
+  CLEANER: "Cleaning Guy",
+};
+
+/* ================= Page Permissions ================= */
+/**
+ * These permissions reflect the CURRENT behavior
+ * We are NOT revoking or adding access yet
+ */
+
+export const PAGE_PERMISSIONS = {
+  // Checklist
+  CHECKLIST: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER],
+  CHECKLIST_FORM: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER],
+  CHECKLIST_HISTORY: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER],
+
+  // Maintenance
+  MAINTENANCE: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER],
+  MAINTENANCE_FORM: [ROLES.SUPERVISOR, ROLES.MECHANIC],
+  MAINTENANCE_HISTORY: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER],
+
+  // Cleaning
+  CLEANING: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.CLEANER],
+  CLEANING_FORM: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.CLEANER],
+  CLEANING_HISTORY: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.CLEANER],
+
+  // Equipment
+  EQUIPMENT: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.CLEANER],
+  EQUIPMENT_LIST: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.CLEANER],
+  EQUIPMENT_MANAGE: [ROLES.SUPERVISOR, ROLES.MECHANIC],
+
+  // Users
+  USERS: [ROLES.SUPERVISOR],
+};
