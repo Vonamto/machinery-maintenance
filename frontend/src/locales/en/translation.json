@@ -82,6 +82,7 @@
       "table": {
         "index": "#",
         "date": "Date",
+        "actions": "Delete",
         "model": "Model / Type",
         "plate": "Plate Number",
         "driver": "Driver",
