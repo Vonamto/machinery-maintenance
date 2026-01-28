@@ -120,9 +120,14 @@ export default function MaintenanceForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate required dropdown fields
-    if (!form["Model / Type"] || !form["Plate Number"] || !form.Driver || !form["Performed By"] || !descriptionType) {
-      alert(t("maintenance.form.alerts.missingRequiredFields"));
+    // Validate required dropdown fields individually for specific errors
+    if (!form["Model / Type"] || !form["Plate Number"] || !form.Driver) {
+      alert(t("maintenance.form.alerts.missingAsset"));
+      return;
+    }
+
+    if (!form["Performed By"]) {
+      alert(t("maintenance.form.alerts.missingPerformer"));
       return;
     }
 
