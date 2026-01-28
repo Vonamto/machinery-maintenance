@@ -66,6 +66,10 @@
       "title": "Maintenance History",
       "subtitle": "View and filter completed maintenance logs",
       "enterDeleteMode": "Delete Mode",
+      "deleteConfirm": "Are you sure you want to permanently delete this maintenance log entry?",
+      "deleteError": "Failed to delete the entry.",
+      "deleteSuccess": "Entry deleted successfully!",
+      "exitDeleteMode": "Exit Delete Mode",
       "loading": "Loading maintenance history...",
       "noResults": "No records match your filters.",
       "filters": {
