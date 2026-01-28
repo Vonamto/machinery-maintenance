@@ -7,12 +7,15 @@ import {
   Wrench,
   ExternalLink,
   XCircle,
+  X as XIcon,
+  Trash2,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
+import { fetchWithAuth } from "@/api/api"; // Import the fetchWithAuth helper
 import { useTranslation } from "react-i18next";
 
 /* ---------------- Helpers ---------------- */
@@ -38,6 +41,7 @@ export default function MaintenanceHistory() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedIndex, setExpandedIndex] = useState(null);
+  const [deleteMode, setDeleteMode] = useState(false); // State for delete mode
 
   const [filters, setFilters] = useState({
     model: "",
@@ -47,6 +51,9 @@ export default function MaintenanceHistory() {
     from: "",
     to: "",
   });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Number of items per page
 
   /* ---------------- Load Maintenance Log ---------------- */
 
@@ -168,6 +175,11 @@ export default function MaintenanceHistory() {
     });
   }, [rows, filters, user, driverAllowedPlates]);
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedRows = filteredRows.slice(startIndex, startIndex + itemsPerPage);
+
   const resetFilters = () =>
     setFilters({
       model: "",
@@ -177,6 +189,45 @@ export default function MaintenanceHistory() {
       from: "",
       to: "",
     });
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  /* ---------------- Delete Entry ---------------- */
+  const handleDelete = async (rowIndex) => {
+    const rowToDelete = filteredRows[startIndex + rowIndex]; // Get the correct row from the filtered list
+    const confirmDelete = window.confirm(t("maintenance.history.deleteConfirm"));
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetchWithAuth(`/api/delete/Maintenance_Log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(rowToDelete), // Send the entire row object
+      });
+
+      const result = await response.json();
+      if (result.status === "success") {
+        // Update the state to remove the deleted item
+        setRows(prevRows => prevRows.filter(r => r.id !== rowToDelete.id)); // Assuming 'id' exists
+        // Also update filteredRows state implicitly through useMemo
+        // Reset to page 1 if current page becomes empty after deletion
+        if (paginatedRows.length === 1 && currentPage > 1) {
+          setCurrentPage(prev => prev - 1);
+        }
+      } else {
+        console.error("Deletion failed:", result.message);
+        alert(t("maintenance.history.deleteError")); // Add this translation key
+      }
+    } catch (error) {
+      console.error("Error deleting row:", error);
+      alert(t("maintenance.history.deleteError")); // Add this translation key
+    }
+  };
+
 
   /* ---------------- Description translation ---------------- */
 
@@ -315,7 +366,22 @@ export default function MaintenanceHistory() {
             />
           </div>
 
-          <div className="flex justify-end mt-4">
+          <div className="flex justify-between mt-4">
+             <div>
+               {user?.role === "Supervisor" && (
+                 <button
+                   onClick={() => setDeleteMode(!deleteMode)}
+                   className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg font-medium ${
+                     deleteMode
+                       ? "bg-red-600/20 hover:bg-red-600/30 text-red-400"
+                       : "bg-gray-700 hover:bg-gray-600 text-white"
+                   }`}
+                 >
+                   <Trash2 size={14} />
+                   {deleteMode ? t("maintenance.history.exitDeleteMode") : t("maintenance.history.enterDeleteMode")}
+                 </button>
+               )}
+             </div>
             <button
               onClick={resetFilters}
               className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium"
@@ -327,7 +393,7 @@ export default function MaintenanceHistory() {
         </div>
 
         {/* Empty */}
-        {filteredRows.length === 0 ? (
+        {paginatedRows.length === 0 ? (
           <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
             <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400 text-lg">
@@ -338,112 +404,125 @@ export default function MaintenanceHistory() {
           <>
             {/* Mobile Cards */}
             <div className="md:hidden space-y-4">
-              {filteredRows.map((r, i) => (
+              {paginatedRows.map((r, i) => (
                 <div
-                   key={i}
-                   onClick={() =>
-                     setExpandedIndex(expandedIndex === i ? null : i)
-                   }
-                   className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg cursor-pointer"
+                   key={`${startIndex + i}-${r.id || i}`} // Use id if available, fallback to index
+                   className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg relative" // Added relative for delete button positioning
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="text-lg font-semibold text-emerald-400">
-                        {r["Plate Number"]}
+                  {deleteMode && user?.role === "Supervisor" && (
+                    <button
+                      onClick={() => handleDelete(i)} // Pass index within current page
+                      className="absolute top-2 right-2 text-red-500 hover:text-red-400"
+                    >
+                      <XIcon size={16} />
+                    </button>
+                  )}
+
+                  <div
+                     onClick={() =>
+                       setExpandedIndex(expandedIndex === i ? null : i)
+                     }
+                     className="cursor-pointer"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="text-lg font-semibold text-emerald-400">
+                          {r["Plate Number"]}
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          {r["Model / Type"]}
+                        </p>
+                      </div>
+                      <span className="text-xs font-semibold text-gray-300">
+                        {r["Date"]}
+                      </span>
+                    </div>
+
+                    <div className="text-sm space-y-1">
+                      <p>
+                        <span className="text-gray-400">
+                          {t("maintenance.history.table.description")}:
+                        </span>{" "}
+                        {translateDescription(r["Description of Work"])}
                       </p>
-                      <p className="text-sm text-gray-400">
-                        {r["Model / Type"]}
+                      <p>
+                        <span className="text-gray-400">
+                          {t("maintenance.history.table.performedBy")}:
+                        </span>{" "}
+                        {r["Performed By"]}
+                      </p>
+                      <p>
+                        <span className="text-gray-400">
+                          {t("maintenance.history.table.driver")}:
+                        </span>{" "}
+                        {r["Driver"]}
+                      </p>
+                      <p>
+                        <span className="text-gray-400">
+                          {t("maintenance.history.table.completionDate")}:
+                        </span>{" "}
+                        {r["Completion Date"] || "---"}
                       </p>
                     </div>
-                    <span className="text-xs font-semibold text-gray-300">
-                      {r["Date"]}
-                    </span>
+
+                    {expandedIndex === i && (
+                      <>
+                        {/* Comments */}
+                        <div className="mt-3 text-sm">
+                          <span className="text-gray-400">
+                            {t("maintenance.history.table.comments")}:
+                          </span>{" "}
+                          {r["Comments"] || "---"}
+                        </div>
+
+                        {/* Photos */}
+                        <div className="flex gap-3 mt-3">
+                          {[
+                            {
+                              field: "Photo Before",
+                              label: t("maintenance.history.table.photoBefore"),
+                            },
+                            {
+                              field: "Photo After",
+                              label: t("maintenance.history.table.photoAfter"),
+                            },
+                            {
+                              field: "Photo Repair/Problem",
+                              label: t("maintenance.history.table.photoProblem"),
+                            },
+                          ].map(
+                            ({ field, label }) =>
+                              r[field] ? (
+                                <div
+                                  key={field}
+                                  className="flex flex-col items-center gap-1"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <a
+                                    href={r[field]}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="relative group"
+                                  >
+                                    <img
+                                      src={getThumbnailUrl(r[field])}
+                                      alt={label}
+                                      className="h-16 w-16 object-cover rounded-lg border border-gray-600"
+                                    />
+                                    <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                                      <ExternalLink className="w-5 h-5 text-emerald-400" />
+                                    </div>
+                                  </a>
+                                  <span className="text-[11px] text-gray-400 text-center">
+                                    {label}
+                                  </span>
+                                </div>
+                              ) : null
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
-
-                  <div className="text-sm space-y-1">
-                    <p>
-                      <span className="text-gray-400">
-                        {t("maintenance.history.table.description")}:
-                      </span>{" "}
-                      {translateDescription(r["Description of Work"])}
-                    </p>
-                    <p>
-                      <span className="text-gray-400">
-                        {t("maintenance.history.table.performedBy")}:
-                      </span>{" "}
-                      {r["Performed By"]}
-                    </p>
-                    <p>
-                      <span className="text-gray-400">
-                        {t("maintenance.history.table.driver")}:
-                      </span>{" "}
-                      {r["Driver"]}
-                    </p>
-                    <p>
-                      <span className="text-gray-400">
-                        {t("maintenance.history.table.completionDate")}:
-                      </span>{" "}
-                      {r["Completion Date"] || "---"}
-                    </p>
-                  </div>
-
-                  {expandedIndex === i && (
-  <>
-    {/* Comments */}
-    <div className="mt-3 text-sm">
-      <span className="text-gray-400">
-        {t("maintenance.history.table.comments")}:
-      </span>{" "}
-      {r["Comments"] || "---"}
-    </div>
-
-    {/* Photos */}
-    <div className="flex gap-3 mt-3">
-  {[
-    {
-      field: "Photo Before",
-      label: t("maintenance.history.table.photoBefore"),
-    },
-    {
-      field: "Photo After",
-      label: t("maintenance.history.table.photoAfter"),
-    },
-    {
-      field: "Photo Repair/Problem",
-      label: t("maintenance.history.table.photoProblem"),
-    },
-  ].map(
-    ({ field, label }) =>
-      r[field] ? (
-        <div
-          key={field}
-          className="flex flex-col items-center gap-1"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <a
-            href={r[field]}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="relative group"
-          >
-            <img
-              src={getThumbnailUrl(r[field])}
-              alt={label}
-              className="h-16 w-16 object-cover rounded-lg border border-gray-600"
-            />
-            <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-              <ExternalLink className="w-5 h-5 text-emerald-400" />
-            </div>
-          </a>
-          <span className="text-[11px] text-gray-400 text-center">
-            {label}
-          </span>
-        </div>
-      ) : null
-  )}
-</div>
-  </>
-)}
                 </div>
               ))}
             </div>
@@ -453,6 +532,11 @@ export default function MaintenanceHistory() {
               <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
                 <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
                   <tr>
+                    {deleteMode && user?.role === "Supervisor" && (
+                      <th className="p-4 text-center text-sm font-semibold text-gray-300">
+                        {t("maintenance.history.table.actions")}
+                      </th>
+                    )}
                     {[
                       "index",
                       "date",
@@ -477,14 +561,24 @@ export default function MaintenanceHistory() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRows.map((r, i) => (
+                  {paginatedRows.map((r, i) => (
                     <tr
-                      key={i}
+                      key={`${startIndex + i}-${r.id || i}`} // Use id if available, fallback to index
                       className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
                         i % 2 === 0 ? "bg-white/[0.02]" : ""
                       }`}
                     >
-                      <td className="p-4 text-sm text-gray-400">{i + 1}</td>
+                      {deleteMode && user?.role === "Supervisor" && (
+                        <td className="p-4 text-center">
+                           <button
+                             onClick={() => handleDelete(i)} // Pass index within current page
+                             className="text-red-500 hover:text-red-400"
+                           >
+                             <XIcon size={16} />
+                           </button>
+                         </td>
+                      )}
+                      <td className="p-4 text-sm text-gray-400">{startIndex + i + 1}</td>
                       <td className="p-4 text-sm">{r["Date"]}</td>
                       <td className="p-4 text-sm">{r["Model / Type"]}</td>
                       <td className="p-4 text-sm font-mono">
@@ -532,6 +626,45 @@ export default function MaintenanceHistory() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-8 flex justify-center items-center gap-2">
+                <button
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  {t("common.previous") || "Previous"}
+                </button>
+
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => goToPage(pageNum)}
+                        className={`px-4 py-2 rounded-lg transition ${
+                          currentPage === pageNum
+                            ? "bg-emerald-600 text-white"
+                            : "bg-gray-700 hover:bg-gray-600 text-white"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                <button
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  {t("common.next") || "Next"}
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
