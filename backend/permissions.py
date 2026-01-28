@@ -23,28 +23,28 @@ SHEET_PERMISSIONS = {
         "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"]],
         "add":    [ROLES["SUPERVISOR"], ROLES["MECHANIC"]],
         "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"]],
-        "delete": [],  # nobody can delete
+        "delete": [ROLES["SUPERVISOR"]],  # nobody can delete
     },
 
     "Requests_Parts": {
         "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"]],
         "add":    [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"]],
         "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"]],
-        "delete": [],
+        "delete": [ROLES["SUPERVISOR"]],
     },
 
     "Grease_Oil_Requests": {
         "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"]],
         "add":    [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"]],
         "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"]],
-        "delete": [],
+        "delete": [ROLES["SUPERVISOR"]],
     },
 
     "Cleaning_Log": {
         "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["CLEANER"]],
         "add":    [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["CLEANER"]],
         "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["CLEANER"]],
-        "delete": [],
+        "delete": [ROLES["SUPERVISOR"]],
     },
 
     "Equipment_List": {
@@ -58,13 +58,13 @@ SHEET_PERMISSIONS = {
         "view":   [ROLES["SUPERVISOR"]],
         "add":    [ROLES["SUPERVISOR"]],
         "edit":   [ROLES["SUPERVISOR"]],
-        "delete": [],
+        "delete": [ROLES["SUPERVISOR"]],
     },
 
     "Checklist_Log": {
         "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"]],
         "add":    [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"]],
         "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"]],
-        "delete": [],
+        "delete": [ROLES["SUPERVISOR"]],
     },
 }
