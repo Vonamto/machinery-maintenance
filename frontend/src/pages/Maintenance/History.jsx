@@ -66,10 +66,21 @@ export default function MaintenanceHistory() {
         });
         const data = await res.json();
         if (Array.isArray(data)) {
-          // Add __row_index to each row for accurate deletion
-          const dataWithIndex = data.map((row, index) => ({
+          // Reverse the data array to show newest entries first
+          const reversedData = data.reverse();
+          // Add __row_index to each row for accurate deletion based on ORIGINAL sheet order
+          // The index should correspond to where it WAS in the original sheet before reversal
+          // Original sheet index: [0, 1, 2, ..., N-1] -> reversed array: [N-1, N-2, ..., 1, 0]
+          // So, item at reversedData[i] was originally at index (data.length - 1 - i) in the sheet.
+          // Since Google Sheets rows start at 1, and header is row 1, data starts at row 2.
+          // Therefore, original sheet row number = (data.length - 1 - i) + 2 = data.length + 1 - i
+          const dataWithIndex = reversedData.map((row, i, arr) => ({
             ...row,
-            __row_index: index + 2, // Google Sheets starts counting rows from 1, header is row 1
+            // Calculate original sheet row index (assuming no gaps, header on row 1)
+            // Original index in 'data' array: (arr.length - 1 - i)
+            // Original sheet row number: (original index) + 2
+            // Which simplifies to: (arr.length - 1 - i) + 2 = arr.length + 1 - i
+            __row_index: data.length + 1 - i // Use original data.length
           }));
           setRows(dataWithIndex);
         }
