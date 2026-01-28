@@ -65,9 +65,18 @@ export default function MaintenanceHistory() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-        if (Array.isArray(data)) setRows(data.reverse());
+        if (Array.isArray(data)) {
+          // Add __row_index to each row for accurate deletion
+          const dataWithIndex = data.map((row, index) => ({
+            ...row,
+            __row_index: index + 2, // Google Sheets starts counting rows from 1, header is row 1
+          }));
+          setRows(dataWithIndex);
+        }
       } catch (err) {
         console.error("Error loading maintenance history:", err);
+      } finally {
+         setLoading(false); // Ensure loading is stopped even on error
       }
     }
     load();
@@ -82,7 +91,7 @@ export default function MaintenanceHistory() {
       if (!hasEquipment) {
         await cache.forceRefreshEquipment?.();
       }
-      setLoading(false);
+      // setLoading(false); // Moved to the first useEffect to handle initial load correctly
     };
     ensureEquipmentLoaded();
   }, [cache]);
@@ -197,27 +206,30 @@ export default function MaintenanceHistory() {
   };
 
   /* ---------------- Delete Entry ---------------- */
-  const handleDelete = async (rowIndex) => {
-    const rowToDelete = filteredRows[startIndex + rowIndex]; // Get the correct row from the filtered list
+  const handleDelete = async (rowIndexInPaginatedList) => {
+    const actualRowIndexInFiltered = startIndex + rowIndexInPaginatedList;
+    const rowToDelete = filteredRows[actualRowIndexInFiltered]; // Get the correct row from the filtered list
     const confirmDelete = window.confirm(t("maintenance.history.deleteConfirm"));
     if (!confirmDelete) return;
 
+    if (!rowToDelete || typeof rowToDelete.__row_index === 'undefined') {
+       console.error("Cannot delete row: Missing __row_index.", rowToDelete);
+       alert(t("maintenance.history.deleteError")); // Or a more specific error message
+       return;
+    }
+
     try {
-      const response = await fetchWithAuth(`/api/delete/Maintenance_Log`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(rowToDelete), // Send the entire row object
+      const response = await fetchWithAuth(`/api/delete/Maintenance_Log/${rowToDelete.__row_index}`, {
+        method: "DELETE", // Use DELETE method
+        headers: { "Content-Type": "application/json" }, // Include auth token via fetchWithAuth
       });
 
       const result = await response.json();
       if (result.status === "success") {
-        // Update the state to remove the deleted item
-        setRows(prevRows => prevRows.filter(r => r.id !== rowToDelete.id)); // Assuming 'id' exists
-        // Also update filteredRows state implicitly through useMemo
-        // Reset to page 1 if current page becomes empty after deletion
-        if (paginatedRows.length === 1 && currentPage > 1) {
-          setCurrentPage(prev => prev - 1);
-        }
+        // Optimistically update the state to remove the deleted item
+        setRows(prevRows => prevRows.filter(r => r.__row_index !== rowToDelete.__row_index));
+        // Show success message
+        alert(t("maintenance.history.deleteSuccess")); // Add this translation key
       } else {
         console.error("Deletion failed:", result.message);
         alert(t("maintenance.history.deleteError")); // Add this translation key
@@ -406,7 +418,7 @@ export default function MaintenanceHistory() {
             <div className="md:hidden space-y-4">
               {paginatedRows.map((r, i) => (
                 <div
-                   key={`${startIndex + i}-${r.id || i}`} // Use id if available, fallback to index
+                   key={r.__row_index} // Use __row_index for stable key
                    className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg relative" // Added relative for delete button positioning
                 >
                   {deleteMode && user?.role === "Supervisor" && (
@@ -563,7 +575,7 @@ export default function MaintenanceHistory() {
                 <tbody>
                   {paginatedRows.map((r, i) => (
                     <tr
-                      key={`${startIndex + i}-${r.id || i}`} // Use id if available, fallback to index
+                      key={r.__row_index} // Use __row_index for stable key
                       className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
                         i % 2 === 0 ? "bg-white/[0.02]" : ""
                       }`}
