@@ -98,6 +98,7 @@
       "plate": "Plate Number",
       "driver": "Driver",
       "description": "Description of Work",
+      "selectMechanic": "Select Mechanic Name",
       "performedBy": "Performed By",
       "comments": "Comments",
       "chooseModel": "--- Choose Model ---",
