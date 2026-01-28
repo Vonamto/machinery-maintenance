@@ -1,6 +1,8 @@
 {
   "common": {
     "submit": " إرسال ",
+    "previous": "السابق",
+    "next": "التالي",
     "submitting": " جاري الإرسال ...",
     "cancel": " إلغاء ",
     "back": " رجوع ",
