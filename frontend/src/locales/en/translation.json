@@ -65,6 +65,7 @@
     "history": {
       "title": "Maintenance History",
       "subtitle": "View and filter completed maintenance logs",
+      "enterDeleteMode": "Delete Mode",
       "loading": "Loading maintenance history...",
       "noResults": "No records match your filters.",
       "filters": {
