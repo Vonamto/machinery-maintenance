@@ -1,6 +1,8 @@
 {
   "common": {
     "submit": "Submit",
+    "previous": "Previous",
+    "next": "Next",
     "submitting": "Submitting...",
     "cancel": "Cancel",
     "back": "Back",
