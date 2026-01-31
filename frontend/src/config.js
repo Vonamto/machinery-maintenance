@@ -1,5 +1,5 @@
 const CONFIG = {
-  BACKEND_URL: "https://machinery-backend.onrender.com"
+  BACKEND_URL: import.meta.env.VITE_API_URL,
 };
 
 export default CONFIG;
