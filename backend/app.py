@@ -1,5 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import os
+
 from sheets_service import get_sheet_data, append_row, update_row
 from auth_service import authenticate_user, verify_token
 
@@ -9,9 +11,13 @@ from permissions import SHEET_PERMISSIONS
 app = Flask(__name__)
 
 # =====================================================
-# ✅ Allow CORS only from your frontend (Vercel)
+# ✅ CORS (ENV-based, PROD + PREVIEW SAFE)
 # =====================================================
-CORS(app, origins=["https://machinery-maintenance.vercel.app"])
+CORS(
+    app,
+    origins=os.environ.get("FRONTEND_URL", "*").split(","),
+    supports_credentials=True
+)
 
 # =====================================================
 # ✅ Root route (for test)
