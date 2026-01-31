@@ -7,6 +7,8 @@ import {
   History as HistoryIcon,
   Droplets,
   XCircle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
@@ -49,10 +51,15 @@ export default function CleaningHistory() {
     to: "",
   });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   /* ---------------- Load Cleaning Log ---------------- */
 
   useEffect(() => {
     async function load() {
+      setLoading(true); // Reset loading state on each load
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(`${CONFIG.BACKEND_URL}/api/Cleaning_Log`, {
@@ -62,24 +69,12 @@ export default function CleaningHistory() {
         if (Array.isArray(data)) setRows(data.reverse());
       } catch (err) {
         console.error("Error loading cleaning history:", err);
+      } finally {
+        setLoading(false);
       }
     }
     load();
   }, []);
-
-  /* ---------------- Ensure Equipment Cache ---------------- */
-
-  useEffect(() => {
-    const ensureEquipmentLoaded = async () => {
-      const hasEquipment =
-        cache.getEquipment && cache.getEquipment().length > 0;
-      if (!hasEquipment) {
-        await cache.forceRefreshEquipment?.();
-      }
-      setLoading(false);
-    };
-    ensureEquipmentLoaded();
-  }, [cache]);
 
   /* ---------------- Driver → Allowed Plates ---------------- */
 
@@ -181,7 +176,12 @@ export default function CleaningHistory() {
     });
   }, [rows, filters, user, driverAllowedPlates]);
 
-  const resetFilters = () =>
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedRows = filteredRows.slice(startIndex, startIndex + itemsPerPage);
+
+  const resetFilters = () => {
     setFilters({
       model: "",
       plate: "",
@@ -191,10 +191,12 @@ export default function CleaningHistory() {
       from: "",
       to: "",
     });
+    setCurrentPage(1); // Reset to first page when filters reset
+  };
 
   /* ---------------- Loading ---------------- */
 
-  if (loading && rows.length === 0) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
@@ -351,11 +353,11 @@ export default function CleaningHistory() {
           <>
             {/* Mobile Cards */}
             <div className="md:hidden space-y-4">
-              {filteredRows.map((r, i) => (
+              {paginatedRows.map((r, i) => (
                 <div
-                  key={i}
+                  key={`${startIndex + i}-${r["__row_index"] || i}`}
                   onClick={() =>
-                    setExpandedIndex(expandedIndex === i ? null : i)
+                    setExpandedIndex(expandedIndex === (startIndex + i) ? null : (startIndex + i))
                   }
                   className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg cursor-pointer"
                 >
@@ -395,7 +397,7 @@ export default function CleaningHistory() {
                     </p>
                   </div>
 
-                  {expandedIndex === i && (
+                  {expandedIndex === (startIndex + i) && (
                     <>
                       <div className="mt-3 text-sm">
                         <span className="text-gray-400">
@@ -481,14 +483,14 @@ export default function CleaningHistory() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRows.map((r, i) => (
+                  {paginatedRows.map((r, i) => (
                     <tr
-                      key={i}
+                      key={`${startIndex + i}-${r["__row_index"] || i}`}
                       className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
                         i % 2 === 0 ? "bg-white/[0.02]" : ""
                       }`}
                     >
-                      <td className="p-4 text-sm text-gray-400">{i + 1}</td>
+                      <td className="p-4 text-sm text-gray-400">{startIndex + i + 1}</td>
                       <td className="p-4 text-sm">{r["Date"]}</td>
                       <td className="p-4 text-sm">{r["Model / Type"]}</td>
                       <td className="p-4 text-sm font-mono">
@@ -531,6 +533,50 @@ export default function CleaningHistory() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="flex justify-between items-center mt-6">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                {t("common.previous") || "Previous"}
+              </button>
+              
+              <div className="flex gap-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      currentPage === pageNum 
+                        ? "bg-sky-600 text-white" 
+                        : "bg-gray-700 hover:bg-gray-600 text-white"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
+              
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                {t("common.next") || "Next"}
+              </button>
+            </div>
+            
+            {/* Results Info */}
+            <div className="text-center mt-4 text-gray-400 text-sm">
+              {t("common.showingResults", {
+                start: startIndex + 1,
+                end: Math.min(startIndex + itemsPerPage, filteredRows.length),
+                total: filteredRows.length
+              }) || `Showing ${startIndex + 1}-${Math.min(startIndex + itemsPerPage, filteredRows.length)} of ${filteredRows.length} results`}
             </div>
           </>
         )}
