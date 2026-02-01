@@ -7,6 +7,7 @@ import {
   History as HistoryIcon,
   Droplets,
   XCircle,
+  X as XIcon,
   Trash2,
   ChevronLeft,
   ChevronRight,
@@ -16,8 +17,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
+import { fetchWithAuth } from "@/api/api";
 import { useTranslation } from "react-i18next";
-import { fetchWithAuth } from "@/api/api"; // Import the fetch utility
 
 /* ---------------- Helpers ---------------- */
 
@@ -42,7 +43,7 @@ export default function CleaningHistory() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedIndex, setExpandedIndex] = useState(null);
-  const [deleteMode, setDeleteMode] = useState(false); // State for delete mode
+  const [deleteMode, setDeleteMode] = useState(false);
 
   const [filters, setFilters] = useState({
     model: "",
@@ -54,7 +55,6 @@ export default function CleaningHistory() {
     to: "",
   });
 
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -62,14 +62,21 @@ export default function CleaningHistory() {
 
   useEffect(() => {
     async function load() {
-      setLoading(true); // Reset loading state on each load
+      setLoading(true);
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(`${CONFIG.BACKEND_URL}/api/Cleaning_Log`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-        if (Array.isArray(data)) setRows(data.reverse());
+        if (Array.isArray(data)) {
+          const reversed = data.reverse();
+          const withIndex = reversed.map((row, i) => ({
+            ...row,
+            __row_index: data.length + 1 - i,
+          }));
+          setRows(withIndex);
+        }
       } catch (err) {
         console.error("Error loading cleaning history:", err);
       } finally {
@@ -84,8 +91,6 @@ export default function CleaningHistory() {
   const driverAllowedPlates = useMemo(() => {
     if (user?.role !== "Driver") return null;
     const equipment = cache.getEquipment?.() || [];
-    if (!equipment.length) return null;
-
     return equipment
       .filter(
         (e) =>
@@ -97,7 +102,7 @@ export default function CleaningHistory() {
       .filter(Boolean);
   }, [user, cache]);
 
-  /* ---------------- Filter options ---------------- */
+  /* ---------------- Filter Options ---------------- */
 
   const modelOptions = useMemo(
     () =>
@@ -137,7 +142,7 @@ export default function CleaningHistory() {
     [rows]
   );
 
-  /* ---------------- Apply filters ---------------- */
+  /* ---------------- Apply Filters ---------------- */
 
   const filteredRows = useMemo(() => {
     return rows.filter((r) => {
@@ -156,33 +161,26 @@ export default function CleaningHistory() {
         return false;
       }
 
-      const matchModel = !filters.model || model === filters.model;
-      const matchPlate = !filters.plate || plate === filters.plate;
-      const matchDriver = !filters.driver || driver === filters.driver;
-      const matchCleanedBy =
-        !filters.cleanedBy || cleanedBy === filters.cleanedBy;
-      const matchCleaningType =
-        !filters.cleaningType || cleaningType === filters.cleaningType;
+      if (filters.model && model !== filters.model) return false;
+      if (filters.plate && plate !== filters.plate) return false;
+      if (filters.driver && driver !== filters.driver) return false;
+      if (filters.cleanedBy && cleanedBy !== filters.cleanedBy) return false;
+      if (filters.cleaningType && cleaningType !== filters.cleaningType)
+        return false;
 
-      let matchDate = true;
-      if (filters.from && date < filters.from) matchDate = false;
-      if (filters.to && date > filters.to) matchDate = false;
+      if (filters.from && date < filters.from) return false;
+      if (filters.to && date > filters.to) return false;
 
-      return (
-        matchModel &&
-        matchPlate &&
-        matchDriver &&
-        matchCleanedBy &&
-        matchCleaningType &&
-        matchDate
-      );
+      return true;
     });
   }, [rows, filters, user, driverAllowedPlates]);
 
-  // Calculate pagination
   const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedRows = filteredRows.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedRows = filteredRows.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   const resetFilters = () => {
     setFilters({
@@ -194,50 +192,43 @@ export default function CleaningHistory() {
       from: "",
       to: "",
     });
-    setCurrentPage(1); // Reset to first page when filters reset
+    setCurrentPage(1);
   };
 
-  /* ---------------- Handle Delete Mode & Actions ---------------- */
+  /* ---------------- Delete ---------------- */
 
-  const toggleDeleteMode = () => {
-    setDeleteMode(!deleteMode);
-  };
+  const handleDelete = async (rowIndexInPage) => {
+    const actualIndex = startIndex + rowIndexInPage;
+    const rowToDelete = filteredRows[actualIndex];
 
-  const handleDeleteEntry = async (rowIndexInPaginatedList, plateNumber) => {
-    const actualRowIndexInFiltered = startIndex + rowIndexInPaginatedList;
-    const rowToDelete = filteredRows[actualRowIndexInFiltered]; // Get the correct row from the filtered list
-
-    const confirmDelete = window.confirm(t("maintenance.history.deleteConfirm"));
+    const confirmDelete = window.confirm(
+      t("maintenance.history.deleteConfirm")
+    );
     if (!confirmDelete) return;
 
-    if (!rowToDelete || typeof rowToDelete.__row_index === 'undefined') {
-      console.error("Cannot delete row: Missing __row_index.", rowToDelete);
-      alert(t("maintenance.history.deleteError")); // Or a more specific error message
+    if (!rowToDelete?.__row_index) {
+      alert(t("maintenance.history.deleteError"));
       return;
     }
 
     try {
-      const response = await fetchWithAuth(`/api/delete/Cleaning_Log/${rowToDelete.__row_index}`, {
-        method: "DELETE", // Use DELETE method
-        headers: { "Content-Type": "application/json" }, // Include auth token via fetchWithAuth
-      });
-      const result = await response.json();
-
+      const res = await fetchWithAuth(
+        `/api/delete/Cleaning_Log/${rowToDelete.__row_index}`,
+        { method: "DELETE" }
+      );
+      const result = await res.json();
       if (result.status === "success") {
-        // Optimistically update the state to remove the deleted item
-        setRows(prevRows => prevRows.filter(r => r.__row_index !== rowToDelete.__row_index));
-        // Show success message
+        setRows((prev) =>
+          prev.filter((r) => r.__row_index !== rowToDelete.__row_index)
+        );
         alert(t("maintenance.history.deleteSuccess"));
       } else {
-        console.error("Deletion failed:", result.message);
         alert(t("maintenance.history.deleteError"));
       }
-    } catch (error) {
-      console.error("Error deleting row:", error);
+    } catch {
       alert(t("maintenance.history.deleteError"));
     }
   };
-
 
   /* ---------------- Loading ---------------- */
 
@@ -259,40 +250,44 @@ export default function CleaningHistory() {
       <Navbar user={user} />
 
       <div className="max-w-7xl mx-auto p-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
-        >
-          <ArrowLeft
-            size={18}
-            className="group-hover:-translate-x-1 transition-transform"
-          />
-          {t("common.back")}
-        </button>
+        <div className="flex justify-between items-center mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition group"
+          >
+            <ArrowLeft
+              size={18}
+              className="group-hover:-translate-x-1 transition-transform"
+            />
+            {t("common.back")}
+          </button>
 
-        <div className="mb-8 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-sky-600 to-indigo-500 shadow-lg shadow-sky-500/40">
-            <Droplets className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-500">
-              {t("cleaning.history.title")}
-            </h1>
-            <p className="text-gray-400 text-sm mt-1">
-              {t("cleaning.history.subtitle")}
-            </p>
-          </div>
+          {user?.role === "Supervisor" && (
+            <button
+              onClick={() => setDeleteMode((v) => !v)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+                deleteMode
+                  ? "bg-red-600/20 text-red-400"
+                  : "bg-gray-800 text-gray-300"
+              }`}
+            >
+              {deleteMode ? <XIcon size={16} /> : <Trash2 size={16} />}
+              {deleteMode
+                ? t("common.cancel")
+                : t("equipment.manage.actions.delete")}
+            </button>
+          )}
         </div>
 
         {/* Filters */}
-        <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-4 mb-8 shadow-lg">
+        <div className="bg-gray-800/40 border border-gray-700 rounded-2xl p-4 mb-8">
           <div className="grid md:grid-cols-7 sm:grid-cols-2 gap-4">
             <select
               value={filters.model}
               onChange={(e) =>
                 setFilters((f) => ({ ...f, model: e.target.value }))
               }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
+              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
             >
               <option value="">{t("cleaning.history.filters.model")}</option>
               {modelOptions.map((m) => (
@@ -305,7 +300,7 @@ export default function CleaningHistory() {
               onChange={(e) =>
                 setFilters((f) => ({ ...f, plate: e.target.value }))
               }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
+              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
             >
               <option value="">{t("cleaning.history.filters.plate")}</option>
               {plateOptions.map((p) => (
@@ -318,7 +313,7 @@ export default function CleaningHistory() {
               onChange={(e) =>
                 setFilters((f) => ({ ...f, driver: e.target.value }))
               }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
+              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
             >
               <option value="">{t("cleaning.history.filters.driver")}</option>
               {driverOptions.map((d) => (
@@ -331,7 +326,7 @@ export default function CleaningHistory() {
               onChange={(e) =>
                 setFilters((f) => ({ ...f, cleanedBy: e.target.value }))
               }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
+              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
             >
               <option value="">
                 {t("cleaning.history.filters.cleanedBy")}
@@ -346,7 +341,7 @@ export default function CleaningHistory() {
               onChange={(e) =>
                 setFilters((f) => ({ ...f, cleaningType: e.target.value }))
               }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
+              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
             >
               <option value="">
                 {t("cleaning.history.filters.cleaningType")}
@@ -362,7 +357,7 @@ export default function CleaningHistory() {
               onChange={(e) =>
                 setFilters((f) => ({ ...f, from: e.target.value }))
               }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
+              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
             />
 
             <input
@@ -371,29 +366,14 @@ export default function CleaningHistory() {
               onChange={(e) =>
                 setFilters((f) => ({ ...f, to: e.target.value }))
               }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
+              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
             />
           </div>
 
-          <div className="flex justify-between mt-4">
-             <div>
-              {user?.role === "Supervisor" && (
-                <button
-                  onClick={toggleDeleteMode}
-                  className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg font-medium ${
-                    deleteMode
-                      ? "bg-red-600/20 hover:bg-red-600/30 text-red-400"
-                      : "bg-gray-700 hover:bg-gray-600 text-white"
-                  }`}
-                >
-                  <Trash2 size={14} />
-                  {deleteMode ? t("maintenance.history.exitDeleteMode") : t("maintenance.history.enterDeleteMode")}
-                </button>
-              )}
-            </div>
+          <div className="flex justify-end mt-4">
             <button
               onClick={resetFilters}
-              className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium"
+              className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400"
             >
               <XCircle size={14} />
               {t("cleaning.history.filters.reset")}
@@ -401,309 +381,123 @@ export default function CleaningHistory() {
           </div>
         </div>
 
-        {/* Empty */}
-        {filteredRows.length === 0 ? (
-          <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
-            <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">
-              {t("cleaning.history.noResults")}
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Mobile Cards */}
-            <div className="md:hidden space-y-4">
+        {/* Table */}
+        <div className="overflow-x-auto rounded-2xl border border-gray-700">
+          <table className="min-w-full bg-gray-800/50">
+            <thead className="bg-gray-900">
+              <tr>
+                {[
+                  "index",
+                  "date",
+                  "model",
+                  "plate",
+                  "driver",
+                  "cleanedBy",
+                  "cleaningType",
+                  "comments",
+                  "photoBefore",
+                  "photoAfter",
+                ].map((h) => (
+                  <th key={h} className="p-4 text-left text-sm text-gray-300">
+                    {t(`cleaning.history.table.${h}`)}
+                  </th>
+                ))}
+                {deleteMode && (
+                  <th className="p-4 text-left text-sm text-red-400">
+                    {t("equipment.manage.actions.delete")}
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody>
               {paginatedRows.map((r, i) => (
-                <div
-                  key={`${startIndex + i}-${r["__row_index"] || i}`}
-                  onClick={() =>
-                    setExpandedIndex(expandedIndex === (startIndex + i) ? null : (startIndex + i))
-                  }
-                  className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg cursor-pointer"
+                <tr
+                  key={r.__row_index}
+                  className="border-t border-gray-700 hover:bg-white/5"
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="text-lg font-semibold text-sky-400">
-                        {r["Plate Number"]}
-                      </p>
-                      <p className="text-sm text-gray-400">
-                        {r["Model / Type"]}
-                      </p>
-                    </div>
-                    <span className="text-xs font-semibold text-gray-300">
-                      {r["Date"]}
-                    </span>
-                  </div>
-
-                  <div className="text-sm space-y-1">
-                    <p>
-                      <span className="text-gray-400">
-                        {t("cleaning.history.table.cleanedBy")}:
-                      </span>{" "}
-                      {r["Cleaned By"]}
-                    </p>
-                    <p>
-                      <span className="text-gray-400">
-                        {t("cleaning.history.table.cleaningType")}:
-                      </span>{" "}
-                      {t(`cleaningTypes.${r["Cleaning Type"]}`) ||
-                        r["Cleaning Type"]}
-                    </p>
-                    <p>
-                      <span className="text-gray-400">
-                        {t("cleaning.history.table.driver")}:
-                      </span>{" "}
-                      {r["Driver"]}
-                    </p>
-                  </div>
-
-                  {expandedIndex === (startIndex + i) && (
-                    <>
-                      <div className="mt-3 text-sm">
-                        <span className="text-gray-400">
-                          {t("cleaning.history.table.comments")}:
-                        </span>{" "}
-                        {r["Comments"] || "---"}
-                      </div>
-
-                      <div className="flex gap-3 mt-3">
-                        {[
-                          {
-                            field: "Photo Before",
-                            label: t(
-                              "cleaning.history.table.photoBefore"
-                            ),
-                          },
-                          {
-                            field: "Photo After",
-                            label: t(
-                              "cleaning.history.table.photoAfter"
-                            ),
-                          },
-                        ].map(
-                          ({ field, label }) =>
-                            r[field] ? (
-                              <div
-                                key={field}
-                                className="flex flex-col items-center gap-1"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <a
-                                  href={r[field]}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="relative group"
-                                >
-                                  <img
-                                    src={getThumbnailUrl(r[field])}
-                                    alt={label}
-                                    className="h-16 w-16 object-cover rounded-lg border border-gray-600"
-                                  />
-                                  <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                                    <ExternalLink className="w-5 h-5 text-sky-400" />
-                                  </div>
-                                </a>
-                                <span className="text-[11px] text-gray-400 text-center">
-                                  {label}
-                                </span>
-                              </div>
-                            ) : null
-                        )}
-                      </div>
-                    </>
-                  )}
-
-                  {/* Delete Button for Mobile Cards */}
-                  {deleteMode && user?.role === "Supervisor" && (
-                    <div className="mt-4 flex justify-center">
+                  <td className="p-4 text-sm text-gray-400">
+                    {startIndex + i + 1}
+                  </td>
+                  <td className="p-4 text-sm">{r["Date"]}</td>
+                  <td className="p-4 text-sm">{r["Model / Type"]}</td>
+                  <td className="p-4 text-sm font-mono">
+                    {r["Plate Number"]}
+                  </td>
+                  <td className="p-4 text-sm">{r["Driver"]}</td>
+                  <td className="p-4 text-sm">{r["Cleaned By"]}</td>
+                  <td className="p-4 text-sm">
+                    {t(`cleaningTypes.${r["Cleaning Type"]}`) ||
+                      r["Cleaning Type"]}
+                  </td>
+                  <td className="p-4 text-sm truncate max-w-xs">
+                    {r["Comments"] || "---"}
+                  </td>
+                  {["Photo Before", "Photo After"].map((field) => (
+                    <td key={field} className="p-4">
+                      {r[field] ? (
+                        <a
+                          href={r[field]}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="relative group block"
+                        >
+                          <img
+                            src={getThumbnailUrl(r[field])}
+                            alt={field}
+                            className="h-16 w-16 rounded-lg border border-gray-600"
+                          />
+                          <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                            <ExternalLink className="w-6 h-6 text-sky-400" />
+                          </div>
+                        </a>
+                      ) : (
+                        <span className="text-gray-500">---</span>
+                      )}
+                    </td>
+                  ))}
+                  {deleteMode && (
+                    <td className="p-4">
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevent triggering expand/collapse
-                          handleDeleteEntry(i, r["Plate Number"]);
-                        }}
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg text-sm font-medium text-white transition-all shadow-lg shadow-red-500/30"
+                        onClick={() => handleDelete(i)}
+                        className="inline-flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm"
                       >
                         <Trash2 size={14} />
-                        {t("maintenance.history.table.actions.delete")}
+                        {t("equipment.manage.actions.delete")}
                       </button>
-                    </div>
+                    </td>
                   )}
-                </div>
+                </tr>
               ))}
-            </div>
+            </tbody>
+          </table>
+        </div>
 
-            {/* Desktop Table */}
-            <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
-              <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
-                <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
-                  <tr>
-                    {deleteMode && user?.role === "Supervisor" && (
-                      <th className="p-4 text-center text-sm font-semibold text-gray-300">
-                        {t("maintenance.history.table.actions.delete")}
-                      </th>
-                    )}
-                    {[
-                      "index",
-                      "date",
-                      "model",
-                      "plate",
-                      "driver",
-                      "cleanedBy",
-                      "cleaningType",
-                      "comments",
-                      "photoBefore",
-                      "photoAfter",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="p-4 text-left text-sm font-semibold text-gray-300"
-                      >
-                        {t(`cleaning.history.table.${h}`)}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedRows.map((r, i) => (
-                    <tr
-                      key={`${startIndex + i}-${r["__row_index"] || i}`}
-                      className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
-                        i % 2 === 0 ? "bg-white/[0.02]" : ""
-                      }`}
-                    >
-                      {deleteMode && user?.role === "Supervisor" && (
-                        <td className="p-4 text-center">
-                          <button
-                            onClick={() => handleDeleteEntry(i, r["Plate Number"])}
-                            className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg text-sm font-medium text-white transition-all shadow-lg shadow-red-500/30"
-                          >
-                            <Trash2 size={14} />
-                            {t("maintenance.history.table.actions.delete")}
-                          </button>
-                        </td>
-                      )}
-                      <td className="p-4 text-sm text-gray-400">{startIndex + i + 1}</td>
-                      <td className="p-4 text-sm">{r["Date"]}</td>
-                      <td className="p-4 text-sm">{r["Model / Type"]}</td>
-                      <td className="p-4 text-sm font-mono">
-                        {r["Plate Number"]}
-                      </td>
-                      <td className="p-4 text-sm">{r["Driver"]}</td>
-                      <td className="p-4 text-sm">{r["Cleaned By"]}</td>
-                      <td className="p-4 text-sm">
-                        {t(`cleaningTypes.${r["Cleaning Type"]}`) ||
-                          r["Cleaning Type"]}
-                      </td>
-                      <td className="p-4 text-sm max-w-xs truncate">
-                        {r["Comments"] || "---"}
-                      </td>
+        {/* Pagination */}
+        <div className="flex items-center justify-between mt-6">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+            disabled={currentPage === 1}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg disabled:opacity-50"
+          >
+            <ChevronLeft size={18} />
+            {t("common.previous")}
+          </button>
 
-                      {["Photo Before", "Photo After"].map((field) => (
-                        <td key={field} className="p-4">
-                          {r[field] ? (
-                            <a
-                              href={r[field]}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="relative group block"
-                            >
-                              <img
-                                src={getThumbnailUrl(r[field])}
-                                alt={field}
-                                className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-sky-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
-                              />
-                              <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                                <ExternalLink className="w-6 h-6 text-sky-400" />
-                              </div>
-                            </a>
-                          ) : (
-                            <span className="text-gray-500 text-sm">---</span>
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <span className="text-sm text-gray-400">
+            {currentPage} / {totalPages}
+          </span>
 
-            {/* Pagination Controls */}
-            <div className="flex items-center justify-between mt-6">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                <ChevronLeft size={18} />
-                {t("common.previous")}
-              </button>
-              
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`w-10 h-10 flex items-center justify-center rounded-lg ${
-                        currentPage === pageNum 
-                          ? "bg-sky-600 text-white" 
-                          : "bg-gray-800 hover:bg-gray-700 text-white"
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-                
-                {totalPages > 5 && (
-                  <>
-                    {currentPage > 4 && <span className="text-gray-500 mx-1">...</span>}
-                    
-                    {currentPage > 3 && currentPage < totalPages - 2 && (
-                      <button
-                        onClick={() => setCurrentPage(currentPage)}
-                        className="w-10 h-10 flex items-center justify-center rounded-lg bg-sky-600 text-white"
-                      >
-                        {currentPage}
-                      </button>
-                    )}
-                    
-                    {currentPage < totalPages - 3 && <span className="text-gray-500 mx-1">...</span>}
-                    
-                    {currentPage < totalPages - 3 && (
-                      <button
-                        onClick={() => setCurrentPage(totalPages)}
-                        className="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-700 text-white"
-                      >
-                        {totalPages}
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-              
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                {t("common.next")}
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </>
-        )}
+          <button
+            onClick={() =>
+              setCurrentPage((p) => Math.min(p + 1, totalPages))
+            }
+            disabled={currentPage === totalPages}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg disabled:opacity-50"
+          >
+            {t("common.next")}
+            <ChevronRight size={18} />
+          </button>
+        </div>
       </div>
     </div>
   );
