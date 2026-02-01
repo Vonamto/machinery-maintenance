@@ -468,37 +468,57 @@ export default function MaintenanceHistory() {
 
                     {isExpanded && (
                       <div className="mt-4 space-y-3">
-                        {[
-                          { field: "Photo Before", label: "Photo Before" },
-                          { field: "Photo After", label: "Photo After" },
-                          {
-                            field: "Photo Repair/Problem",
-                            label: "Photo Repair / Problem",
-                          },
-                        ].map(
-                          ({ field, label }) =>
-                            r[field] && (
-                              <div key={field}>
-                                <p className="text-xs text-gray-400 mb-1">
-                                  {label}
-                                </p>
-                                <a
-                                  href={r[field]}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="relative group inline-block"
-                                >
-                                  <img
-                                    src={getThumbnailUrl(r[field])}
-                                    alt={field}
-                                    className="h-20 w-20 rounded-lg border border-gray-600"
-                                  />
-                                  <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                                    <ExternalLink className="w-5 h-5 text-emerald-400" />
-                                  </div>
-                                </a>
+                        <div className="flex gap-3">
+                          {[
+                            { field: "Photo Before", label: "Photo Before" },
+                            { field: "Photo After", label: "Photo After" },
+                          ].map(
+                            ({ field, label }) =>
+                              r[field] && (
+                                <div key={field} className="flex-shrink-0">
+                                  <p className="text-xs text-gray-400 mb-1">
+                                    {label}
+                                  </p>
+                                  <a
+                                    href={r[field]}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="relative group inline-block"
+                                  >
+                                    <img
+                                      src={getThumbnailUrl(r[field])}
+                                      alt={field}
+                                      className="h-20 w-20 rounded-lg border border-gray-600"
+                                    />
+                                    <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                                      <ExternalLink className="w-5 h-5 text-emerald-400" />
+                                    </div>
+                                  </a>
+                                </div>
+                              )
+                          )}
+                        </div>
+                        {r["Photo Repair/Problem"] && (
+                          <div>
+                            <p className="text-xs text-gray-400 mb-1">
+                              Photo Repair / Problem
+                            </p>
+                            <a
+                              href={r["Photo Repair/Problem"]}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="relative group inline-block"
+                            >
+                              <img
+                                src={getThumbnailUrl(r["Photo Repair/Problem"])}
+                                alt="Photo Repair/Problem"
+                                className="h-20 w-20 rounded-lg border border-gray-600"
+                              />
+                              <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                                <ExternalLink className="w-5 h-5 text-emerald-400" />
                               </div>
-                            )
+                            </a>
+                          </div>
                         )}
                       </div>
                     )}
