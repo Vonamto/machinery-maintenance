@@ -7,8 +7,8 @@ import {
   History as HistoryIcon,
   Droplets,
   XCircle,
-  ChevronDown,
-  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
@@ -536,47 +536,79 @@ export default function CleaningHistory() {
             </div>
 
             {/* Pagination Controls */}
-            <div className="flex justify-between items-center mt-6">
+            <div className="flex items-center justify-between mt-6">
               <button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+                className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
-                {t("common.previous") || "Previous"}
+                <ChevronLeft size={18} />
+                {t("common.previous")}
               </button>
               
-              <div className="flex gap-2">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-                  <button
-                    key={pageNum}
-                    onClick={() => setCurrentPage(pageNum)}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      currentPage === pageNum 
-                        ? "bg-sky-600 text-white" 
-                        : "bg-gray-700 hover:bg-gray-600 text-white"
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                ))}
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-10 h-10 flex items-center justify-center rounded-lg ${
+                        currentPage === pageNum 
+                          ? "bg-sky-600 text-white" 
+                          : "bg-gray-800 hover:bg-gray-700 text-white"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                
+                {totalPages > 5 && (
+                  <>
+                    {currentPage > 4 && <span className="text-gray-500 mx-1">...</span>}
+                    
+                    {currentPage > 3 && currentPage < totalPages - 2 && (
+                      <button
+                        onClick={() => setCurrentPage(currentPage)}
+                        className="w-10 h-10 flex items-center justify-center rounded-lg bg-sky-600 text-white"
+                      >
+                        {currentPage}
+                      </button>
+                    )}
+                    
+                    {currentPage < totalPages - 3 && <span className="text-gray-500 mx-1">...</span>}
+                    
+                    {currentPage < totalPages - 3 && (
+                      <button
+                        onClick={() => setCurrentPage(totalPages)}
+                        className="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-700 text-white"
+                      >
+                        {totalPages}
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
               
               <button
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+                className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
-                {t("common.next") || "Next"}
+                {t("common.next")}
+                <ChevronRight size={18} />
               </button>
-            </div>
-            
-            {/* Results Info */}
-            <div className="text-center mt-4 text-gray-400 text-sm">
-              {t("common.showingResults", {
-                start: startIndex + 1,
-                end: Math.min(startIndex + itemsPerPage, filteredRows.length),
-                total: filteredRows.length
-              }) || `Showing ${startIndex + 1}-${Math.min(startIndex + itemsPerPage, filteredRows.length)} of ${filteredRows.length} results`}
             </div>
           </>
         )}
