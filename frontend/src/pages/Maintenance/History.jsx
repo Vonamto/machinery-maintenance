@@ -9,6 +9,8 @@ import {
   XCircle,
   X as XIcon,
   Trash2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
@@ -402,86 +404,117 @@ export default function MaintenanceHistory() {
           <>
             {/* Mobile Cards */}
             <div className="md:hidden space-y-4">
-              {paginatedRows.map((r, i) => (
-                <div
-                  key={r.__row_index}
-                  className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="text-lg font-semibold text-emerald-400">
-                        {r["Plate Number"]}
+              {paginatedRows.map((r, i) => {
+                const isExpanded = expandedIndex === i;
+                return (
+                  <div
+                    key={r.__row_index}
+                    className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg"
+                  >
+                    <button
+                      onClick={() =>
+                        setExpandedIndex(isExpanded ? null : i)
+                      }
+                      className="w-full text-left"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="text-lg font-semibold text-emerald-400">
+                            {r["Plate Number"]}
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            {r["Model / Type"]}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-300">
+                            {r["Date"]}
+                          </span>
+                          {isExpanded ? (
+                            <ChevronUp size={16} />
+                          ) : (
+                            <ChevronDown size={16} />
+                          )}
+                        </div>
+                      </div>
+                    </button>
+
+                    <div className="text-sm space-y-1">
+                      <p>
+                        <span className="text-gray-400">
+                          {t("maintenance.history.table.description")}:
+                        </span>{" "}
+                        {translateDescription(r["Description of Work"])}
                       </p>
-                      <p className="text-sm text-gray-400">
-                        {r["Model / Type"]}
+                      <p>
+                        <span className="text-gray-400">
+                          {t("maintenance.history.table.performedBy")}:
+                        </span>{" "}
+                        {r["Performed By"]}
+                      </p>
+                      <p>
+                        <span className="text-gray-400">
+                          {t("maintenance.history.table.driver")}:
+                        </span>{" "}
+                        {r["Driver"]}
+                      </p>
+                      <p>
+                        <span className="text-gray-400">
+                          {t("maintenance.history.table.comments")}:
+                        </span>{" "}
+                        {r["Comments"] || "---"}
                       </p>
                     </div>
-                    <span className="text-xs text-gray-300">{r["Date"]}</span>
-                  </div>
 
-                  <div className="text-sm space-y-1">
-                    <p>
-                      <span className="text-gray-400">
-                        {t("maintenance.history.table.description")}:
-                      </span>{" "}
-                      {translateDescription(r["Description of Work"])}
-                    </p>
-                    <p>
-                      <span className="text-gray-400">
-                        {t("maintenance.history.table.performedBy")}:
-                      </span>{" "}
-                      {r["Performed By"]}
-                    </p>
-                    <p>
-                      <span className="text-gray-400">
-                        {t("maintenance.history.table.driver")}:
-                      </span>{" "}
-                      {r["Driver"]}
-                    </p>
-                  </div>
+                    {isExpanded && (
+                      <div className="mt-4 space-y-3">
+                        {[
+                          { field: "Photo Before", label: "Photo Before" },
+                          { field: "Photo After", label: "Photo After" },
+                          {
+                            field: "Photo Repair/Problem",
+                            label: "Photo Repair / Problem",
+                          },
+                        ].map(
+                          ({ field, label }) =>
+                            r[field] && (
+                              <div key={field}>
+                                <p className="text-xs text-gray-400 mb-1">
+                                  {label}
+                                </p>
+                                <a
+                                  href={r[field]}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="relative group inline-block"
+                                >
+                                  <img
+                                    src={getThumbnailUrl(r[field])}
+                                    alt={field}
+                                    className="h-20 w-20 rounded-lg border border-gray-600"
+                                  />
+                                  <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                                    <ExternalLink className="w-5 h-5 text-emerald-400" />
+                                  </div>
+                                </a>
+                              </div>
+                            )
+                        )}
+                      </div>
+                    )}
 
-                  <div className="mt-3 text-sm">
-                    <span className="text-gray-400">
-                      {t("maintenance.history.table.comments")}:
-                    </span>{" "}
-                    {r["Comments"] || "---"}
-                  </div>
-
-                  <div className="flex gap-3 mt-3">
-                    {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
-                      (field) =>
-                        r[field] && (
-                          <a
-                            key={field}
-                            href={r[field]}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="relative group"
-                          >
-                            <img
-                              src={getThumbnailUrl(r[field])}
-                              alt={field}
-                              className="h-16 w-16 rounded-lg border border-gray-600"
-                            />
-                            <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                              <ExternalLink className="w-5 h-5 text-emerald-400" />
-                            </div>
-                          </a>
-                        )
+                    {deleteMode && (
+                      <button
+                        onClick={() => handleDelete(i)}
+                        className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm"
+                      >
+                        <Trash2 size={14} />
+                        {t("equipment.manage.actions.delete")}
+                      </button>
                     )}
                   </div>
-
-                  {deleteMode && (
-                    <button
-                      onClick={() => handleDelete(i)}
-                      className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm"
-                    >
-                      <Trash2 size={14} />
-                      {t("equipment.manage.actions.delete")}
-                    </button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Desktop Table */}
@@ -497,7 +530,6 @@ export default function MaintenanceHistory() {
                       "driver",
                       "performedBy",
                       "description",
-                      "completionDate",
                       "comments",
                       "photoBefore",
                       "photoAfter",
@@ -532,9 +564,6 @@ export default function MaintenanceHistory() {
                       <td className="p-4 text-sm">{r["Performed By"]}</td>
                       <td className="p-4 text-sm">
                         {translateDescription(r["Description of Work"])}
-                      </td>
-                      <td className="p-4 text-sm">
-                        {r["Completion Date"] || "---"}
                       </td>
                       <td className="p-4 text-sm truncate max-w-xs">
                         {r["Comments"] || "---"}
