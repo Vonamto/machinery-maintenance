@@ -9,6 +9,8 @@ import {
   XCircle,
   X as XIcon,
   Trash2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
@@ -176,7 +178,10 @@ export default function MaintenanceHistory() {
 
   const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedRows = filteredRows.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedRows = filteredRows.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   const resetFilters = () => {
     setFilters({
@@ -287,176 +292,181 @@ export default function MaintenanceHistory() {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-gray-800/40 border border-gray-700 rounded-2xl p-4 mb-8">
-          <div className="grid md:grid-cols-6 sm:grid-cols-2 gap-4">
-            <select
-              value={filters.model}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, model: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
-            >
-              <option value="">{t("maintenance.history.filters.model")}</option>
-              {modelOptions.map((m) => (
-                <option key={m}>{m}</option>
-              ))}
-            </select>
-
-            <select
-              value={filters.plate}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, plate: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
-            >
-              <option value="">{t("maintenance.history.filters.plate")}</option>
-              {plateOptions.map((p) => (
-                <option key={p}>{p}</option>
-              ))}
-            </select>
-
-            <select
-              value={filters.driver}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, driver: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
-            >
-              <option value="">{t("maintenance.history.filters.driver")}</option>
-              {driverOptions.map((d) => (
-                <option key={d}>{d}</option>
-              ))}
-            </select>
-
-            <select
-              value={filters.performedBy}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, performedBy: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
-            >
-              <option value="">
-                {t("maintenance.history.filters.performedBy")}
-              </option>
-              {performedByOptions.map((p) => (
-                <option key={p}>{p}</option>
-              ))}
-            </select>
-
-            <input
-              type="date"
-              value={filters.from}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, from: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
-            />
-
-            <input
-              type="date"
-              value={filters.to}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, to: e.target.value }))
-              }
-              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
-            />
-          </div>
-
-          <div className="flex justify-between mt-4">
-            {user?.role === "Supervisor" && (
-              <button
-                onClick={() => setDeleteMode((v) => !v)}
-                className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg ${
-                  deleteMode
-                    ? "bg-red-600/20 text-red-400"
-                    : "bg-gray-700 text-gray-300"
-                }`}
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-4">
+          {paginatedRows.map((r, i) => {
+            const isOpen = expandedIndex === i;
+            return (
+              <div
+                key={r.__row_index}
+                onClick={() =>
+                  setExpandedIndex(isOpen ? null : i)
+                }
+                className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg cursor-pointer"
               >
-                {deleteMode ? <XIcon size={14} /> : <Trash2 size={14} />}
-                {deleteMode
-                  ? t("common.cancel")
-                  : t("equipment.manage.actions.delete")}
-              </button>
-            )}
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-lg font-semibold text-emerald-400">
+                      {r["Plate Number"]}
+                    </p>
+                    <p className="text-sm text-gray-400">
+                      {r["Model / Type"]}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-300">
+                      {r["Date"]}
+                    </span>
+                    {isOpen ? <ChevronUp /> : <ChevronDown />}
+                  </div>
+                </div>
 
-            <button
-              onClick={resetFilters}
-              className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400"
-            >
-              <XCircle size={14} />
-              {t("maintenance.history.filters.reset")}
-            </button>
-          </div>
-        </div>
+                <div className="mt-2 text-sm">
+                  <span className="text-gray-400">
+                    {t("maintenance.history.table.description")}:
+                  </span>{" "}
+                  {translateDescription(r["Description of Work"])}
+                </div>
 
-        {/* Empty */}
-        {paginatedRows.length === 0 ? (
-          <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
-            <HistoryIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">
-              {t("maintenance.history.noResults")}
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Mobile Cards */}
-            <div className="md:hidden space-y-4">
-              {paginatedRows.map((r, i) => (
-                <div
-                  key={r.__row_index}
-                  className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="text-lg font-semibold text-emerald-400">
-                        {r["Plate Number"]}
+                {isOpen && (
+                  <>
+                    <div className="mt-2 text-sm space-y-1">
+                      <p>
+                        <span className="text-gray-400">
+                          {t("maintenance.history.table.performedBy")}:
+                        </span>{" "}
+                        {r["Performed By"]}
                       </p>
-                      <p className="text-sm text-gray-400">
-                        {r["Model / Type"]}
+                      <p>
+                        <span className="text-gray-400">
+                          {t("maintenance.history.table.driver")}:
+                        </span>{" "}
+                        {r["Driver"]}
+                      </p>
+                      <p>
+                        <span className="text-gray-400">
+                          {t("maintenance.history.table.comments")}:
+                        </span>{" "}
+                        {r["Comments"] || "---"}
                       </p>
                     </div>
-                    <span className="text-xs text-gray-300">{r["Date"]}</span>
-                  </div>
 
-                  <div className="text-sm space-y-1">
-                    <p>
-                      <span className="text-gray-400">
-                        {t("maintenance.history.table.description")}:
-                      </span>{" "}
-                      {translateDescription(r["Description of Work"])}
-                    </p>
-                    <p>
-                      <span className="text-gray-400">
-                        {t("maintenance.history.table.performedBy")}:
-                      </span>{" "}
-                      {r["Performed By"]}
-                    </p>
-                    <p>
-                      <span className="text-gray-400">
-                        {t("maintenance.history.table.driver")}:
-                      </span>{" "}
-                      {r["Driver"]}
-                    </p>
-                  </div>
+                    <div className="mt-3 space-y-2">
+                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
+                        (field) =>
+                          r[field] && (
+                            <div key={field}>
+                              <p className="text-xs text-gray-400 mb-1">
+                                {t(
+                                  `maintenance.history.table.${
+                                    field === "Photo Repair/Problem"
+                                      ? "photoProblem"
+                                      : field === "Photo Before"
+                                      ? "photoBefore"
+                                      : "photoAfter"
+                                  }`
+                                )}
+                              </p>
+                              <a
+                                href={r[field]}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="relative group inline-block"
+                              >
+                                <img
+                                  src={getThumbnailUrl(r[field])}
+                                  alt={field}
+                                  className="h-20 w-20 rounded-lg border border-gray-600"
+                                />
+                                <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                                  <ExternalLink className="w-5 h-5 text-emerald-400" />
+                                </div>
+                              </a>
+                            </div>
+                          )
+                      )}
+                    </div>
 
-                  <div className="mt-3 text-sm">
-                    <span className="text-gray-400">
-                      {t("maintenance.history.table.comments")}:
-                    </span>{" "}
+                    {deleteMode && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(i);
+                        }}
+                        className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm"
+                      >
+                        <Trash2 size={14} />
+                        {t("equipment.manage.actions.delete")}
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-700">
+          <table className="min-w-full bg-gray-800/50">
+            <thead className="bg-gray-900">
+              <tr>
+                {[
+                  "index",
+                  "date",
+                  "model",
+                  "plate",
+                  "driver",
+                  "performedBy",
+                  "description",
+                  "comments",
+                  "photoBefore",
+                  "photoAfter",
+                  "photoProblem",
+                ].map((h) => (
+                  <th key={h} className="p-4 text-left text-sm text-gray-300">
+                    {t(`maintenance.history.table.${h}`)}
+                  </th>
+                ))}
+                {deleteMode && (
+                  <th className="p-4 text-left text-sm text-red-400">
+                    {t("equipment.manage.actions.delete")}
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedRows.map((r, i) => (
+                <tr
+                  key={r.__row_index}
+                  className="border-t border-gray-700 hover:bg-white/5"
+                >
+                  <td className="p-4 text-sm text-gray-400">
+                    {startIndex + i + 1}
+                  </td>
+                  <td className="p-4 text-sm">{r["Date"]}</td>
+                  <td className="p-4 text-sm">{r["Model / Type"]}</td>
+                  <td className="p-4 text-sm font-mono">
+                    {r["Plate Number"]}
+                  </td>
+                  <td className="p-4 text-sm">{r["Driver"]}</td>
+                  <td className="p-4 text-sm">{r["Performed By"]}</td>
+                  <td className="p-4 text-sm">
+                    {translateDescription(r["Description of Work"])}
+                  </td>
+                  <td className="p-4 text-sm truncate max-w-xs">
                     {r["Comments"] || "---"}
-                  </div>
+                  </td>
 
-                  <div className="flex gap-3 mt-3">
-                    {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
-                      (field) =>
-                        r[field] && (
+                  {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
+                    (field) => (
+                      <td key={field} className="p-4">
+                        {r[field] ? (
                           <a
-                            key={field}
                             href={r[field]}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="relative group"
+                            className="relative group block"
                           >
                             <img
                               src={getThumbnailUrl(r[field])}
@@ -464,164 +474,70 @@ export default function MaintenanceHistory() {
                               className="h-16 w-16 rounded-lg border border-gray-600"
                             />
                             <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                              <ExternalLink className="w-5 h-5 text-emerald-400" />
+                              <ExternalLink className="w-6 h-6 text-emerald-400" />
                             </div>
                           </a>
-                        )
-                    )}
-                  </div>
-
-                  {deleteMode && (
-                    <button
-                      onClick={() => handleDelete(i)}
-                      className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm"
-                    >
-                      <Trash2 size={14} />
-                      {t("equipment.manage.actions.delete")}
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Desktop Table */}
-            <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-700">
-              <table className="min-w-full bg-gray-800/50">
-                <thead className="bg-gray-900">
-                  <tr>
-                    {[
-                      "index",
-                      "date",
-                      "model",
-                      "plate",
-                      "driver",
-                      "performedBy",
-                      "description",
-                      "completionDate",
-                      "comments",
-                      "photoBefore",
-                      "photoAfter",
-                      "photoProblem",
-                    ].map((h) => (
-                      <th key={h} className="p-4 text-left text-sm text-gray-300">
-                        {t(`maintenance.history.table.${h}`)}
-                      </th>
-                    ))}
-                    {deleteMode && (
-                      <th className="p-4 text-left text-sm text-red-400">
-                        {t("equipment.manage.actions.delete")}
-                      </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedRows.map((r, i) => (
-                    <tr
-                      key={r.__row_index}
-                      className="border-t border-gray-700 hover:bg-white/5"
-                    >
-                      <td className="p-4 text-sm text-gray-400">
-                        {startIndex + i + 1}
+                        ) : (
+                          <span className="text-gray-500">---</span>
+                        )}
                       </td>
-                      <td className="p-4 text-sm">{r["Date"]}</td>
-                      <td className="p-4 text-sm">{r["Model / Type"]}</td>
-                      <td className="p-4 text-sm font-mono">
-                        {r["Plate Number"]}
-                      </td>
-                      <td className="p-4 text-sm">{r["Driver"]}</td>
-                      <td className="p-4 text-sm">{r["Performed By"]}</td>
-                      <td className="p-4 text-sm">
-                        {translateDescription(r["Description of Work"])}
-                      </td>
-                      <td className="p-4 text-sm">
-                        {r["Completion Date"] || "---"}
-                      </td>
-                      <td className="p-4 text-sm truncate max-w-xs">
-                        {r["Comments"] || "---"}
-                      </td>
-
-                      {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
-                        (field) => (
-                          <td key={field} className="p-4">
-                            {r[field] ? (
-                              <a
-                                href={r[field]}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="relative group block"
-                              >
-                                <img
-                                  src={getThumbnailUrl(r[field])}
-                                  alt={field}
-                                  className="h-16 w-16 rounded-lg border border-gray-600"
-                                />
-                                <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                                  <ExternalLink className="w-6 h-6 text-emerald-400" />
-                                </div>
-                              </a>
-                            ) : (
-                              <span className="text-gray-500">---</span>
-                            )}
-                          </td>
-                        )
-                      )}
-
-                      {deleteMode && (
-                        <td className="p-4">
-                          <button
-                            onClick={() => handleDelete(i)}
-                            className="inline-flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm"
-                          >
-                            <Trash2 size={14} />
-                            {t("equipment.manage.actions.delete")}
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="mt-8 flex justify-center items-center gap-2">
-                <button
-                  onClick={() => goToPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50"
-                >
-                  {t("common.previous")}
-                </button>
-
-                <div className="flex gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (pageNum) => (
-                      <button
-                        key={pageNum}
-                        onClick={() => goToPage(pageNum)}
-                        className={`px-4 py-2 rounded-lg ${
-                          currentPage === pageNum
-                            ? "bg-emerald-600 text-white"
-                            : "bg-gray-700 hover:bg-gray-600 text-white"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
                     )
                   )}
-                </div>
 
-                <button
-                  onClick={() => goToPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50"
-                >
-                  {t("common.next")}
-                </button>
-              </div>
-            )}
-          </>
+                  {deleteMode && (
+                    <td className="p-4">
+                      <button
+                        onClick={() => handleDelete(i)}
+                        className="inline-flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm"
+                      >
+                        <Trash2 size={14} />
+                        {t("equipment.manage.actions.delete")}
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-8 flex justify-center items-center gap-2">
+            <button
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50"
+            >
+              {t("common.previous")}
+            </button>
+
+            <div className="flex gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (pageNum) => (
+                  <button
+                    key={pageNum}
+                    onClick={() => goToPage(pageNum)}
+                    className={`px-4 py-2 rounded-lg ${
+                      currentPage === pageNum
+                        ? "bg-emerald-600 text-white"
+                        : "bg-gray-700 hover:bg-gray-600 text-white"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              )}
+            </div>
+
+            <button
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50"
+            >
+              {t("common.next")}
+            </button>
+          </div>
         )}
       </div>
     </div>
