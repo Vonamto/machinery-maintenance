@@ -7,6 +7,7 @@ import {
   History as HistoryIcon,
   Droplets,
   XCircle,
+  Trash2,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -16,6 +17,7 @@ import { useCache } from "@/context/CacheContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
 import { useTranslation } from "react-i18next";
+import { fetchWithAuth } from "@/api/api"; // Import the fetch utility
 
 /* ---------------- Helpers ---------------- */
 
@@ -40,6 +42,7 @@ export default function CleaningHistory() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedIndex, setExpandedIndex] = useState(null);
+  const [deleteMode, setDeleteMode] = useState(false); // State for delete mode
 
   const [filters, setFilters] = useState({
     model: "",
@@ -194,6 +197,48 @@ export default function CleaningHistory() {
     setCurrentPage(1); // Reset to first page when filters reset
   };
 
+  /* ---------------- Handle Delete Mode & Actions ---------------- */
+
+  const toggleDeleteMode = () => {
+    setDeleteMode(!deleteMode);
+  };
+
+  const handleDeleteEntry = async (rowIndexInPaginatedList, plateNumber) => {
+    const actualRowIndexInFiltered = startIndex + rowIndexInPaginatedList;
+    const rowToDelete = filteredRows[actualRowIndexInFiltered]; // Get the correct row from the filtered list
+
+    const confirmDelete = window.confirm(t("maintenance.history.deleteConfirm"));
+    if (!confirmDelete) return;
+
+    if (!rowToDelete || typeof rowToDelete.__row_index === 'undefined') {
+      console.error("Cannot delete row: Missing __row_index.", rowToDelete);
+      alert(t("maintenance.history.deleteError")); // Or a more specific error message
+      return;
+    }
+
+    try {
+      const response = await fetchWithAuth(`/api/delete/Cleaning_Log/${rowToDelete.__row_index}`, {
+        method: "DELETE", // Use DELETE method
+        headers: { "Content-Type": "application/json" }, // Include auth token via fetchWithAuth
+      });
+      const result = await response.json();
+
+      if (result.status === "success") {
+        // Optimistically update the state to remove the deleted item
+        setRows(prevRows => prevRows.filter(r => r.__row_index !== rowToDelete.__row_index));
+        // Show success message
+        alert(t("maintenance.history.deleteSuccess"));
+      } else {
+        console.error("Deletion failed:", result.message);
+        alert(t("maintenance.history.deleteError"));
+      }
+    } catch (error) {
+      console.error("Error deleting row:", error);
+      alert(t("maintenance.history.deleteError"));
+    }
+  };
+
+
   /* ---------------- Loading ---------------- */
 
   if (loading) {
@@ -330,7 +375,22 @@ export default function CleaningHistory() {
             />
           </div>
 
-          <div className="flex justify-end mt-4">
+          <div className="flex justify-between mt-4">
+             <div>
+              {user?.role === "Supervisor" && (
+                <button
+                  onClick={toggleDeleteMode}
+                  className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg font-medium ${
+                    deleteMode
+                      ? "bg-red-600/20 hover:bg-red-600/30 text-red-400"
+                      : "bg-gray-700 hover:bg-gray-600 text-white"
+                  }`}
+                >
+                  <Trash2 size={14} />
+                  {deleteMode ? t("maintenance.history.exitDeleteMode") : t("maintenance.history.enterDeleteMode")}
+                </button>
+              )}
+            </div>
             <button
               onClick={resetFilters}
               className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium"
@@ -452,6 +512,22 @@ export default function CleaningHistory() {
                       </div>
                     </>
                   )}
+
+                  {/* Delete Button for Mobile Cards */}
+                  {deleteMode && user?.role === "Supervisor" && (
+                    <div className="mt-4 flex justify-center">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent triggering expand/collapse
+                          handleDeleteEntry(i, r["Plate Number"]);
+                        }}
+                        className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg text-sm font-medium text-white transition-all shadow-lg shadow-red-500/30"
+                      >
+                        <Trash2 size={14} />
+                        {t("maintenance.history.table.actions.delete")}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -461,6 +537,11 @@ export default function CleaningHistory() {
               <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
                 <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
                   <tr>
+                    {deleteMode && user?.role === "Supervisor" && (
+                      <th className="p-4 text-center text-sm font-semibold text-gray-300">
+                        {t("maintenance.history.table.actions.delete")}
+                      </th>
+                    )}
                     {[
                       "index",
                       "date",
@@ -490,6 +571,17 @@ export default function CleaningHistory() {
                         i % 2 === 0 ? "bg-white/[0.02]" : ""
                       }`}
                     >
+                      {deleteMode && user?.role === "Supervisor" && (
+                        <td className="p-4 text-center">
+                          <button
+                            onClick={() => handleDeleteEntry(i, r["Plate Number"])}
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg text-sm font-medium text-white transition-all shadow-lg shadow-red-500/30"
+                          >
+                            <Trash2 size={14} />
+                            {t("maintenance.history.table.actions.delete")}
+                          </button>
+                        </td>
+                      )}
                       <td className="p-4 text-sm text-gray-400">{startIndex + i + 1}</td>
                       <td className="p-4 text-sm">{r["Date"]}</td>
                       <td className="p-4 text-sm">{r["Model / Type"]}</td>
