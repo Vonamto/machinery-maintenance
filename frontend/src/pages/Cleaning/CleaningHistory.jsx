@@ -71,12 +71,20 @@ export default function CleaningHistory() {
         });
         const data = await res.json();
         if (Array.isArray(data)) {
-          const reversed = data.reverse();
-          const withIndex = reversed.map((row, i) => ({
+          // ✅ Step 1: Assign __row_index based on ORIGINAL sheet position (for delete/edit)
+          const withIndex = data.map((row, i) => ({
             ...row,
-            __row_index: data.length + 1 - i,
+            __row_index: i + 2, // +2 because row 1 is headers, data starts at row 2
           }));
-          setRows(withIndex);
+          
+          // ✅ Step 2: Sort by Date field for display (newest first)
+          const sorted = [...withIndex].sort((a, b) => {
+            const dateA = new Date(a.Date);
+            const dateB = new Date(b.Date);
+            return dateB - dateA; // Newest first
+          });
+          
+          setRows(sorted);
         }
       } catch (err) {
         console.error("Error loading cleaning history:", err);
