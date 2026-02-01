@@ -470,8 +470,8 @@ export default function MaintenanceHistory() {
                       <div className="mt-4 space-y-3">
                         <div className="flex gap-3">
                           {[
-                            { field: "Photo Before", label: "Photo Before" },
-                            { field: "Photo After", label: "Photo After" },
+                            { field: "Photo Before", label: t("maintenance.history.table.photoBefore") },
+                            { field: "Photo After", label: t("maintenance.history.table.photoAfter") },
                           ].map(
                             ({ field, label }) =>
                               r[field] && (
@@ -501,7 +501,7 @@ export default function MaintenanceHistory() {
                         {r["Photo Repair/Problem"] && (
                           <div>
                             <p className="text-xs text-gray-400 mb-1">
-                              Photo Repair / Problem
+                              {t("maintenance.history.table.photoProblem")}
                             </p>
                             <a
                               href={r["Photo Repair/Problem"]}
