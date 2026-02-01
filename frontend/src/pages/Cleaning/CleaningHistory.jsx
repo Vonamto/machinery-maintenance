@@ -10,6 +10,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
@@ -253,12 +255,15 @@ export default function CleaningHistory() {
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft
+            size={18}
+            className="group-hover:-translate-x-1 transition-transform"
+          />
           {t("common.back")}
         </button>
 
         <div className="mb-8 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-sky-600 to-indigo-500">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-sky-600 to-indigo-500 shadow-lg shadow-sky-500/40">
             <Droplets className="w-8 h-8 text-white" />
           </div>
           <div>
@@ -318,7 +323,7 @@ export default function CleaningHistory() {
 
             <button
               onClick={resetFilters}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-red-400 text-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm"
             >
               <XCircle size={14} />
               {t("cleaning.history.filters.reset")}
@@ -326,91 +331,114 @@ export default function CleaningHistory() {
           </div>
         </div>
 
-        {/* Mobile Cards (Maintenance-style expandable) */}
-        <div className="md:hidden space-y-4">
-          {paginatedRows.map((r, i) => (
-            <div
-              key={r.__row_index}
-              className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg"
-            >
-              <div
-                onClick={() => setExpandedIndex(expandedIndex === i ? null : i)}
-                className="cursor-pointer"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="text-lg font-semibold text-sky-400">
-                      {r["Plate Number"]}
-                    </p>
-                    <p className="text-sm text-gray-400">
-                      {r["Model / Type"]}
-                    </p>
-                  </div>
-                  <span className="text-xs text-gray-300">{r["Date"]}</span>
-                </div>
+        {/* Empty */}
+        {paginatedRows.length === 0 ? (
+          <div className="text-center py-12 bg-gray-800/30 rounded-2xl border border-gray-700">
+            <Droplets className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-400 text-lg">
+              {t("cleaning.history.noResults")}
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-4">
+              {paginatedRows.map((r, i) => {
+                const isExpanded = expandedIndex === i;
+                return (
+                  <div
+                    key={r.__row_index}
+                    className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg"
+                  >
+                    <button
+                      onClick={() =>
+                        setExpandedIndex(isExpanded ? null : i)
+                      }
+                      className="w-full text-left"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="text-lg font-semibold text-sky-400">
+                            {r["Plate Number"]}
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            {r["Model / Type"]}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-300">
+                            {r["Date"]}
+                          </span>
+                          {isExpanded ? (
+                            <ChevronUp size={16} />
+                          ) : (
+                            <ChevronDown size={16} />
+                          )}
+                        </div>
+                      </div>
+                    </button>
 
-                <div className="text-sm space-y-1">
-                  <p>
-                    <span className="text-gray-400">
-                      {t("cleaning.history.table.cleanedBy")}:
-                    </span>{" "}
-                    {r["Cleaned By"]}
-                  </p>
-                  <p>
-                    <span className="text-gray-400">
-                      {t("cleaning.history.table.cleaningType")}:
-                    </span>{" "}
-                    {t(`cleaningTypes.${r["Cleaning Type"]}`) || r["Cleaning Type"]}
-                  </p>
-                </div>
-
-                {expandedIndex === i && (
-                  <>
-                    <div className="mt-3 text-sm">
-                      <span className="text-gray-400">
-                        {t("cleaning.history.table.driver")}:
-                      </span>{" "}
-                      {r["Driver"]}
+                    <div className="text-sm space-y-1">
+                      <p>
+                        <span className="text-gray-400">
+                          {t("cleaning.history.table.cleanedBy")}:
+                        </span>{" "}
+                        {r["Cleaned By"]}
+                      </p>
+                      <p>
+                        <span className="text-gray-400">
+                          {t("cleaning.history.table.cleaningType")}:
+                        </span>{" "}
+                        {t(`cleaningTypes.${r["Cleaning Type"]}`) || r["Cleaning Type"]}
+                      </p>
+                      <p>
+                        <span className="text-gray-400">
+                          {t("cleaning.history.table.driver")}:
+                        </span>{" "}
+                        {r["Driver"]}
+                      </p>
+                      <p>
+                        <span className="text-gray-400">
+                          {t("cleaning.history.table.comments")}:
+                        </span>{" "}
+                        {r["Comments"] || "---"}
+                      </p>
                     </div>
 
-                    <div className="mt-3 text-sm">
-                      <span className="text-gray-400">
-                        {t("cleaning.history.table.comments")}:
-                      </span>{" "}
-                      {r["Comments"] || "---"}
-                    </div>
-
-                    <div className="flex gap-3 mt-3">
-                      {[
-                        { field: "Photo Before", label: t("cleaning.history.table.photoBefore") },
-                        { field: "Photo After", label: t("cleaning.history.table.photoAfter") },
-                      ].map(
-                        ({ field, label }) =>
-                          r[field] && (
-                            <div key={field} className="flex flex-col items-center gap-1">
-                              <a
-                                href={r[field]}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="relative group"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <img
-                                  src={getThumbnailUrl(r[field])}
-                                  alt={label}
-                                  className="h-16 w-16 rounded-lg border border-gray-600"
-                                />
-                                <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                                  <ExternalLink className="w-5 h-5 text-sky-400" />
+                    {isExpanded && (
+                      <div className="mt-4 space-y-3">
+                        <div className="flex gap-3">
+                          {[
+                            { field: "Photo Before", label: t("cleaning.history.table.photoBefore") },
+                            { field: "Photo After", label: t("cleaning.history.table.photoAfter") },
+                          ].map(
+                            ({ field, label }) =>
+                              r[field] && (
+                                <div key={field} className="flex-shrink-0">
+                                  <p className="text-xs text-gray-400 mb-1">
+                                    {label}
+                                  </p>
+                                  <a
+                                    href={r[field]}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="relative group inline-block"
+                                  >
+                                    <img
+                                      src={getThumbnailUrl(r[field])}
+                                      alt={field}
+                                      className="h-20 w-20 rounded-lg border border-gray-600"
+                                    />
+                                    <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                                      <ExternalLink className="w-5 h-5 text-sky-400" />
+                                    </div>
+                                  </a>
                                 </div>
-                              </a>
-                              <span className="text-[11px] text-gray-400 text-center">
-                                {label}
-                              </span>
-                            </div>
-                          )
-                      )}
-                    </div>
+                              )
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {deleteMode && (
                       <button
@@ -421,123 +449,142 @@ export default function CleaningHistory() {
                         {t("equipment.manage.actions.delete")}
                       </button>
                     )}
-                  </>
-                )}
-              </div>
+                  </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
 
-        {/* Desktop Table (unchanged) */}
-        <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-700">
-          <table className="min-w-full bg-gray-800/50">
-            <thead className="bg-gray-900">
-              <tr>
-                {[
-                  "index",
-                  "date",
-                  "model",
-                  "plate",
-                  "driver",
-                  "cleanedBy",
-                  "cleaningType",
-                  "comments",
-                  "photoBefore",
-                  "photoAfter",
-                ].map((h) => (
-                  <th key={h} className="p-4 text-left text-sm text-gray-300">
-                    {t(`cleaning.history.table.${h}`)}
-                  </th>
-                ))}
-                {deleteMode && (
-                  <th className="p-4 text-left text-sm text-red-400">
-                    {t("equipment.manage.actions.delete")}
-                  </th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedRows.map((r, i) => (
-                <tr key={r.__row_index} className="border-t border-gray-700">
-                  <td className="p-4 text-sm text-gray-400">{startIndex + i + 1}</td>
-                  <td className="p-4 text-sm">{r["Date"]}</td>
-                  <td className="p-4 text-sm">{r["Model / Type"]}</td>
-                  <td className="p-4 text-sm font-mono">{r["Plate Number"]}</td>
-                  <td className="p-4 text-sm">{r["Driver"]}</td>
-                  <td className="p-4 text-sm">{r["Cleaned By"]}</td>
-                  <td className="p-4 text-sm">
-                    {t(`cleaningTypes.${r["Cleaning Type"]}`) || r["Cleaning Type"]}
-                  </td>
-                  <td className="p-4 text-sm truncate max-w-xs">{r["Comments"] || "---"}</td>
-
-                  {["Photo Before", "Photo After"].map((field) => (
-                    <td key={field} className="p-4">
-                      {r[field] ? (
-                        <a href={r[field]} target="_blank" rel="noopener noreferrer">
-                          <img
-                            src={getThumbnailUrl(r[field])}
-                            alt={field}
-                            className="h-16 w-16 rounded-lg border border-gray-600"
-                          />
-                        </a>
-                      ) : (
-                        <span className="text-gray-500">---</span>
-                      )}
-                    </td>
-                  ))}
-
-                  {deleteMode && (
-                    <td className="p-4">
-                      <button
-                        onClick={() => handleDelete(i)}
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm"
-                      >
-                        <Trash2 size={14} />
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-700">
+              <table className="min-w-full bg-gray-800/50">
+                <thead className="bg-gray-900">
+                  <tr>
+                    {[
+                      "index",
+                      "date",
+                      "model",
+                      "plate",
+                      "driver",
+                      "cleanedBy",
+                      "cleaningType",
+                      "comments",
+                      "photoBefore",
+                      "photoAfter",
+                    ].map((h) => (
+                      <th key={h} className="p-4 text-left text-sm text-gray-300">
+                        {t(`cleaning.history.table.${h}`)}
+                      </th>
+                    ))}
+                    {deleteMode && (
+                      <th className="p-4 text-left text-sm text-red-400">
                         {t("equipment.manage.actions.delete")}
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedRows.map((r, i) => (
+                    <tr
+                      key={r.__row_index}
+                      className="border-t border-gray-700 hover:bg-white/5"
+                    >
+                      <td className="p-4 text-sm text-gray-400">
+                        {startIndex + i + 1}
+                      </td>
+                      <td className="p-4 text-sm">{r["Date"]}</td>
+                      <td className="p-4 text-sm">{r["Model / Type"]}</td>
+                      <td className="p-4 text-sm font-mono">
+                        {r["Plate Number"]}
+                      </td>
+                      <td className="p-4 text-sm">{r["Driver"]}</td>
+                      <td className="p-4 text-sm">{r["Cleaned By"]}</td>
+                      <td className="p-4 text-sm">
+                        {t(`cleaningTypes.${r["Cleaning Type"]}`) || r["Cleaning Type"]}
+                      </td>
+                      <td className="p-4 text-sm truncate max-w-xs">
+                        {r["Comments"] || "---"}
+                      </td>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="mt-8 flex justify-center items-center gap-2">
-            <button
-              onClick={() => setCurrentPage(p => p - 1)}
-              disabled={currentPage === 1}
-              className="px-4 py-2 bg-gray-700 text-white rounded-lg disabled:opacity-50"
-            >
-              <ChevronLeft size={16} />
-            </button>
+                      {["Photo Before", "Photo After"].map((field) => (
+                        <td key={field} className="p-4">
+                          {r[field] ? (
+                            <a
+                              href={r[field]}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="relative group block"
+                            >
+                              <img
+                                src={getThumbnailUrl(r[field])}
+                                alt={field}
+                                className="h-16 w-16 rounded-lg border border-gray-600"
+                              />
+                              <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                                <ExternalLink className="w-6 h-6 text-sky-400" />
+                              </div>
+                            </a>
+                          ) : (
+                            <span className="text-gray-500">---</span>
+                          )}
+                        </td>
+                      ))}
 
-            <div className="flex gap-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-                <button
-                  key={pageNum}
-                  onClick={() => setCurrentPage(pageNum)}
-                  className={`px-4 py-2 rounded-lg ${
-                    currentPage === pageNum
-                      ? "bg-sky-600 text-white"
-                      : "bg-gray-700 text-white"
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              ))}
+                      {deleteMode && (
+                        <td className="p-4">
+                          <button
+                            onClick={() => handleDelete(i)}
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm"
+                          >
+                            <Trash2 size={14} />
+                            {t("equipment.manage.actions.delete")}
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
-            <button
-              onClick={() => setCurrentPage(p => p + 1)}
-              disabled={currentPage === totalPages}
-              className="px-4 py-2 bg-gray-700 text-white rounded-lg disabled:opacity-50"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-8 flex justify-center items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => p - 1)}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50"
+                >
+                  {t("common.previous")}
+                </button>
+
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-4 py-2 rounded-lg ${
+                          currentPage === pageNum
+                            ? "bg-sky-600 text-white"
+                            : "bg-gray-700 hover:bg-gray-600 text-white"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(p => p + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50"
+                >
+                  {t("common.next")}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
