@@ -1,7 +1,9 @@
 // frontend/src/App.jsx (role-config based, behavior unchanged)
 
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -33,6 +35,16 @@ import EquipmentManage from "./pages/Equipment/Manage";
 import UsersManage from "./pages/Users/Manage";
 
 export default function App() {
+  const { i18n } = useTranslation();
+
+  // ✅ AUTO SWITCH LTR / RTL WHEN LANGUAGE CHANGES
+  useEffect(() => {
+    const isRTL = i18n.language === "ar";
+
+    document.documentElement.dir = isRTL ? "rtl" : "ltr";
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
+
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-theme-background-primary text-theme-text-primary">
