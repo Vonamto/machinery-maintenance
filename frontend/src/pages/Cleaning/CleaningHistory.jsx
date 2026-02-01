@@ -250,33 +250,29 @@ export default function CleaningHistory() {
       <Navbar user={user} />
 
       <div className="max-w-7xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <button
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition group"
-          >
-            <ArrowLeft
-              size={18}
-              className="group-hover:-translate-x-1 transition-transform"
-            />
-            {t("common.back")}
-          </button>
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
+        >
+          <ArrowLeft
+            size={18}
+            className="group-hover:-translate-x-1 transition-transform"
+          />
+          {t("common.back")}
+        </button>
 
-          {user?.role === "Supervisor" && (
-            <button
-              onClick={() => setDeleteMode((v) => !v)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
-                deleteMode
-                  ? "bg-red-600/20 text-red-400"
-                  : "bg-gray-800 text-gray-300"
-              }`}
-            >
-              {deleteMode ? <XIcon size={16} /> : <Trash2 size={16} />}
-              {deleteMode
-                ? t("common.cancel")
-                : t("equipment.manage.actions.delete")}
-            </button>
-          )}
+        <div className="mb-8 flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-sky-600 to-indigo-500 shadow-lg shadow-sky-500/40">
+            <Droplets className="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-500">
+              {t("cleaning.history.title")}
+            </h1>
+            <p className="text-gray-400 text-sm mt-1">
+              {t("cleaning.history.subtitle")}
+            </p>
+          </div>
         </div>
 
         {/* Filters */}
@@ -370,7 +366,23 @@ export default function CleaningHistory() {
             />
           </div>
 
-          <div className="flex justify-end mt-4">
+          <div className="flex justify-between mt-4">
+            {user?.role === "Supervisor" && (
+              <button
+                onClick={() => setDeleteMode((v) => !v)}
+                className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg ${
+                  deleteMode
+                    ? "bg-red-600/20 text-red-400"
+                    : "bg-gray-700 text-gray-300"
+                }`}
+              >
+                {deleteMode ? <XIcon size={14} /> : <Trash2 size={14} />}
+                {deleteMode
+                  ? t("common.cancel")
+                  : t("equipment.manage.actions.delete")}
+              </button>
+            )}
+
             <button
               onClick={resetFilters}
               className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400"
@@ -381,8 +393,93 @@ export default function CleaningHistory() {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto rounded-2xl border border-gray-700">
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-4">
+          {paginatedRows.map((r, i) => (
+            <div
+              key={r.__row_index}
+              className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg"
+            >
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <p className="text-lg font-semibold text-sky-400">
+                    {r["Plate Number"]}
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    {r["Model / Type"]}
+                  </p>
+                </div>
+                <span className="text-xs text-gray-300">{r["Date"]}</span>
+              </div>
+
+              <div className="text-sm space-y-1">
+                <p>
+                  <span className="text-gray-400">
+                    {t("cleaning.history.table.cleanedBy")}:
+                  </span>{" "}
+                  {r["Cleaned By"]}
+                </p>
+                <p>
+                  <span className="text-gray-400">
+                    {t("cleaning.history.table.cleaningType")}:
+                  </span>{" "}
+                  {t(`cleaningTypes.${r["Cleaning Type"]}`) ||
+                    r["Cleaning Type"]}
+                </p>
+                <p>
+                  <span className="text-gray-400">
+                    {t("cleaning.history.table.driver")}:
+                  </span>{" "}
+                  {r["Driver"]}
+                </p>
+              </div>
+
+              <div className="mt-3 text-sm">
+                <span className="text-gray-400">
+                  {t("cleaning.history.table.comments")}:
+                </span>{" "}
+                {r["Comments"] || "---"}
+              </div>
+
+              <div className="flex gap-3 mt-3">
+                {["Photo Before", "Photo After"].map(
+                  (field) =>
+                    r[field] && (
+                      <a
+                        key={field}
+                        href={r[field]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="relative group"
+                      >
+                        <img
+                          src={getThumbnailUrl(r[field])}
+                          alt={field}
+                          className="h-16 w-16 rounded-lg border border-gray-600"
+                        />
+                        <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                          <ExternalLink className="w-5 h-5 text-sky-400" />
+                        </div>
+                      </a>
+                    )
+                )}
+              </div>
+
+              {deleteMode && (
+                <button
+                  onClick={() => handleDelete(i)}
+                  className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm"
+                >
+                  <Trash2 size={14} />
+                  {t("equipment.manage.actions.delete")}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-700">
           <table className="min-w-full bg-gray-800/50">
             <thead className="bg-gray-900">
               <tr>
@@ -473,31 +570,43 @@ export default function CleaningHistory() {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between mt-6">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            disabled={currentPage === 1}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg disabled:opacity-50"
-          >
-            <ChevronLeft size={18} />
-            {t("common.previous")}
-          </button>
+        {totalPages > 1 && (
+          <div className="mt-8 flex justify-center items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => p - 1)}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50"
+            >
+              {t("common.previous")}
+            </button>
 
-          <span className="text-sm text-gray-400">
-            {currentPage} / {totalPages}
-          </span>
+            <div className="flex gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (pageNum) => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`px-4 py-2 rounded-lg ${
+                      currentPage === pageNum
+                        ? "bg-sky-600 text-white"
+                        : "bg-gray-700 hover:bg-gray-600 text-white"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              )}
+            </div>
 
-          <button
-            onClick={() =>
-              setCurrentPage((p) => Math.min(p + 1, totalPages))
-            }
-            disabled={currentPage === totalPages}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg disabled:opacity-50"
-          >
-            {t("common.next")}
-            <ChevronRight size={18} />
-          </button>
-        </div>
+            <button
+              onClick={() => setCurrentPage((p) => p + 1)}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50"
+            >
+              {t("common.next")}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
