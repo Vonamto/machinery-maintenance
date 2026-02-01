@@ -15,7 +15,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
-import { fetchWithAuth } from "@/api/api"; // Import the fetchWithAuth helper
+import { fetchWithAuth } from "@/api/api";
 import { useTranslation } from "react-i18next";
 
 /* ---------------- Helpers ---------------- */
@@ -41,7 +41,7 @@ export default function MaintenanceHistory() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedIndex, setExpandedIndex] = useState(null);
-  const [deleteMode, setDeleteMode] = useState(false); // State for delete mode
+  const [deleteMode, setDeleteMode] = useState(false);
 
   const [filters, setFilters] = useState({
     model: "",
@@ -53,7 +53,7 @@ export default function MaintenanceHistory() {
   });
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Number of items per page
+  const itemsPerPage = 10;
 
   /* ---------------- Load Maintenance Log ---------------- */
 
@@ -66,28 +66,17 @@ export default function MaintenanceHistory() {
         });
         const data = await res.json();
         if (Array.isArray(data)) {
-          // Reverse the data array to show newest entries first
-          const reversedData = data.reverse();
-          // Add __row_index to each row for accurate deletion based on ORIGINAL sheet order
-          // The index should correspond to where it WAS in the original sheet before reversal
-          // Original sheet index: [0, 1, 2, ..., N-1] -> reversed array: [N-1, N-2, ..., 1, 0]
-          // So, item at reversedData[i] was originally at index (data.length - 1 - i) in the sheet.
-          // Since Google Sheets rows start at 1, and header is row 1, data starts at row 2.
-          // Therefore, original sheet row number = (data.length - 1 - i) + 2 = data.length + 1 - i
-          const dataWithIndex = reversedData.map((row, i, arr) => ({
+          const reversed = data.reverse();
+          const withIndex = reversed.map((row, i) => ({
             ...row,
-            // Calculate original sheet row index (assuming no gaps, header on row 1)
-            // Original index in 'data' array: (arr.length - 1 - i)
-            // Original sheet row number: (original index) + 2
-            // Which simplifies to: (arr.length - 1 - i) + 2 = arr.length + 1 - i
-            __row_index: data.length + 1 - i // Use original data.length
+            __row_index: data.length + 1 - i,
           }));
-          setRows(dataWithIndex);
+          setRows(withIndex);
         }
       } catch (err) {
         console.error("Error loading maintenance history:", err);
       } finally {
-         setLoading(false); // Ensure loading is stopped even on error
+        setLoading(false);
       }
     }
     load();
@@ -102,7 +91,6 @@ export default function MaintenanceHistory() {
       if (!hasEquipment) {
         await cache.forceRefreshEquipment?.();
       }
-      // setLoading(false); // Moved to the first useEffect to handle initial load correctly
     };
     ensureEquipmentLoaded();
   }, [cache]);
@@ -112,8 +100,6 @@ export default function MaintenanceHistory() {
   const driverAllowedPlates = useMemo(() => {
     if (user?.role !== "Driver") return null;
     const equipment = cache.getEquipment?.() || [];
-    if (!equipment.length) return null;
-
     return equipment
       .filter(
         (e) =>
@@ -125,7 +111,7 @@ export default function MaintenanceHistory() {
       .filter(Boolean);
   }, [user, cache]);
 
-  /* ---------------- Filter options ---------------- */
+  /* ---------------- Filter Options ---------------- */
 
   const modelOptions = useMemo(
     () =>
@@ -157,7 +143,7 @@ export default function MaintenanceHistory() {
     [rows]
   );
 
-  /* ---------------- Apply filters ---------------- */
+  /* ---------------- Apply Filters ---------------- */
 
   const filteredRows = useMemo(() => {
     return rows.filter((r) => {
@@ -175,32 +161,24 @@ export default function MaintenanceHistory() {
         return false;
       }
 
-      const matchModel = !filters.model || model === filters.model;
-      const matchPlate = !filters.plate || plate === filters.plate;
-      const matchDriver = !filters.driver || driver === filters.driver;
-      const matchPerformedBy =
-        !filters.performedBy || performedBy === filters.performedBy;
+      if (filters.model && model !== filters.model) return false;
+      if (filters.plate && plate !== filters.plate) return false;
+      if (filters.driver && driver !== filters.driver) return false;
+      if (filters.performedBy && performedBy !== filters.performedBy)
+        return false;
 
-      let matchDate = true;
-      if (filters.from && date < filters.from) matchDate = false;
-      if (filters.to && date > filters.to) matchDate = false;
+      if (filters.from && date < filters.from) return false;
+      if (filters.to && date > filters.to) return false;
 
-      return (
-        matchModel &&
-        matchPlate &&
-        matchDriver &&
-        matchPerformedBy &&
-        matchDate
-      );
+      return true;
     });
   }, [rows, filters, user, driverAllowedPlates]);
 
-  // Pagination logic
   const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedRows = filteredRows.slice(startIndex, startIndex + itemsPerPage);
 
-  const resetFilters = () =>
+  const resetFilters = () => {
     setFilters({
       model: "",
       plate: "",
@@ -209,62 +187,58 @@ export default function MaintenanceHistory() {
       from: "",
       to: "",
     });
-
-  const goToPage = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+    setCurrentPage(1);
   };
 
-  /* ---------------- Delete Entry ---------------- */
-  const handleDelete = async (rowIndexInPaginatedList) => {
-    const actualRowIndexInFiltered = startIndex + rowIndexInPaginatedList;
-    const rowToDelete = filteredRows[actualRowIndexInFiltered]; // Get the correct row from the filtered list
-    const confirmDelete = window.confirm(t("maintenance.history.deleteConfirm"));
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+  };
+
+  /* ---------------- Delete ---------------- */
+
+  const handleDelete = async (rowIndexInPage) => {
+    const actualIndex = startIndex + rowIndexInPage;
+    const rowToDelete = filteredRows[actualIndex];
+
+    const confirmDelete = window.confirm(
+      t("maintenance.history.deleteConfirm")
+    );
     if (!confirmDelete) return;
 
-    if (!rowToDelete || typeof rowToDelete.__row_index === 'undefined') {
-       console.error("Cannot delete row: Missing __row_index.", rowToDelete);
-       alert(t("maintenance.history.deleteError")); // Or a more specific error message
-       return;
+    if (!rowToDelete?.__row_index) {
+      alert(t("maintenance.history.deleteError"));
+      return;
     }
 
     try {
-      const response = await fetchWithAuth(`/api/delete/Maintenance_Log/${rowToDelete.__row_index}`, {
-        method: "DELETE", // Use DELETE method
-        headers: { "Content-Type": "application/json" }, // Include auth token via fetchWithAuth
-      });
-
-      const result = await response.json();
+      const res = await fetchWithAuth(
+        `/api/delete/Maintenance_Log/${rowToDelete.__row_index}`,
+        { method: "DELETE" }
+      );
+      const result = await res.json();
       if (result.status === "success") {
-        // Optimistically update the state to remove the deleted item
-        setRows(prevRows => prevRows.filter(r => r.__row_index !== rowToDelete.__row_index));
-        // Show success message
-        alert(t("maintenance.history.deleteSuccess")); // Add this translation key
+        setRows((prev) =>
+          prev.filter((r) => r.__row_index !== rowToDelete.__row_index)
+        );
+        alert(t("maintenance.history.deleteSuccess"));
       } else {
-        console.error("Deletion failed:", result.message);
-        alert(t("maintenance.history.deleteError")); // Add this translation key
+        alert(t("maintenance.history.deleteError"));
       }
-    } catch (error) {
-      console.error("Error deleting row:", error);
-      alert(t("maintenance.history.deleteError")); // Add this translation key
+    } catch {
+      alert(t("maintenance.history.deleteError"));
     }
   };
 
-
-  /* ---------------- Description translation ---------------- */
+  /* ---------------- Description Translation ---------------- */
 
   const translateDescription = (value) => {
     if (!value) return "---";
-
     const cleaningKey = `cleaningTypes.${value}`;
     const cleaningTranslated = t(cleaningKey);
     if (cleaningTranslated !== cleaningKey) return cleaningTranslated;
-
     const requestKey = `requestTypes.${value}`;
     const requestTranslated = t(requestKey);
     if (requestTranslated !== requestKey) return requestTranslated;
-
     return value;
   };
 
@@ -314,14 +288,14 @@ export default function MaintenanceHistory() {
         </div>
 
         {/* Filters */}
-        <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-4 mb-8 shadow-lg">
+        <div className="bg-gray-800/40 border border-gray-700 rounded-2xl p-4 mb-8">
           <div className="grid md:grid-cols-6 sm:grid-cols-2 gap-4">
             <select
               value={filters.model}
               onChange={(e) =>
                 setFilters((f) => ({ ...f, model: e.target.value }))
               }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
+              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
             >
               <option value="">{t("maintenance.history.filters.model")}</option>
               {modelOptions.map((m) => (
@@ -334,7 +308,7 @@ export default function MaintenanceHistory() {
               onChange={(e) =>
                 setFilters((f) => ({ ...f, plate: e.target.value }))
               }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
+              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
             >
               <option value="">{t("maintenance.history.filters.plate")}</option>
               {plateOptions.map((p) => (
@@ -347,7 +321,7 @@ export default function MaintenanceHistory() {
               onChange={(e) =>
                 setFilters((f) => ({ ...f, driver: e.target.value }))
               }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
+              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
             >
               <option value="">{t("maintenance.history.filters.driver")}</option>
               {driverOptions.map((d) => (
@@ -360,7 +334,7 @@ export default function MaintenanceHistory() {
               onChange={(e) =>
                 setFilters((f) => ({ ...f, performedBy: e.target.value }))
               }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
+              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
             >
               <option value="">
                 {t("maintenance.history.filters.performedBy")}
@@ -376,7 +350,7 @@ export default function MaintenanceHistory() {
               onChange={(e) =>
                 setFilters((f) => ({ ...f, from: e.target.value }))
               }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
+              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
             />
 
             <input
@@ -385,29 +359,30 @@ export default function MaintenanceHistory() {
               onChange={(e) =>
                 setFilters((f) => ({ ...f, to: e.target.value }))
               }
-              className="p-2 rounded-lg bg-gray-900/70 border border-gray-700 text-white text-sm"
+              className="p-2 rounded-lg bg-gray-900 border border-gray-700"
             />
           </div>
 
           <div className="flex justify-between mt-4">
-             <div>
-               {user?.role === "Supervisor" && (
-                 <button
-                   onClick={() => setDeleteMode(!deleteMode)}
-                   className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg font-medium ${
-                     deleteMode
-                       ? "bg-red-600/20 hover:bg-red-600/30 text-red-400"
-                       : "bg-gray-700 hover:bg-gray-600 text-white"
-                   }`}
-                 >
-                   <Trash2 size={14} />
-                   {deleteMode ? t("maintenance.history.exitDeleteMode") : t("maintenance.history.enterDeleteMode")}
-                 </button>
-               )}
-             </div>
+            {user?.role === "Supervisor" && (
+              <button
+                onClick={() => setDeleteMode((v) => !v)}
+                className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg ${
+                  deleteMode
+                    ? "bg-red-600/20 text-red-400"
+                    : "bg-gray-700 text-gray-300"
+                }`}
+              >
+                {deleteMode ? <XIcon size={14} /> : <Trash2 size={14} />}
+                {deleteMode
+                  ? t("common.cancel")
+                  : t("equipment.manage.actions.delete")}
+              </button>
+            )}
+
             <button
               onClick={resetFilters}
-              className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium"
+              className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400"
             >
               <XCircle size={14} />
               {t("maintenance.history.filters.reset")}
@@ -429,137 +404,91 @@ export default function MaintenanceHistory() {
             <div className="md:hidden space-y-4">
               {paginatedRows.map((r, i) => (
                 <div
-                   key={r.__row_index} // Use __row_index for stable key
-                   className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg relative" // Added relative for delete button positioning
+                  key={r.__row_index}
+                  className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 shadow-lg"
                 >
-                  {deleteMode && user?.role === "Supervisor" && (
-                    <button
-                      onClick={() => handleDelete(i)} // Pass index within current page
-                      className="absolute top-2 right-2 text-red-500 hover:text-red-400"
-                    >
-                      <XIcon size={16} />
-                    </button>
-                  )}
-
-                  <div
-                     onClick={() =>
-                       setExpandedIndex(expandedIndex === i ? null : i)
-                     }
-                     className="cursor-pointer"
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="text-lg font-semibold text-emerald-400">
-                          {r["Plate Number"]}
-                        </p>
-                        <p className="text-sm text-gray-400">
-                          {r["Model / Type"]}
-                        </p>
-                      </div>
-                      <span className="text-xs font-semibold text-gray-300">
-                        {r["Date"]}
-                      </span>
-                    </div>
-
-                    <div className="text-sm space-y-1">
-                      <p>
-                        <span className="text-gray-400">
-                          {t("maintenance.history.table.description")}:
-                        </span>{" "}
-                        {translateDescription(r["Description of Work"])}
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="text-lg font-semibold text-emerald-400">
+                        {r["Plate Number"]}
                       </p>
-                      <p>
-                        <span className="text-gray-400">
-                          {t("maintenance.history.table.performedBy")}:
-                        </span>{" "}
-                        {r["Performed By"]}
-                      </p>
-                      <p>
-                        <span className="text-gray-400">
-                          {t("maintenance.history.table.driver")}:
-                        </span>{" "}
-                        {r["Driver"]}
-                      </p>
-                      <p>
-                        <span className="text-gray-400">
-                          {t("maintenance.history.table.completionDate")}:
-                        </span>{" "}
-                        {r["Completion Date"] || "---"}
+                      <p className="text-sm text-gray-400">
+                        {r["Model / Type"]}
                       </p>
                     </div>
+                    <span className="text-xs text-gray-300">{r["Date"]}</span>
+                  </div>
 
-                    {expandedIndex === i && (
-                      <>
-                        {/* Comments */}
-                        <div className="mt-3 text-sm">
-                          <span className="text-gray-400">
-                            {t("maintenance.history.table.comments")}:
-                          </span>{" "}
-                          {r["Comments"] || "---"}
-                        </div>
+                  <div className="text-sm space-y-1">
+                    <p>
+                      <span className="text-gray-400">
+                        {t("maintenance.history.table.description")}:
+                      </span>{" "}
+                      {translateDescription(r["Description of Work"])}
+                    </p>
+                    <p>
+                      <span className="text-gray-400">
+                        {t("maintenance.history.table.performedBy")}:
+                      </span>{" "}
+                      {r["Performed By"]}
+                    </p>
+                    <p>
+                      <span className="text-gray-400">
+                        {t("maintenance.history.table.driver")}:
+                      </span>{" "}
+                      {r["Driver"]}
+                    </p>
+                  </div>
 
-                        {/* Photos */}
-                        <div className="flex gap-3 mt-3">
-                          {[
-                            {
-                              field: "Photo Before",
-                              label: t("maintenance.history.table.photoBefore"),
-                            },
-                            {
-                              field: "Photo After",
-                              label: t("maintenance.history.table.photoAfter"),
-                            },
-                            {
-                              field: "Photo Repair/Problem",
-                              label: t("maintenance.history.table.photoProblem"),
-                            },
-                          ].map(
-                            ({ field, label }) =>
-                              r[field] ? (
-                                <div
-                                  key={field}
-                                  className="flex flex-col items-center gap-1"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <a
-                                    href={r[field]}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="relative group"
-                                  >
-                                    <img
-                                      src={getThumbnailUrl(r[field])}
-                                      alt={label}
-                                      className="h-16 w-16 object-cover rounded-lg border border-gray-600"
-                                    />
-                                    <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
-                                      <ExternalLink className="w-5 h-5 text-emerald-400" />
-                                    </div>
-                                  </a>
-                                  <span className="text-[11px] text-gray-400 text-center">
-                                    {label}
-                                  </span>
-                                </div>
-                              ) : null
-                          )}
-                        </div>
-                      </>
+                  <div className="mt-3 text-sm">
+                    <span className="text-gray-400">
+                      {t("maintenance.history.table.comments")}:
+                    </span>{" "}
+                    {r["Comments"] || "---"}
+                  </div>
+
+                  <div className="flex gap-3 mt-3">
+                    {["Photo Before", "Photo After", "Photo Repair/Problem"].map(
+                      (field) =>
+                        r[field] && (
+                          <a
+                            key={field}
+                            href={r[field]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="relative group"
+                          >
+                            <img
+                              src={getThumbnailUrl(r[field])}
+                              alt={field}
+                              className="h-16 w-16 rounded-lg border border-gray-600"
+                            />
+                            <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
+                              <ExternalLink className="w-5 h-5 text-emerald-400" />
+                            </div>
+                          </a>
+                        )
                     )}
                   </div>
+
+                  {deleteMode && (
+                    <button
+                      onClick={() => handleDelete(i)}
+                      className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm"
+                    >
+                      <Trash2 size={14} />
+                      {t("equipment.manage.actions.delete")}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
 
             {/* Desktop Table */}
-            <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-700 shadow-2xl">
-              <table className="min-w-full bg-gray-800/50 backdrop-blur-sm">
-                <thead className="bg-gradient-to-r from-gray-800 to-gray-900">
+            <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-700">
+              <table className="min-w-full bg-gray-800/50">
+                <thead className="bg-gray-900">
                   <tr>
-                    {deleteMode && user?.role === "Supervisor" && (
-                      <th className="p-4 text-center text-sm font-semibold text-gray-300">
-                        {t("maintenance.history.table.actions")}
-                      </th>
-                    )}
                     {[
                       "index",
                       "date",
@@ -574,34 +503,26 @@ export default function MaintenanceHistory() {
                       "photoAfter",
                       "photoProblem",
                     ].map((h) => (
-                      <th
-                        key={h}
-                        className="p-4 text-left text-sm font-semibold text-gray-300"
-                      >
+                      <th key={h} className="p-4 text-left text-sm text-gray-300">
                         {t(`maintenance.history.table.${h}`)}
                       </th>
                     ))}
+                    {deleteMode && (
+                      <th className="p-4 text-left text-sm text-red-400">
+                        {t("equipment.manage.actions.delete")}
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedRows.map((r, i) => (
                     <tr
-                      key={r.__row_index} // Use __row_index for stable key
-                      className={`border-t border-gray-700 hover:bg-white/5 transition-colors ${
-                        i % 2 === 0 ? "bg-white/[0.02]" : ""
-                      }`}
+                      key={r.__row_index}
+                      className="border-t border-gray-700 hover:bg-white/5"
                     >
-                      {deleteMode && user?.role === "Supervisor" && (
-                        <td className="p-4 text-center">
-                           <button
-                             onClick={() => handleDelete(i)} // Pass index within current page
-                             className="text-red-500 hover:text-red-400"
-                           >
-                             <XIcon size={16} />
-                           </button>
-                         </td>
-                      )}
-                      <td className="p-4 text-sm text-gray-400">{startIndex + i + 1}</td>
+                      <td className="p-4 text-sm text-gray-400">
+                        {startIndex + i + 1}
+                      </td>
                       <td className="p-4 text-sm">{r["Date"]}</td>
                       <td className="p-4 text-sm">{r["Model / Type"]}</td>
                       <td className="p-4 text-sm font-mono">
@@ -615,7 +536,7 @@ export default function MaintenanceHistory() {
                       <td className="p-4 text-sm">
                         {r["Completion Date"] || "---"}
                       </td>
-                      <td className="p-4 text-sm max-w-xs truncate">
+                      <td className="p-4 text-sm truncate max-w-xs">
                         {r["Comments"] || "---"}
                       </td>
 
@@ -632,17 +553,29 @@ export default function MaintenanceHistory() {
                                 <img
                                   src={getThumbnailUrl(r[field])}
                                   alt={field}
-                                  className="h-16 w-16 object-cover rounded-lg border border-gray-600 group-hover:border-emerald-500 group-hover:scale-110 transition-all duration-200 shadow-lg"
+                                  className="h-16 w-16 rounded-lg border border-gray-600"
                                 />
                                 <div className="hidden group-hover:flex absolute inset-0 bg-black/70 items-center justify-center rounded-lg">
                                   <ExternalLink className="w-6 h-6 text-emerald-400" />
                                 </div>
                               </a>
                             ) : (
-                              <span className="text-gray-500 text-sm">---</span>
+                              <span className="text-gray-500">---</span>
                             )}
                           </td>
                         )
+                      )}
+
+                      {deleteMode && (
+                        <td className="p-4">
+                          <button
+                            onClick={() => handleDelete(i)}
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm"
+                          >
+                            <Trash2 size={14} />
+                            {t("equipment.manage.actions.delete")}
+                          </button>
+                        </td>
                       )}
                     </tr>
                   ))}
@@ -650,15 +583,15 @@ export default function MaintenanceHistory() {
               </table>
             </div>
 
-            {/* Pagination Controls */}
+            {/* Pagination */}
             {totalPages > 1 && (
               <div className="mt-8 flex justify-center items-center gap-2">
                 <button
                   onClick={() => goToPage(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50"
                 >
-                  {t("common.previous") || "Previous"}
+                  {t("common.previous")}
                 </button>
 
                 <div className="flex gap-1">
@@ -667,7 +600,7 @@ export default function MaintenanceHistory() {
                       <button
                         key={pageNum}
                         onClick={() => goToPage(pageNum)}
-                        className={`px-4 py-2 rounded-lg transition ${
+                        className={`px-4 py-2 rounded-lg ${
                           currentPage === pageNum
                             ? "bg-emerald-600 text-white"
                             : "bg-gray-700 hover:bg-gray-600 text-white"
@@ -682,9 +615,9 @@ export default function MaintenanceHistory() {
                 <button
                   onClick={() => goToPage(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50"
                 >
-                  {t("common.next") || "Next"}
+                  {t("common.next")}
                 </button>
               </div>
             )}
