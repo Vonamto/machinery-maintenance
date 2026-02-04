@@ -50,7 +50,7 @@ def authenticate_user(username, password):
                     "username": sheet_username,
                     "role": user.get("Role", ""),
                     "full_name": user.get("Full Name", ""),
-                    "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
+                    "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24)
                 }
                 token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
                 return jsonify({
