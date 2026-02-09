@@ -85,22 +85,55 @@ export default function MaintenanceForm() {
     loadInitialData();
   }, [cache]);
 
-  // Dynamic linking: When Model/Type is selected, update available Plate Numbers
+  // Dynamic linking: When Model/Type is selected, update available Plate Numbers AND Drivers
   useEffect(() => {
     const model = form["Model / Type"];
     if (!model) {
       setPlateOptions([]);
+      setDriverOptions([]);
       return;
     }
+    
     // Get all plates that match the selected model
-    setPlateOptions(cache.getPlatesByModel?.(model) || []);
+    const plates = cache.getPlatesByModel?.(model) || [];
+    setPlateOptions(plates);
+
+    // Get all drivers assigned to equipment of this model type
+    const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
+    const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === model);
+    const driversForThisModel = [
+      ...new Set(
+        equipmentOfThisModel.flatMap((e) => [
+          e["Driver 1"],
+          e["Driver 2"],
+          e["Driver"]
+        ]).filter(Boolean)
+      )
+    ];
+    setDriverOptions(driversForThisModel);
   }, [form["Model / Type"], cache]);
 
   // Dynamic linking: When Plate Number is selected, auto-fill Model and update Drivers
   useEffect(() => {
     const plate = form["Plate Number"];
     if (!plate) {
-      setDriverOptions([]);
+      // If plate is cleared but model is still selected, restore drivers for that model
+      if (form["Model / Type"]) {
+        const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
+        const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === form["Model / Type"]);
+        const driversForThisModel = [
+          ...new Set(
+            equipmentOfThisModel.flatMap((e) => [
+              e["Driver 1"],
+              e["Driver 2"],
+              e["Driver"]
+            ]).filter(Boolean)
+          )
+        ];
+        setDriverOptions(driversForThisModel);
+      } else {
+        setDriverOptions([]);
+      }
       return;
     }
 
@@ -112,7 +145,7 @@ export default function MaintenanceForm() {
         ...p,
         "Model / Type": eq["Model / Type"] || p["Model / Type"],
       }));
-      // Update driver options to only show drivers for this equipment
+      // Update driver options to only show drivers for this specific equipment
       setDriverOptions(cache.getDriversByPlate?.(plate) || []);
     }
   }, [form["Plate Number"], cache]);
@@ -141,6 +174,16 @@ export default function MaintenanceForm() {
     } 
     // If driver is assigned to multiple equipment, show all matching plates and models
     else if (matches.length > 1) {
+      const models = [...new Set(matches.map(m => m["Model / Type"]))];
+      
+      // If driver has only one model type, auto-fill model
+      if (models.length === 1) {
+        setForm((p) => ({
+          ...p,
+          "Model / Type": models[0] || p["Model / Type"],
+        }));
+      }
+      
       setPlateOptions(matches.map((m) => m["Plate Number"]));
       setDriverOptions([...new Set(matches.flatMap((m) => [m["Driver 1"], m["Driver 2"]]).filter(Boolean))]);
     } 
@@ -264,7 +307,7 @@ export default function MaintenanceForm() {
               />
             </div>
 
-            {/* Model/Type dropdown - filters Plate Number options */}
+            {/* Model/Type dropdown - filters Plate Number AND Driver options */}
             <div>
               <label className="block text-sm font-medium mb-2">
                 {t("maintenance.form.model")}
@@ -309,7 +352,7 @@ export default function MaintenanceForm() {
               </select>
             </div>
 
-            {/* Driver dropdown - auto-fills Model and Plate if driver has only one assignment */}
+            {/* Driver dropdown - shows filtered drivers based on Model/Plate selection */}
             <div>
               <label className="block text-sm font-medium mb-2">
                 {t("maintenance.form.driver")}
