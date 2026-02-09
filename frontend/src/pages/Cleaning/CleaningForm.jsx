@@ -64,6 +64,7 @@ export default function CleaningForm() {
   }, [cache]);
 
   // Dynamic linking: When Model/Type is selected, update available Plate Numbers AND Drivers
+  // BUT: If a Plate Number is already selected, don't change drivers (plate takes precedence)
   useEffect(() => {
     const model = form["Model / Type"];
     if (!model) {
@@ -76,20 +77,24 @@ export default function CleaningForm() {
     const plates = cache.getPlatesByModel ? cache.getPlatesByModel(model) : [];
     setPlateOptions(plates);
 
-    // Get all drivers assigned to equipment of this model type
-    const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
-    const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === model);
-    const driversForThisModel = [
-      ...new Set(
-        equipmentOfThisModel.flatMap((e) => [
-          e["Driver 1"],
-          e["Driver 2"],
-          e["Driver"]
-        ]).filter(Boolean)
-      )
-    ];
-    setDriverOptions(driversForThisModel);
-  }, [form["Model / Type"], cache]);
+    // Only update drivers if NO plate is selected (plate has priority over model)
+    if (!form["Plate Number"]) {
+      // Get all drivers assigned to equipment of this model type
+      const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
+      const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === model);
+      const driversForThisModel = [
+        ...new Set(
+          equipmentOfThisModel.flatMap((e) => [
+            e["Driver 1"],
+            e["Driver 2"],
+            e["Driver"]
+          ]).filter(Boolean)
+        )
+      ];
+      setDriverOptions(driversForThisModel);
+    }
+    // If plate is selected, drivers are already set by the plate useEffect, so don't override
+  }, [form["Model / Type"], form["Plate Number"], cache]);
 
   // Dynamic linking: When Plate Number is selected, auto-fill Model and update Drivers
   useEffect(() => {
@@ -120,7 +125,7 @@ export default function CleaningForm() {
     if (eq) {
       // Auto-fill the Model/Type field
       setForm((p) => ({ ...p, "Model / Type": eq["Model / Type"] || p["Model / Type"] }));
-      // Update driver options to only show drivers for this specific equipment
+      // Update driver options to only show the 2 drivers for this specific equipment
       const drivers = cache.getDriversByPlate ? cache.getDriversByPlate(plate) : [];
       setDriverOptions(drivers);
     }
@@ -272,7 +277,7 @@ export default function CleaningForm() {
               />
             </div>
 
-            {/* Model/Type dropdown - filters Plate Number AND Driver options */}
+            {/* Model/Type dropdown - filters Plate Number AND Driver options (unless plate is selected) */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.model")}</label>
               <select
@@ -287,7 +292,7 @@ export default function CleaningForm() {
               </select>
             </div>
 
-            {/* Plate Number dropdown - auto-fills Model and filters Drivers */}
+            {/* Plate Number dropdown - auto-fills Model and shows only the 2 drivers for this equipment */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.plate")}</label>
               <select
