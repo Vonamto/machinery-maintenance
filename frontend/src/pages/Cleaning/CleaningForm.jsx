@@ -1,7 +1,7 @@
 // frontend/src/pages/Cleaning/CleaningForm.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Upload, Droplets, Loader2 } from "lucide-react"; // Added Loader2
+import { ArrowLeft, Camera, Upload, Droplets, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
@@ -31,8 +31,9 @@ export default function CleaningForm() {
   const [plateOptions, setPlateOptions] = useState([]);
   const [driverOptions, setDriverOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true); // Add loading state
+  const [loading, setLoading] = useState(true);
 
+  // Load initial data from cache on component mount
   useEffect(() => {
     const loadInitialData = async () => {
       try {
@@ -42,7 +43,6 @@ export default function CleaningForm() {
 
         // If data is missing, force a refresh
         if (!hasModels || !hasUsernames) {
-          // Use optional chaining to avoid errors if functions don't exist
           await Promise.allSettled([
             cache.forceRefreshEquipment?.(),
             cache.forceRefreshUsernames?.()
@@ -53,56 +53,91 @@ export default function CleaningForm() {
         const models = cache.getModels ? cache.getModels() : [];
         setModelOptions(models);
 
-        const cachedUsers = cache.getUsernames ? cache.getUsernames() : cache.usernames || [];
-        const allUserNames = (cachedUsers || [])
-          .map((u) => u.Name || u["Full Name"])
-          .filter(Boolean);
-        setDriverOptions(allUserNames); // Use all user names for initial drivers too
-
       } catch (err) {
         console.error("Error during initial data load:", err);
-        // Optionally, you could display an error message to the user here
-        // For now, just log and proceed with potentially empty arrays
       } finally {
-        setLoading(false); // Always stop loading eventually
+        setLoading(false);
       }
     };
 
     loadInitialData();
-  }, [cache]); // Run once on mount
+  }, [cache]);
 
-
+  // Dynamic linking: When Model/Type is selected, update available Plate Numbers AND Drivers
   useEffect(() => {
     const model = form["Model / Type"];
     if (!model) {
       setPlateOptions([]);
-      return;
-    }
-    const plates = cache.getPlatesByModel ? cache.getPlatesByModel(model) : [];
-    setPlateOptions(plates);
-  }, [form["Model / Type"], cache]);
-
-  useEffect(() => {
-    const plate = form["Plate Number"];
-    if (!plate) {
       setDriverOptions([]);
       return;
     }
+    
+    // Get all plates that match the selected model
+    const plates = cache.getPlatesByModel ? cache.getPlatesByModel(model) : [];
+    setPlateOptions(plates);
+
+    // Get all drivers assigned to equipment of this model type
+    const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
+    const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === model);
+    const driversForThisModel = [
+      ...new Set(
+        equipmentOfThisModel.flatMap((e) => [
+          e["Driver 1"],
+          e["Driver 2"],
+          e["Driver"]
+        ]).filter(Boolean)
+      )
+    ];
+    setDriverOptions(driversForThisModel);
+  }, [form["Model / Type"], cache]);
+
+  // Dynamic linking: When Plate Number is selected, auto-fill Model and update Drivers
+  useEffect(() => {
+    const plate = form["Plate Number"];
+    if (!plate) {
+      // If plate is cleared but model is still selected, restore drivers for that model
+      if (form["Model / Type"]) {
+        const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
+        const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === form["Model / Type"]);
+        const driversForThisModel = [
+          ...new Set(
+            equipmentOfThisModel.flatMap((e) => [
+              e["Driver 1"],
+              e["Driver 2"],
+              e["Driver"]
+            ]).filter(Boolean)
+          )
+        ];
+        setDriverOptions(driversForThisModel);
+      } else {
+        setDriverOptions([]);
+      }
+      return;
+    }
+
+    // Get the equipment that matches this plate
     const eq = cache.getEquipmentByPlate ? cache.getEquipmentByPlate(plate) : null;
     if (eq) {
+      // Auto-fill the Model/Type field
       setForm((p) => ({ ...p, "Model / Type": eq["Model / Type"] || p["Model / Type"] }));
+      // Update driver options to only show drivers for this specific equipment
       const drivers = cache.getDriversByPlate ? cache.getDriversByPlate(plate) : [];
       setDriverOptions(drivers);
     }
   }, [form["Plate Number"], cache]);
 
+  // Dynamic linking: When Driver is selected, auto-fill Model and Plate if there's only one match
   useEffect(() => {
     const driver = form.Driver;
     if (!driver) return;
+
+    // Get all equipment that this driver is assigned to
     const allEquipment = cache.getEquipment ? cache.getEquipment() : cache.equipment || [];
     const matches = (allEquipment || []).filter(
       (e) => e["Driver 1"] === driver || e["Driver 2"] === driver || e["Driver"] === driver
     );
+
+    // If driver is assigned to only ONE equipment, auto-fill everything
     if (matches.length === 1) {
       const eq = matches[0];
       setForm((p) => ({
@@ -112,10 +147,24 @@ export default function CleaningForm() {
       }));
       setPlateOptions([eq["Plate Number"]]);
       setDriverOptions([matches[0]["Driver 1"], matches[0]["Driver 2"]].filter(Boolean));
-    } else if (matches.length > 1) {
+    } 
+    // If driver is assigned to multiple equipment, show all matching plates and models
+    else if (matches.length > 1) {
+      const models = [...new Set(matches.map(m => m["Model / Type"]))];
+      
+      // If driver has only one model type, auto-fill model
+      if (models.length === 1) {
+        setForm((p) => ({
+          ...p,
+          "Model / Type": models[0] || p["Model / Type"],
+        }));
+      }
+      
       setPlateOptions(matches.map((m) => m["Plate Number"]));
       setDriverOptions([...new Set(matches.flatMap((m) => [m["Driver 1"], m["Driver 2"]]).filter(Boolean))]);
-    } else {
+    } 
+    // If no matches found, reset plate options
+    else {
       setPlateOptions([]);
     }
   }, [form.Driver, cache]);
@@ -178,14 +227,13 @@ export default function CleaningForm() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
         <Navbar user={user} />
-        <div className="max-w-4xl mx-auto p-6 flex flex-col items-center justify-center h-[calc(100vh-120px)]"> {/* Adjust height calculation if needed */}
+        <div className="max-w-4xl mx-auto p-6 flex flex-col items-center justify-center h-[calc(100vh-120px)]">
           <Loader2 className="h-12 w-12 animate-spin text-sky-400 mb-4" />
           <p className="text-lg text-gray-300">{t("common.loading") || "Loading form data..."}</p>
         </div>
       </div>
     );
   }
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
@@ -224,6 +272,7 @@ export default function CleaningForm() {
               />
             </div>
 
+            {/* Model/Type dropdown - filters Plate Number AND Driver options */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.model")}</label>
               <select
@@ -238,6 +287,7 @@ export default function CleaningForm() {
               </select>
             </div>
 
+            {/* Plate Number dropdown - auto-fills Model and filters Drivers */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.plate")}</label>
               <select
@@ -254,6 +304,7 @@ export default function CleaningForm() {
               </select>
             </div>
 
+            {/* Driver dropdown - shows filtered drivers based on Model/Plate selection */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.driver")}</label>
               <select
