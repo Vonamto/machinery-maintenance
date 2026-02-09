@@ -57,6 +57,7 @@ export default function MaintenanceForm() {
     { key: "OTHER", label: t("maintenance.form.otherOption") }
   ];
 
+  // Load initial data from cache on component mount
   useEffect(() => {
     const loadInitialData = async () => {
       try {
@@ -84,28 +85,70 @@ export default function MaintenanceForm() {
     loadInitialData();
   }, [cache]);
 
+  // Dynamic linking: When Model/Type is selected, update available Plate Numbers
   useEffect(() => {
     const model = form["Model / Type"];
     if (!model) {
       setPlateOptions([]);
       return;
     }
+    // Get all plates that match the selected model
     setPlateOptions(cache.getPlatesByModel?.(model) || []);
   }, [form["Model / Type"], cache]);
 
+  // Dynamic linking: When Plate Number is selected, auto-fill Model and update Drivers
   useEffect(() => {
     const plate = form["Plate Number"];
-    if (!plate) return;
+    if (!plate) {
+      setDriverOptions([]);
+      return;
+    }
 
+    // Get the equipment that matches this plate
     const eq = cache.getEquipmentByPlate?.(plate);
     if (eq) {
+      // Auto-fill the Model/Type field
       setForm((p) => ({
         ...p,
         "Model / Type": eq["Model / Type"] || p["Model / Type"],
       }));
+      // Update driver options to only show drivers for this equipment
       setDriverOptions(cache.getDriversByPlate?.(plate) || []);
     }
   }, [form["Plate Number"], cache]);
+
+  // Dynamic linking: When Driver is selected, auto-fill Model and Plate if there's only one match
+  useEffect(() => {
+    const driver = form.Driver;
+    if (!driver) return;
+
+    // Get all equipment that this driver is assigned to
+    const allEquipment = cache.getEquipment ? cache.getEquipment() : cache.equipment || [];
+    const matches = (allEquipment || []).filter(
+      (e) => e["Driver 1"] === driver || e["Driver 2"] === driver || e["Driver"] === driver
+    );
+
+    // If driver is assigned to only ONE equipment, auto-fill everything
+    if (matches.length === 1) {
+      const eq = matches[0];
+      setForm((p) => ({
+        ...p,
+        "Plate Number": eq["Plate Number"] || p["Plate Number"],
+        "Model / Type": eq["Model / Type"] || p["Model / Type"],
+      }));
+      setPlateOptions([eq["Plate Number"]]);
+      setDriverOptions([matches[0]["Driver 1"], matches[0]["Driver 2"]].filter(Boolean));
+    } 
+    // If driver is assigned to multiple equipment, show all matching plates and models
+    else if (matches.length > 1) {
+      setPlateOptions(matches.map((m) => m["Plate Number"]));
+      setDriverOptions([...new Set(matches.flatMap((m) => [m["Driver 1"], m["Driver 2"]]).filter(Boolean))]);
+    } 
+    // If no matches found, reset plate options
+    else {
+      setPlateOptions([]);
+    }
+  }, [form.Driver, cache]);
 
   const handleChange = (name, value) =>
     setForm((p) => ({ ...p, [name]: value }));
@@ -169,6 +212,7 @@ export default function MaintenanceForm() {
     }
   };
 
+  // Loading screen while fetching initial data
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
@@ -220,6 +264,7 @@ export default function MaintenanceForm() {
               />
             </div>
 
+            {/* Model/Type dropdown - filters Plate Number options */}
             <div>
               <label className="block text-sm font-medium mb-2">
                 {t("maintenance.form.model")}
@@ -238,6 +283,7 @@ export default function MaintenanceForm() {
               </select>
             </div>
 
+            {/* Plate Number dropdown - auto-fills Model and filters Drivers */}
             <div>
               <label className="block text-sm font-medium mb-2">
                 {t("maintenance.form.plate")}
@@ -263,6 +309,7 @@ export default function MaintenanceForm() {
               </select>
             </div>
 
+            {/* Driver dropdown - auto-fills Model and Plate if driver has only one assignment */}
             <div>
               <label className="block text-sm font-medium mb-2">
                 {t("maintenance.form.driver")}
@@ -364,6 +411,7 @@ export default function MaintenanceForm() {
             />
           </div>
 
+          {/* Photo upload fields */}
           {[ 
             { key: "Photo Before", label: t("maintenance.form.photoBefore") },
             { key: "Photo After", label: t("maintenance.form.photoAfter") },
