@@ -47,7 +47,7 @@ drive_service = build("drive", "v3", credentials=creds)
 #  ✅  Google Sheets access (still uses service account)
 # =====================================================
 service_account_info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
-service_account_info["private_key"] = service_account_info["private_key"].replace("\\n", "\n")
+service_account_info["private_key"] = service_account_info["private_key"].replace("\\\\n", "\\n")
 
 sheet_creds = Credentials.from_service_account_info(
     service_account_info,
@@ -122,6 +122,10 @@ def save_image_to_drive(base64_string, filename, subfolder_name):
 #  ✅  Copy to Maintenance_Log
 # =====================================================
 def copy_to_maintenance_log(source_sheet, data):
+    """
+    NOTE: This function is kept for potential future use or for other sheets,
+    but it is NO LONGER called automatically for Cleaning_Log submissions.
+    """
     try:
         maintenance = client.open_by_key(SPREADSHEET_ID).worksheet("Maintenance_Log")
         headers = maintenance.row_values(1)
@@ -219,9 +223,18 @@ def append_row(sheet_name, new_row):
 
         sheet.append_row(row_to_add)
 
-        # Auto-copy Cleaning to Maintenance
-        if sheet_name == "Cleaning_Log":
-            copy_to_maintenance_log("Cleaning_Log", new_row)
+        # ============================================================
+        # 🔴 CHANGE MADE: Auto-copy to Maintenance_Log REMOVED
+        # ============================================================
+        # Previously, Cleaning_Log entries were automatically copied to Maintenance_Log.
+        # This has been disabled as per user request.
+        # 
+        # OLD CODE (now removed):
+        # if sheet_name == "Cleaning_Log":
+        #     copy_to_maintenance_log("Cleaning_Log", new_row)
+        #
+        # Cleaning logs are now ONLY stored in Cleaning_Log sheet.
+        # ============================================================
 
         return {"status": "success", "added": new_row, "timestamp": current_time}
 
