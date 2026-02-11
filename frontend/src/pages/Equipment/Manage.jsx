@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
 import { useTranslation } from "react-i18next";
+import { PAGE_PERMISSIONS } from "@/config/roles"; // ✅ ADDED: Import centralized roles
 
 export default function EquipmentManage() {
   const { user } = useAuth();
@@ -27,7 +28,8 @@ export default function EquipmentManage() {
     Notes: "",
   });
 
-  if (user?.role !== "Supervisor") {
+  // ✅ CHANGED: From hardcoded to centralized role check
+  if (!PAGE_PERMISSIONS.EQUIPMENT_MANAGE.includes(user?.role)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
