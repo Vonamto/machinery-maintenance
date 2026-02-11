@@ -270,6 +270,9 @@
     "Mechanic": " ميكانيكي ",
     "Driver": " سائق ",
     "Cleaning Guy": " عامل نظافة "
+    "Admin": "مسؤول",
+    "Guest": "ضيف",
+    "Manager": "مدير"
   },
   "status": {
     "Pending": " قيد الانتظار ",
