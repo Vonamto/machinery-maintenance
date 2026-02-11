@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
 import { useTranslation } from "react-i18next";
+import { PAGE_PERMISSIONS } from "@/config/roles"; // ✅ ADDED: Import centralized permissions
 
 export default function EquipmentManage() {
   const { user } = useAuth();
@@ -27,7 +28,8 @@ export default function EquipmentManage() {
     Notes: "",
   });
 
-  if (user?.role !== "Supervisor") {
+  // ✅ FIXED: Use centralized permissions instead of hardcoded role check
+  if (!PAGE_PERMISSIONS.EQUIPMENTMANAGE.includes(user?.role)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
@@ -115,47 +117,43 @@ export default function EquipmentManage() {
     }
   };
 
-  // adding handleDeleteEquipment function in Manage.jsx with this:
-
-const handleDeleteEquipment = async (rowIndex, plateNumber) => {
-  const confirmed = window.confirm(
-    t("equipment.manage.alerts.deleteConfirm", { plateNumber: plateNumber })
-  );
-
-  if (!confirmed) return;
-
-  setSaving(true);
-  try {
-    const token = localStorage.getItem("token");
-    
-    // ✅ NEW: Use DELETE method to completely remove the row
-    const res = await fetch(
-      `${CONFIG.BACKEND_URL}/api/delete/Equipment_List/${rowIndex}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+  const handleDeleteEquipment = async (rowIndex, plateNumber) => {
+    const confirmed = window.confirm(
+      t("equipment.manage.alerts.deleteConfirm", { plateNumber: plateNumber })
     );
-    
-    const data = await res.json();
 
-    if (data.status === "success") {
-      alert(t("equipment.manage.alerts.deleteSuccess"));
-      loadEquipment(); // Reload the list
-    } else {
-      alert(t("equipment.manage.alerts.error", { message: data.message || "Unknown error" }));
+    if (!confirmed) return;
+
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      
+      const res = await fetch(
+        `${CONFIG.BACKEND_URL}/api/delete/Equipment_List/${rowIndex}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      const data = await res.json();
+
+      if (data.status === "success") {
+        alert(t("equipment.manage.alerts.deleteSuccess"));
+        loadEquipment();
+      } else {
+        alert(t("equipment.manage.alerts.error", { message: data.message || "Unknown error" }));
+      }
+    } catch (err) {
+      console.error("Delete equipment error:", err);
+      alert(t("equipment.manage.alerts.networkError") + " " + t("equipment.manage.alerts.deleting"));
+    } finally {
+      setSaving(false);
     }
-  } catch (err) {
-    console.error("Delete equipment error:", err);
-    alert(t("equipment.manage.alerts.networkError") + " " + t("equipment.manage.alerts.deleting"));
-  } finally {
-    setSaving(false);
-  }
-};
+  };
 
-  // ✅ FIXED: Added "data:" property name
   const handleEditClick = (row, index) => {
     setEditingRow({
       index,
