@@ -12,6 +12,9 @@ ROLES = {
     "MECHANIC": "Mechanic",
     "DRIVER": "Driver",
     "CLEANER": "Cleaning Guy",
+    "ADMIN": "Admin",           # 🆕 NEW: Full access (including Users page)
+    "GUEST": "Guest",           # 🆕 NEW: Access to all except Users page
+    "MANAGER": "Manager",       # 🆕 NEW: Read-only access to history pages
 }
 
 # -------------------------
@@ -20,51 +23,51 @@ ROLES = {
 SHEET_PERMISSIONS = {
 
     "Maintenance_Log": {
-        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"]],
-        "add":    [ROLES["SUPERVISOR"], ROLES["MECHANIC"]],
-        "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"]],
-        "delete": [ROLES["SUPERVISOR"]],  # nobody can delete
+        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["ADMIN"], ROLES["GUEST"], ROLES["MANAGER"]],  # ✅ Manager can view history
+        "add":    [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["ADMIN"], ROLES["GUEST"]],
+        "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["ADMIN"], ROLES["GUEST"]],
+        "delete": [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
     },
 
     "Requests_Parts": {
-        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"]],
-        "add":    [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"]],
-        "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"]],
-        "delete": [ROLES["SUPERVISOR"]],
+        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["ADMIN"], ROLES["GUEST"]],
+        "add":    [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["ADMIN"], ROLES["GUEST"]],
+        "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["ADMIN"], ROLES["GUEST"]],
+        "delete": [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
     },
 
     "Grease_Oil_Requests": {
-        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"]],
-        "add":    [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"]],
-        "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"]],
-        "delete": [ROLES["SUPERVISOR"]],
+        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["ADMIN"], ROLES["GUEST"]],
+        "add":    [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["ADMIN"], ROLES["GUEST"]],
+        "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["ADMIN"], ROLES["GUEST"]],
+        "delete": [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
     },
 
     "Cleaning_Log": {
-        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["CLEANER"]],
-        "add":    [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["CLEANER"]],
-        "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["CLEANER"]],
-        "delete": [ROLES["SUPERVISOR"]],
+        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["CLEANER"], ROLES["ADMIN"], ROLES["GUEST"], ROLES["MANAGER"]],  # ✅ Manager can view history
+        "add":    [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["CLEANER"], ROLES["ADMIN"], ROLES["GUEST"]],
+        "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["CLEANER"], ROLES["ADMIN"], ROLES["GUEST"]],
+        "delete": [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
     },
 
     "Equipment_List": {
-        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["CLEANER"]],
-        "add":    [ROLES["SUPERVISOR"]],
-        "edit":   [ROLES["SUPERVISOR"]],
-        "delete": [ROLES["SUPERVISOR"]],  # 👈 SAME rule as before
+        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["CLEANER"], ROLES["ADMIN"], ROLES["GUEST"], ROLES["MANAGER"]],  # ✅ Manager can view list
+        "add":    [ROLES["SUPERVISOR"], ROLES["ADMIN"], ROLES["GUEST"]],
+        "edit":   [ROLES["SUPERVISOR"], ROLES["ADMIN"], ROLES["GUEST"]],
+        "delete": [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
     },
 
     "Users": {
-        "view":   [ROLES["SUPERVISOR"]],
-        "add":    [ROLES["SUPERVISOR"]],
-        "edit":   [ROLES["SUPERVISOR"]],
-        "delete": [ROLES["SUPERVISOR"]],
+        "view":   [ROLES["ADMIN"]],    # 🔒 Only Admin (Supervisor removed)
+        "add":    [ROLES["ADMIN"]],    # 🔒 Only Admin
+        "edit":   [ROLES["ADMIN"]],    # 🔒 Only Admin
+        "delete": [ROLES["ADMIN"]],    # 🔒 Only Admin
     },
 
     "Checklist_Log": {
-        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"]],
-        "add":    [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"]],
-        "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"]],
-        "delete": [ROLES["SUPERVISOR"]],
+        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["ADMIN"], ROLES["GUEST"], ROLES["MANAGER"]],  # ✅ Manager can view history
+        "add":    [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["ADMIN"], ROLES["GUEST"]],
+        "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["ADMIN"], ROLES["GUEST"]],
+        "delete": [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
     },
 }
