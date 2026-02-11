@@ -19,6 +19,7 @@ import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
 import { useTranslation } from "react-i18next";
 import { getChecklistTemplate } from "@/config/checklistTemplates";
+import { PAGE_PERMISSIONS } from "@/config/roles"; // 🆕 Import centralized roles
 
 export default function ChecklistHistory() {
   const { user } = useAuth();
@@ -41,9 +42,9 @@ export default function ChecklistHistory() {
 
   const itemsPerPage = 10;
 
-  /* -------------------- ACCESS CONTROL -------------------- */
+  /* -------------------- ACCESS CONTROL (Centralized) -------------------- */
   useEffect(() => {
-    if (user?.role === "Cleaning Guy") {
+    if (!PAGE_PERMISSIONS.CHECKLIST_HISTORY.includes(user?.role)) {
       navigate("/", { replace: true });
     }
   }, [user, navigate]);
