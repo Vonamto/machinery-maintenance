@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
 import { useTranslation } from "react-i18next";
+import { PAGE_PERMISSIONS } from "@/config/roles"; // 🆕 Import centralized roles
 
 export default function MaintenanceForm() {
   const { user } = useAuth();
@@ -14,8 +15,8 @@ export default function MaintenanceForm() {
   const cache = useCache();
   const { t } = useTranslation();
 
-  // 🚫 Driver cannot access
-  if (user?.role === "Driver") {
+  // 🔒 Access control (Centralized)
+  if (!PAGE_PERMISSIONS.MAINTENANCE_FORM.includes(user?.role)) {
     navigate("/", { replace: true });
     return null;
   }

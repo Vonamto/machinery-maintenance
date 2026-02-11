@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
 import { useTranslation } from "react-i18next";
+import { ROLES, PAGE_PERMISSIONS } from "@/config/roles"; // 🆕 Import centralized roles
 
 export default function UsersManage() {
   const { user } = useAuth();
@@ -25,8 +26,8 @@ export default function UsersManage() {
     "Full Name": "",
   });
 
-  // Only Supervisors can access
-  if (user?.role !== "Supervisor") {
+  // 🔒 Centralized access control using roles.js
+  if (!PAGE_PERMISSIONS.USERS.includes(user?.role)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
@@ -379,10 +380,12 @@ function UserInputs({ user, setUser }) {
           onChange={(e) => setUser({ ...user, Role: e.target.value })}
           className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
         >
-          <option value="Supervisor">{t("roles.Supervisor")}</option>
-          <option value="Mechanic">{t("roles.Mechanic")}</option>
-          <option value="Driver">{t("roles.Driver")}</option>
-          <option value="Cleaning Guy">{t("roles.Cleaning Guy")}</option>
+          {/* 🆕 Dynamically generate role options from centralized ROLES */}
+          {Object.values(ROLES).map((role) => (
+            <option key={role} value={role}>
+              {t(`roles.${role}`)}
+            </option>
+          ))}
         </select>
       </div>
     </>

@@ -269,7 +269,10 @@
     "Supervisor": "Supervisor",
     "Mechanic": "Mechanic",
     "Driver": "Driver",
-    "Cleaning Guy": "Cleaning Guy"
+    "Cleaning Guy": "Cleaning Guy",
+    "Admin": "Admin",
+    "Guest": "Guest",
+    "Manager": "Manager"
   },
   "status": {
     "Pending": "Pending",
