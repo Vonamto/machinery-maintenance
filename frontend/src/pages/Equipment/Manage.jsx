@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
 import { useTranslation } from "react-i18next";
-import { PAGE_PERMISSIONS } from "@/config/roles"; // ✅ ADDED: Import centralized permissions
+import { PAGE_PERMISSIONS } from "../../config/roles";  // ✅ Works!
 
 export default function EquipmentManage() {
   const { user } = useAuth();
