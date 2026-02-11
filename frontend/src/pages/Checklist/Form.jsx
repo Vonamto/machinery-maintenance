@@ -15,6 +15,7 @@ import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
 import { useTranslation } from "react-i18next";
 import { getChecklistTemplate } from "@/config/checklistTemplates";
+import { PAGE_PERMISSIONS } from "@/config/roles"; // 🆕 Import centralized roles
 
 export default function ChecklistForm() {
   const { user } = useAuth();
@@ -43,9 +44,9 @@ export default function ChecklistForm() {
   const isSupervisorOrMechanic =
     user?.role === "Supervisor" || user?.role === "Mechanic";
 
-  /* -------------------- ACCESS CONTROL -------------------- */
+  /* -------------------- ACCESS CONTROL (Centralized) -------------------- */
   useEffect(() => {
-    if (user?.role === "Cleaning Guy") {
+    if (!PAGE_PERMISSIONS.CHECKLIST_FORM.includes(user?.role)) {
       navigate("/", { replace: true });
     }
   }, [user, navigate]);
