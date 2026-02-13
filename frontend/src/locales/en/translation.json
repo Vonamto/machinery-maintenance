@@ -140,6 +140,8 @@
       "historyDescription": "View and review previously submitted machinery checklists"
     },
     "form": {
+      "title": "New Safety Inspection",
+      "subtitle": "Complete daily safety checklist",
       "commentPlaceholder": "Write Your Comments Here",
       "uploadPhoto": "Upload a Photo",
       "checklist": "Safety Checklist Items",
