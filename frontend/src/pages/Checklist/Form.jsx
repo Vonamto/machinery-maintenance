@@ -1,5 +1,5 @@
 // frontend/src/pages/Checklist/Form.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -15,7 +15,7 @@ import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
 import { useTranslation } from "react-i18next";
 import { getChecklistTemplate } from "@/config/checklistTemplates";
-import { PAGE_PERMISSIONS } from "@/config/roles"; // 🆕 Import centralized roles
+import { PAGE_PERMISSIONS } from "@/config/roles";
 
 export default function ChecklistForm() {
   const { user } = useAuth();
@@ -26,7 +26,7 @@ export default function ChecklistForm() {
   /* -------------------- STATE -------------------- */
   const [formData, setFormData] = useState({
     Date: new Date().toISOString().split("T")[0],
-    "Full Name": user?.full_name || "",
+    "Full Name": "",
     "Model / Type": "",
     "Plate Number": "",
     "Equipment Type": ""
@@ -40,9 +40,8 @@ export default function ChecklistForm() {
   const [plateOptions, setPlateOptions] = useState([]);
   const [driverOptions, setDriverOptions] = useState([]);
 
+  // Determine if user is a Driver
   const isDriver = user?.role === "Driver";
-  const isSupervisorOrMechanic =
-    user?.role === "Supervisor" || user?.role === "Mechanic";
 
   /* -------------------- ACCESS CONTROL (Centralized) -------------------- */
   useEffect(() => {
@@ -84,9 +83,16 @@ export default function ChecklistForm() {
           if (assigned) {
             setFormData(prev => ({
               ...prev,
+              "Full Name": user.full_name || "",
               "Model / Type": assigned["Model / Type"] || "",
               "Plate Number": assigned["Plate Number"] || "",
               "Equipment Type": assigned["Equipment Type"] || ""
+            }));
+          } else {
+            // Driver not assigned to any equipment, but set their name
+            setFormData(prev => ({
+              ...prev,
+              "Full Name": user.full_name || ""
             }));
           }
         }
@@ -100,9 +106,9 @@ export default function ChecklistForm() {
     loadInitialData();
   }, [cache, isDriver, user]);
 
-  /* -------------------- DYNAMIC DROPDOWN LOGIC (Supervisor/Mechanic) -------------------- */
+  /* -------------------- DYNAMIC DROPDOWN LOGIC (Non-Driver Roles) -------------------- */
   
-  // Update plate options based on selected model
+  // Update plate options and drivers based on selected model
   useEffect(() => {
     if (isDriver) return; // Skip for drivers
 
@@ -112,32 +118,58 @@ export default function ChecklistForm() {
       return;
     }
 
+    // Get all plates that match the selected model
     const plates = cache.getPlatesByModel ? cache.getPlatesByModel(model) : [];
     setPlateOptions(plates);
-  }, [formData["Model / Type"], cache, isDriver]);
 
-  // Update model and drivers based on selected plate
+    // Only update drivers if NO plate is selected (plate has priority over model)
+    if (!formData["Plate Number"]) {
+      // Get all drivers assigned to equipment of this model type
+      const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
+      const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === model);
+      const driversForThisModel = [...new Set(
+        equipmentOfThisModel.flatMap(e => [e["Driver 1"], e["Driver 2"]]).filter(Boolean)
+      )];
+      setDriverOptions(driversForThisModel);
+    }
+    // If plate is selected, drivers are already set by the plate useEffect, so don't override
+  }, [formData["Model / Type"], formData["Plate Number"], cache, isDriver]);
+
+  // Update model, equipment type, and drivers based on selected plate
   useEffect(() => {
     if (isDriver) return; // Skip for drivers
 
     const plate = formData["Plate Number"];
     if (!plate) {
-      setDriverOptions([]);
+      // If plate is cleared but model is still selected, restore drivers for that model
+      if (formData["Model / Type"]) {
+        const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
+        const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === formData["Model / Type"]);
+        const driversForThisModel = [...new Set(
+          equipmentOfThisModel.flatMap(e => [e["Driver 1"], e["Driver 2"]]).filter(Boolean)
+        )];
+        setDriverOptions(driversForThisModel);
+      } else {
+        setDriverOptions([]);
+      }
       return;
     }
 
+    // Get the equipment that matches this plate
     const eq = cache.getEquipmentByPlate ? cache.getEquipmentByPlate(plate) : null;
     if (eq) {
+      // Auto-fill the Model/Type and Equipment Type fields
       setFormData(prev => ({
         ...prev,
         "Model / Type": eq["Model / Type"] || prev["Model / Type"],
         "Equipment Type": eq["Equipment Type"] || prev["Equipment Type"]
       }));
 
+      // Update driver options to only show the 2 drivers for this specific equipment
       const drivers = cache.getDriversByPlate ? cache.getDriversByPlate(plate) : [];
       setDriverOptions(drivers);
     }
-  }, [formData["Plate Number"], cache, isDriver]);
+  }, [formData["Plate Number"], formData["Model / Type"], cache, isDriver]);
 
   // Update plates and model based on selected driver
   useEffect(() => {
@@ -146,11 +178,13 @@ export default function ChecklistForm() {
     const driver = formData["Full Name"];
     if (!driver) return;
 
+    // Get all equipment that this driver is assigned to
     const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
     const matches = allEquipment.filter(
       e => e["Driver 1"] === driver || e["Driver 2"] === driver
     );
 
+    // If driver is assigned to only ONE equipment, auto-fill everything
     if (matches.length === 1) {
       const eq = matches[0];
       setFormData(prev => ({
@@ -161,12 +195,25 @@ export default function ChecklistForm() {
       }));
       setPlateOptions([eq["Plate Number"]]);
       setDriverOptions([eq["Driver 1"], eq["Driver 2"]].filter(Boolean));
-    } else if (matches.length > 1) {
+    } 
+    // If driver is assigned to multiple equipment, show all matching plates and models
+    else if (matches.length > 1) {
+      const models = [...new Set(matches.map(m => m["Model / Type"]))];
+      
+      // If driver has only one model type, auto-fill model
+      if (models.length === 1) {
+        setFormData(prev => ({
+          ...prev,
+          "Model / Type": models[0]
+        }));
+      }
+      
       setPlateOptions(matches.map(m => m["Plate Number"]));
       setDriverOptions([...new Set(matches.flatMap(m => [m["Driver 1"], m["Driver 2"]]).filter(Boolean))]);
-    } else {
+    } 
+    // If no matches found, reset plate options
+    else {
       setPlateOptions([]);
-      setDriverOptions([]);
     }
   }, [formData["Full Name"], cache, isDriver]);
 
@@ -259,11 +306,14 @@ export default function ChecklistForm() {
 
   const template = getChecklistTemplate(formData["Equipment Type"]);
 
-  // Get usernames for Supervisor/Mechanic dropdown
-  const cachedUsers = cache.getUsernames ? cache.getUsernames() : cache.usernames || [];
-  const allUserNames = (cachedUsers || [])
-    .map(u => u.Name || u["Full Name"])
-    .filter(Boolean);
+  // Get all driver names from Equipment_List for dropdown (for non-Driver roles)
+  const allDriverNames = cache.getEquipment
+    ? [...new Set(
+        cache.getEquipment()
+          .flatMap(e => [e["Driver 1"], e["Driver 2"]])
+          .filter(Boolean)
+      )]
+    : [];
 
   /* -------------------- LOADING SCREEN -------------------- */
   if (loading) {
@@ -314,11 +364,17 @@ export default function ChecklistForm() {
             </div>
 
             {/* Full Name / Driver */}
-            {isSupervisorOrMechanic && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {t("checklist.form.fullName")}
-                </label>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                {t("checklist.form.fullName")}
+              </label>
+              {isDriver ? (
+                <input
+                  value={formData["Full Name"]}
+                  disabled
+                  className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
+                />
+              ) : (
                 <select
                   value={formData["Full Name"]}
                   onChange={e =>
@@ -332,34 +388,27 @@ export default function ChecklistForm() {
                   <option value="">
                     {t("checklist.form.chooseInspector")}
                   </option>
-                  {allUserNames.map(u => (
-                    <option key={u} value={u}>
-                      {u}
+                  {(driverOptions.length ? driverOptions : allDriverNames).map(d => (
+                    <option key={d} value={d}>
+                      {d}
                     </option>
                   ))}
                 </select>
-              </div>
-            )}
-
-            {isDriver && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {t("checklist.form.fullName")}
-                </label>
-                <input
-                  value={formData["Full Name"]}
-                  disabled
-                  className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
-                />
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Model / Type */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 {t("checklist.form.model")}
               </label>
-              {isSupervisorOrMechanic ? (
+              {isDriver ? (
+                <input
+                  value={formData["Model / Type"]}
+                  disabled
+                  className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
+                />
+              ) : (
                 <select
                   value={formData["Model / Type"]}
                   onChange={e =>
@@ -378,12 +427,6 @@ export default function ChecklistForm() {
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
-              ) : (
-                <input
-                  value={formData["Model / Type"]}
-                  disabled
-                  className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
-                />
               )}
             </div>
 
@@ -392,7 +435,13 @@ export default function ChecklistForm() {
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 {t("checklist.form.plate")}
               </label>
-              {isSupervisorOrMechanic ? (
+              {isDriver ? (
+                <input
+                  value={formData["Plate Number"]}
+                  disabled
+                  className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
+                />
+              ) : (
                 <select
                   value={formData["Plate Number"]}
                   onChange={e =>
@@ -415,12 +464,6 @@ export default function ChecklistForm() {
                     <option key={p} value={p}>{p}</option>
                   ))}
                 </select>
-              ) : (
-                <input
-                  value={formData["Plate Number"]}
-                  disabled
-                  className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
-                />
               )}
             </div>
           </div>
