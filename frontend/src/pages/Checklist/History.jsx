@@ -14,7 +14,6 @@ import {
   ExternalLink,
   Trash2,
   ArrowLeft,
-  RefreshCw,
   ClipboardCheck,
   Droplets,
   Zap,
@@ -49,7 +48,7 @@ export default function ChecklistHistory() {
     endDate: ""
   });
 
-  // Delete mode state (simple toggle like Maintenance)
+  // Delete mode state
   const [deleteMode, setDeleteMode] = useState(false);
 
   const itemsPerPage = 10;
@@ -78,11 +77,11 @@ export default function ChecklistHistory() {
           __row_index: i + 2, // +2 because row 1 is headers, data starts at row 2
         }));
         
-        // ✅ Step 2: Sort by Date field for display (newest first)
+        // ✅ Step 2: Sort by Date field for display (NEWEST FIRST)
         const sorted = [...withIndex].sort((a, b) => {
           const dateA = new Date(a.Date);
           const dateB = new Date(b.Date);
-          return dateB - dateA; // Newest first
+          return dateB - dateA; // Newest first (descending order)
         });
 
         // Apply driver-specific filtering
@@ -600,22 +599,6 @@ export default function ChecklistHistory() {
                                   <h3 className="text-lg font-semibold text-cyan-300">
                                     {t(section.titleKey)}
                                   </h3>
-                                  
-                                  {/* Section Summary */}
-                                  <div className="flex items-center gap-2 text-sm ml-2">
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-emerald-400 font-semibold">{sectionSummary.OK}</span>
-                                      {getStatusIcon("OK", "w-3 h-3")}
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-amber-400 font-semibold">{sectionSummary.Warning}</span>
-                                      {getStatusIcon("Warning", "w-3 h-3")}
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-red-400 font-semibold">{sectionSummary.Fail}</span>
-                                      {getStatusIcon("Fail", "w-3 h-3")}
-                                    </div>
-                                  </div>
                                 </div>
                                 
                                 {isSectionExpanded ? (
