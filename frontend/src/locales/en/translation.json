@@ -249,6 +249,8 @@
     },
     "history": {
       "search": "Search Checklists...",
+      "title": "Checklist History",
+      "subtitle": "View and review all submitted safety inspection checklists",
       "filterPlate": "Filter by Plate Number",
       "filterModel": "Filter by Model",
       "filterDriver": "Filter by Driver Name",
@@ -265,7 +267,10 @@
       "model": "Model / Type",
       "performedBy": "Driver",
       "summary": "Summary",
-      "comment": "Comment"
+      "comment": "Comment",
+      "deleteConfirm": "Are you sure you want to delete this checklist record? This action cannot be undone.",
+      "deleteSuccess": "✅ Record deleted successfully!",
+      "deleteError": "❌ Error deleting record. Please try again."
     }
   },
   "roles": {
