@@ -49,9 +49,8 @@ export default function ChecklistHistory() {
     endDate: ""
   });
 
-  // Delete mode state
+  // Delete mode state (simple toggle like Maintenance)
   const [deleteMode, setDeleteMode] = useState(false);
-  const [selectedRows, setSelectedRows] = useState(new Set());
 
   const itemsPerPage = 10;
 
@@ -73,8 +72,18 @@ export default function ChecklistHistory() {
       if (response.ok) {
         let data = await response.json();
         
-        // Sort by date descending
-        data = data.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+        // ✅ Step 1: Assign __row_index based on ORIGINAL sheet position (for delete)
+        const withIndex = data.map((row, i) => ({
+          ...row,
+          __row_index: i + 2, // +2 because row 1 is headers, data starts at row 2
+        }));
+        
+        // ✅ Step 2: Sort by Date field for display (newest first)
+        const sorted = [...withIndex].sort((a, b) => {
+          const dateA = new Date(a.Date);
+          const dateB = new Date(b.Date);
+          return dateB - dateA; // Newest first
+        });
 
         // Apply driver-specific filtering
         if (user?.role === "Driver") {
@@ -82,10 +91,11 @@ export default function ChecklistHistory() {
             eq["Driver 1"] === user.full_name || eq["Driver 2"] === user.full_name
           );
           const allowedPlates = driverEquipment.map(eq => eq["Plate Number"]);
-          data = data.filter(record => allowedPlates.includes(record["Plate Number"]));
+          const filtered = sorted.filter(record => allowedPlates.includes(record["Plate Number"]));
+          setChecklists(filtered);
+        } else {
+          setChecklists(sorted);
         }
-
-        setChecklists(data);
       }
     } catch (error) {
       console.error('Error loading checklists:', error);
@@ -122,8 +132,6 @@ export default function ChecklistHistory() {
 
   /* -------------------- TOGGLE CARD EXPANSION -------------------- */
   const toggleCard = (id) => {
-    if (deleteMode) return; // Prevent expansion in delete mode
-    
     if (expandedCard === id) {
       setExpandedCard(null);
       setExpandedSections(new Set());
@@ -164,59 +172,43 @@ export default function ChecklistHistory() {
   /* -------------------- DELETE MODE HANDLERS -------------------- */
   const toggleDeleteMode = () => {
     setDeleteMode(!deleteMode);
-    setSelectedRows(new Set());
-    setExpandedCard(null); // Collapse all cards when entering delete mode
   };
 
-  const toggleRowSelection = (recordId) => {
-    const newSelected = new Set(selectedRows);
-    if (newSelected.has(recordId)) {
-      newSelected.delete(recordId);
-    } else {
-      newSelected.add(recordId);
-    }
-    setSelectedRows(newSelected);
-  };
+  const handleDelete = async (rowIndexInPage) => {
+    const actualIndex = startIndex + rowIndexInPage;
+    const rowToDelete = filteredChecklists[actualIndex];
 
-  const selectAll = () => {
-    if (selectedRows.size === paginatedChecklists.length) {
-      setSelectedRows(new Set());
-    } else {
-      const allIds = paginatedChecklists.map((_, idx) => 
-        startIndex + idx + 2 // +2 because rows start at index 2 in Google Sheets
-      );
-      setSelectedRows(new Set(allIds));
-    }
-  };
+    const confirmDelete = window.confirm(
+      t("checklist.history.deleteConfirm") || 
+      "Are you sure you want to delete this checklist record? This action cannot be undone."
+    );
+    if (!confirmDelete) return;
 
-  const handleDelete = async () => {
-    if (selectedRows.size === 0) {
-      alert(t("maintenance.history.delete.selectAtLeastOne") || "Please select at least one record to delete.");
+    if (!rowToDelete?.__row_index) {
+      alert(t("checklist.history.deleteError") || "Error: Unable to identify the record to delete.");
       return;
     }
 
-    const confirmMsg = t("maintenance.history.delete.confirmMultiple")?.replace("{count}", selectedRows.size) 
-      || `Are you sure you want to delete ${selectedRows.size} record(s)? This action cannot be undone.`;
-
-    if (!window.confirm(confirmMsg)) return;
-
     setLoading(true);
-    const sortedRows = Array.from(selectedRows).sort((a, b) => b - a);
-
     try {
-      for (const rowIndex of sortedRows) {
-        await fetchWithAuth(`/api/delete/Checklist_Log/${rowIndex}`, {
-          method: "DELETE"
-        });
+      const res = await fetchWithAuth(
+        `/api/delete/Checklist_Log/${rowToDelete.__row_index}`,
+        { method: "DELETE" }
+      );
+      const result = await res.json();
+      
+      if (result.status === "success") {
+        // Remove from local state
+        setChecklists((prev) =>
+          prev.filter((r) => r.__row_index !== rowToDelete.__row_index)
+        );
+        alert(t("checklist.history.deleteSuccess") || "✅ Record deleted successfully!");
+      } else {
+        alert(t("checklist.history.deleteError") || "❌ Error deleting record. Please try again.");
       }
-
-      alert(t("maintenance.history.delete.success") || "✅ Selected records deleted successfully!");
-      setSelectedRows(new Set());
-      setDeleteMode(false);
-      await loadChecklists();
     } catch (error) {
       console.error("Delete error:", error);
-      alert(t("maintenance.history.delete.error") || "❌ Error deleting records. Please try again.");
+      alert(t("checklist.history.deleteError") || "❌ Error deleting record. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -318,7 +310,7 @@ export default function ChecklistHistory() {
   const drivers = [...new Set(checklists.map(record => record["Full Name"]).filter(Boolean))];
 
   /* -------------------- LOADING SCREEN -------------------- */
-  if (loading) {
+  if (loading && checklists.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
@@ -346,76 +338,19 @@ export default function ChecklistHistory() {
 
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-500 shadow-lg shadow-purple-500/40">
-                <Eye className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500">
-                  {t("checklist.history.title")}
-                </h1>
-                <p className="text-gray-400 text-sm mt-1">
-                  {t("checklist.history.subtitle")}
-                </p>
-              </div>
+          <div className="flex items-center gap-4 mb-6">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-500 shadow-lg shadow-purple-500/40">
+              <Eye className="w-8 h-8 text-white" />
             </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3">
-              {/* Refresh Button */}
-              <button
-                onClick={loadChecklists}
-                className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition"
-                title={t("common.refresh") || "Refresh"}
-              >
-                <RefreshCw size={20} />
-              </button>
-
-              {/* Delete Mode Toggle (Admin/Supervisor only) */}
-              {canDelete && (
-                <button
-                  onClick={toggleDeleteMode}
-                  className={`px-4 py-2 rounded-lg font-medium transition ${
-                    deleteMode
-                      ? "bg-red-600 hover:bg-red-700 text-white"
-                      : "bg-gray-700 hover:bg-gray-600 text-white"
-                  }`}
-                >
-                  {deleteMode ? t("common.cancel") || "Cancel" : t("common.delete") || "Delete"}
-                </button>
-              )}
+            <div>
+              <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500">
+                {t("checklist.history.title")}
+              </h1>
+              <p className="text-gray-400 text-sm mt-1">
+                {t("checklist.history.subtitle")}
+              </p>
             </div>
           </div>
-
-          {/* Delete Mode Actions */}
-          {deleteMode && (
-            <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Trash2 className="text-red-400" size={20} />
-                <span className="text-red-300 font-medium">
-                  {selectedRows.size} {t("maintenance.history.delete.selected") || "selected"}
-                </span>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={selectAll}
-                  className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm transition"
-                >
-                  {selectedRows.size === paginatedChecklists.length
-                    ? t("common.deselectAll") || "Deselect All"
-                    : t("common.selectAll") || "Select All"}
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={selectedRows.size === 0}
-                  className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition"
-                >
-                  {t("maintenance.history.delete.deleteSelected") || "Delete Selected"}
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Filters */}
           <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 mb-6">
@@ -491,11 +426,27 @@ export default function ChecklistHistory() {
               </div>
             </div>
 
-            {/* Reset Button */}
-            <div className="flex justify-end mt-4">
+            {/* Action Buttons Row */}
+            <div className="flex justify-between mt-4">
+              {/* Delete Mode Toggle (Admin/Supervisor only) */}
+              {canDelete && (
+                <button
+                  onClick={toggleDeleteMode}
+                  className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg font-medium transition ${
+                    deleteMode
+                      ? "bg-red-600/20 text-red-400"
+                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
+                >
+                  {deleteMode ? <X size={14} /> : <Trash2 size={14} />}
+                  {deleteMode ? t("common.cancel") : t("equipment.manage.actions.delete")}
+                </button>
+              )}
+
+              {/* Reset Filters Button */}
               <button
                 onClick={resetFilters}
-                className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium transition"
+                className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium transition ml-auto"
               >
                 <X size={14} />
                 {t("maintenance.history.filters.reset")}
@@ -522,11 +473,9 @@ export default function ChecklistHistory() {
         ) : (
           <div className="space-y-4">
             {paginatedChecklists.map((record, index) => {
-              const rowIndex = startIndex + index + 2; // +2 because sheet rows start at 2
               const recordId = `${record.Timestamp}-${index}`;
               const isCardExpanded = expandedCard === recordId;
               const recordDate = new Date(record.Date);
-              const isSelected = selectedRows.has(rowIndex);
               
               let checklistData = {};
               try {
@@ -541,65 +490,37 @@ export default function ChecklistHistory() {
               return (
                 <div 
                   key={recordId}
-                  className={`bg-gray-800/50 backdrop-blur-sm rounded-2xl border overflow-hidden transition-all ${
-                    deleteMode
-                      ? isSelected
-                        ? "border-red-500 ring-2 ring-red-500/50"
-                        : "border-gray-700 hover:border-red-500/50"
-                      : "border-gray-700 hover:border-purple-500/50"
-                  }`}
+                  className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 overflow-hidden hover:border-purple-500/50 transition-all"
                 >
                   {/* Collapsed View */}
                   <div
-                    className={`p-6 transition ${
-                      deleteMode
-                        ? "cursor-pointer hover:bg-red-900/10"
-                        : "cursor-pointer hover:bg-gray-700/30"
-                    }`}
-                    onClick={() => deleteMode ? toggleRowSelection(rowIndex) : toggleCard(recordId)}
+                    className="p-6 cursor-pointer hover:bg-gray-700/30 transition"
+                    onClick={() => toggleCard(recordId)}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 flex-1">
-                        {/* Delete Mode Checkbox */}
-                        {deleteMode && (
-                          <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition ${
-                              isSelected
-                                ? "bg-red-600 border-red-600"
-                                : "border-gray-600"
-                            }`}
-                          >
-                            {isSelected && <CheckCircle size={14} className="text-white" />}
-                          </div>
-                        )}
-
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 flex-1">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="text-gray-400" size={18} />
-                            <span className="font-medium text-white">
-                              {recordDate.toLocaleDateString()}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-400">{t("checklist.history.plate") || "Plate"}:</span>
-                            <span className="font-medium text-cyan-400">{record["Plate Number"]}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-400">{t("checklist.history.model") || "Model"}:</span>
-                            <span className="font-medium text-purple-400">{record["Model / Type"]}</span>
-                          </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="text-gray-400" size={18} />
+                          <span className="font-medium text-white">
+                            {recordDate.toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400">{t("checklist.history.plate") || "Plate"}:</span>
+                          <span className="font-medium text-cyan-400">{record["Plate Number"]}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400">{t("checklist.history.model") || "Model"}:</span>
+                          <span className="font-medium text-purple-400">{record["Model / Type"]}</span>
                         </div>
                       </div>
-                      
-                      {!deleteMode && (
-                        <div className="flex items-center gap-2 ml-4">
-                          {isCardExpanded ? (
-                            <ChevronUp className="text-purple-400" size={20} />
-                          ) : (
-                            <ChevronDown className="text-gray-400" size={20} />
-                          )}
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2 ml-4">
+                        {isCardExpanded ? (
+                          <ChevronUp className="text-purple-400" size={20} />
+                        ) : (
+                          <ChevronDown className="text-gray-400" size={20} />
+                        )}
+                      </div>
                     </div>
                     
                     {/* Driver Name and Summary */}
@@ -631,8 +552,21 @@ export default function ChecklistHistory() {
                     </div>
                   </div>
 
+                  {/* Delete Button (appears below card when in delete mode) */}
+                  {deleteMode && (
+                    <div className="border-t border-gray-700 p-4 bg-red-900/10">
+                      <button
+                        onClick={() => handleDelete(index)}
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition"
+                      >
+                        <Trash2 size={14} />
+                        {t("equipment.manage.actions.delete") || "Delete"}
+                      </button>
+                    </div>
+                  )}
+
                   {/* Expanded View */}
-                  {isCardExpanded && !deleteMode && (
+                  {isCardExpanded && (
                     <div className="border-t border-gray-700 p-6 bg-gray-900/20">
                       <div className="space-y-4">
                         {checklistTemplate.map((section) => {
