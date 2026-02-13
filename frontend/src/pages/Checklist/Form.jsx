@@ -271,7 +271,7 @@ export default function ChecklistForm() {
     reader.readAsDataURL(file);
   };
 
-  /* -------------------- SECTION ICON -------------------- */
+  /* -------------------- SECTION ICON & COLORS -------------------- */
   const getSectionIcon = (sectionKey, size = 20) => {
     const iconMap = {
       "general_inspection": <ClipboardCheck size={size} />,
@@ -283,6 +283,62 @@ export default function ChecklistForm() {
       "lifting_system": <ArrowUpCircle size={size} />
     };
     return iconMap[sectionKey] || <ClipboardCheck size={size} />;
+  };
+
+  const getSectionColors = (sectionKey) => {
+    const colorMap = {
+      "general_inspection": {
+        gradient: "from-emerald-900/30 to-teal-900/30",
+        border: "border-emerald-700/30",
+        iconBg: "bg-emerald-500/10",
+        textColor: "text-emerald-300",
+        glow: "shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_20px_rgba(16,185,129,0.25)]"
+      },
+      "fluids_check": {
+        gradient: "from-blue-900/30 to-cyan-900/30",
+        border: "border-blue-700/30",
+        iconBg: "bg-blue-500/10",
+        textColor: "text-blue-300",
+        glow: "shadow-[0_0_15px_rgba(59,130,246,0.15)] hover:shadow-[0_0_20px_rgba(59,130,246,0.25)]"
+      },
+      "electrical": {
+        gradient: "from-yellow-900/30 to-amber-900/30",
+        border: "border-yellow-700/30",
+        iconBg: "bg-yellow-500/10",
+        textColor: "text-yellow-300",
+        glow: "shadow-[0_0_15px_rgba(234,179,8,0.15)] hover:shadow-[0_0_20px_rgba(234,179,8,0.25)]"
+      },
+      "tires": {
+        gradient: "from-gray-900/30 to-slate-900/30",
+        border: "border-gray-700/30",
+        iconBg: "bg-gray-500/10",
+        textColor: "text-gray-300",
+        glow: "shadow-[0_0_15px_rgba(100,116,139,0.15)] hover:shadow-[0_0_20px_rgba(100,116,139,0.25)]"
+      },
+      "emergency_equipment": {
+        gradient: "from-red-900/30 to-orange-900/30",
+        border: "border-red-700/30",
+        iconBg: "bg-red-500/10",
+        textColor: "text-red-300",
+        glow: "shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:shadow-[0_0_20px_rgba(239,68,68,0.25)]"
+      },
+      "hydraulic_system": {
+        gradient: "from-purple-900/30 to-indigo-900/30",
+        border: "border-purple-700/30",
+        iconBg: "bg-purple-500/10",
+        textColor: "text-purple-300",
+        glow: "shadow-[0_0_15px_rgba(147,51,234,0.15)] hover:shadow-[0_0_20px_rgba(147,51,234,0.25)]"
+      },
+      "lifting_system": {
+        gradient: "from-pink-900/30 to-rose-900/30",
+        border: "border-pink-700/30",
+        iconBg: "bg-pink-500/10",
+        textColor: "text-pink-300",
+        glow: "shadow-[0_0_15px_rgba(236,72,153,0.15)] hover:shadow-[0_0_20px_rgba(236,72,153,0.25)]"
+      }
+    };
+    
+    return colorMap[sectionKey] || colorMap["general_inspection"];
   };
 
   /* -------------------- SUBMIT -------------------- */
@@ -511,104 +567,107 @@ export default function ChecklistForm() {
         {/* CHECKLIST */}
         {formData["Equipment Type"] && !loading ? (
           <form onSubmit={handleSubmit} className="space-y-6">
-            {template.map(section => (
-              <div
-                key={section.sectionKey}
-                className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:shadow-[0_0_20px_rgba(6,182,212,0.25)] transition-all"
-              >
-                {/* Section Header with Gradient Background */}
-                <div className="bg-gradient-to-r from-cyan-900/30 to-teal-900/30 -mx-6 -mt-6 px-6 py-4 mb-6 rounded-t-2xl border-b border-cyan-700/30">
-                  <h3 className="text-lg font-semibold text-cyan-300 flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-cyan-500/10">
-                      {getSectionIcon(section.sectionKey, 20)}
-                    </div>
-                    {t(section.titleKey)}
-                  </h3>
-                </div>
-
-                {/* Section Items */}
-                <div className="space-y-3">
-                  {section.items.map(item => {
-                    const key = `${section.sectionKey}.${item.key}`;
-                    const state = checklistData[key];
-                    return (
-                      <div
-                        key={key}
-                        className="p-4 bg-gray-900/40 rounded-xl border border-gray-700 hover:border-gray-600 transition-all"
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-200 font-medium">
-                            {t(`checklist.items.${item.key}`)}
-                          </span>
-                          <div className="flex gap-3">
-                            <CheckCircle
-                              size={22}
-                              onClick={() => handleStatusChange(key, "OK")}
-                              className={`cursor-pointer transition-all hover:scale-110 ${
-                                state?.status === "OK" 
-                                  ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" 
-                                  : "text-gray-600 hover:text-emerald-400"
-                              }`}
-                            />
-                            <AlertTriangle
-                              size={22}
-                              onClick={() => handleStatusChange(key, "Warning")}
-                              className={`cursor-pointer transition-all hover:scale-110 ${
-                                state?.status === "Warning" 
-                                  ? "text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" 
-                                  : "text-gray-600 hover:text-amber-400"
-                              }`}
-                            />
-                            <XCircle
-                              size={22}
-                              onClick={() => handleStatusChange(key, "Fail")}
-                              className={`cursor-pointer transition-all hover:scale-110 ${
-                                state?.status === "Fail" 
-                                  ? "text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.6)]" 
-                                  : "text-gray-600 hover:text-red-400"
-                              }`}
-                            />
-                          </div>
-                        </div>
-                        {(state?.status === "Warning" || state?.status === "Fail") && (
-                          <div className="mt-3 space-y-3 pt-3 border-t border-gray-700">
-                            <textarea
-                              value={state.comment}
-                              onChange={e =>
-                                handleCommentChange(key, e.target.value)
-                              }
-                              rows={2}
-                              className="w-full p-3 rounded-lg bg-gray-900/70 border border-gray-700 text-white placeholder-gray-500 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all resize-none"
-                              placeholder={t("checklist.form.commentPlaceholder")}
-                            />
-                            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-400 hover:text-cyan-400 transition">
-                              <Camera size={16} />
-                              <span>{t("checklist.form.uploadPhoto")}</span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                hidden
-                                onChange={e =>
-                                  e.target.files &&
-                                  handlePhotoUpload(key, e.target.files[0])
-                                }
-                              />
-                            </label>
-                            {state.photo && (
-                              <img
-                                src={state.photo}
-                                alt="Preview"
-                                className="w-32 h-32 object-cover rounded-lg border-2 border-cyan-500/50 shadow-lg"
-                              />
-                            )}
-                          </div>
-                        )}
+            {template.map(section => {
+              const colors = getSectionColors(section.sectionKey);
+              return (
+                <div
+                  key={section.sectionKey}
+                  className={`bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 ${colors.glow} transition-all`}
+                >
+                  {/* Section Header with Section-Specific Colors */}
+                  <div className={`bg-gradient-to-r ${colors.gradient} -mx-6 -mt-6 px-6 py-4 mb-6 rounded-t-2xl border-b ${colors.border}`}>
+                    <h3 className={`text-lg font-semibold ${colors.textColor} flex items-center gap-3`}>
+                      <div className={`p-2 rounded-lg ${colors.iconBg}`}>
+                        {getSectionIcon(section.sectionKey, 20)}
                       </div>
-                    );
-                  })}
+                      {t(section.titleKey)}
+                    </h3>
+                  </div>
+
+                  {/* Section Items */}
+                  <div className="space-y-3">
+                    {section.items.map(item => {
+                      const key = `${section.sectionKey}.${item.key}`;
+                      const state = checklistData[key];
+                      return (
+                        <div
+                          key={key}
+                          className="p-4 bg-gray-900/40 rounded-xl border border-gray-700 hover:border-gray-600 transition-all"
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-200 font-medium">
+                              {t(`checklist.items.${item.key}`)}
+                            </span>
+                            <div className="flex gap-3">
+                              <CheckCircle
+                                size={22}
+                                onClick={() => handleStatusChange(key, "OK")}
+                                className={`cursor-pointer transition-all hover:scale-110 ${
+                                  state?.status === "OK" 
+                                    ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" 
+                                    : "text-gray-600 hover:text-emerald-400"
+                                }`}
+                              />
+                              <AlertTriangle
+                                size={22}
+                                onClick={() => handleStatusChange(key, "Warning")}
+                                className={`cursor-pointer transition-all hover:scale-110 ${
+                                  state?.status === "Warning" 
+                                    ? "text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" 
+                                    : "text-gray-600 hover:text-amber-400"
+                                }`}
+                              />
+                              <XCircle
+                                size={22}
+                                onClick={() => handleStatusChange(key, "Fail")}
+                                className={`cursor-pointer transition-all hover:scale-110 ${
+                                  state?.status === "Fail" 
+                                    ? "text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.6)]" 
+                                    : "text-gray-600 hover:text-red-400"
+                                }`}
+                              />
+                            </div>
+                          </div>
+                          {(state?.status === "Warning" || state?.status === "Fail") && (
+                            <div className="mt-3 space-y-3 pt-3 border-t border-gray-700">
+                              <textarea
+                                value={state.comment}
+                                onChange={e =>
+                                  handleCommentChange(key, e.target.value)
+                                }
+                                rows={2}
+                                className="w-full p-3 rounded-lg bg-gray-900/70 border border-gray-700 text-white placeholder-gray-500 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all resize-none"
+                                placeholder={t("checklist.form.commentPlaceholder")}
+                              />
+                              <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-400 hover:text-cyan-400 transition">
+                                <Camera size={16} />
+                                <span>{t("checklist.form.uploadPhoto")}</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  hidden
+                                  onChange={e =>
+                                    e.target.files &&
+                                    handlePhotoUpload(key, e.target.files[0])
+                                  }
+                                />
+                              </label>
+                              {state.photo && (
+                                <img
+                                  src={state.photo}
+                                  alt="Preview"
+                                  className="w-32 h-32 object-cover rounded-lg border-2 border-cyan-500/50 shadow-lg"
+                                />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             <button
               type="submit"
               disabled={submitting}
