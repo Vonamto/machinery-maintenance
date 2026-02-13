@@ -291,50 +291,43 @@ export default function ChecklistForm() {
         gradient: "from-emerald-900/30 to-teal-900/30",
         border: "border-emerald-700/30",
         iconBg: "bg-emerald-500/10",
-        textColor: "text-emerald-300",
-        glow: "shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_20px_rgba(16,185,129,0.25)]"
+        textColor: "text-emerald-300"
       },
       "fluids_check": {
         gradient: "from-blue-900/30 to-cyan-900/30",
         border: "border-blue-700/30",
         iconBg: "bg-blue-500/10",
-        textColor: "text-blue-300",
-        glow: "shadow-[0_0_15px_rgba(59,130,246,0.15)] hover:shadow-[0_0_20px_rgba(59,130,246,0.25)]"
+        textColor: "text-blue-300"
       },
       "electrical": {
         gradient: "from-yellow-900/30 to-amber-900/30",
         border: "border-yellow-700/30",
         iconBg: "bg-yellow-500/10",
-        textColor: "text-yellow-300",
-        glow: "shadow-[0_0_15px_rgba(234,179,8,0.15)] hover:shadow-[0_0_20px_rgba(234,179,8,0.25)]"
+        textColor: "text-yellow-300"
       },
       "tires": {
         gradient: "from-gray-900/30 to-slate-900/30",
         border: "border-gray-700/30",
         iconBg: "bg-gray-500/10",
-        textColor: "text-gray-300",
-        glow: "shadow-[0_0_15px_rgba(100,116,139,0.15)] hover:shadow-[0_0_20px_rgba(100,116,139,0.25)]"
+        textColor: "text-gray-300"
       },
       "emergency_equipment": {
         gradient: "from-red-900/30 to-orange-900/30",
         border: "border-red-700/30",
         iconBg: "bg-red-500/10",
-        textColor: "text-red-300",
-        glow: "shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:shadow-[0_0_20px_rgba(239,68,68,0.25)]"
+        textColor: "text-red-300"
       },
       "hydraulic_system": {
         gradient: "from-purple-900/30 to-indigo-900/30",
         border: "border-purple-700/30",
         iconBg: "bg-purple-500/10",
-        textColor: "text-purple-300",
-        glow: "shadow-[0_0_15px_rgba(147,51,234,0.15)] hover:shadow-[0_0_20px_rgba(147,51,234,0.25)]"
+        textColor: "text-purple-300"
       },
       "lifting_system": {
         gradient: "from-pink-900/30 to-rose-900/30",
         border: "border-pink-700/30",
         iconBg: "bg-pink-500/10",
-        textColor: "text-pink-300",
-        glow: "shadow-[0_0_15px_rgba(236,72,153,0.15)] hover:shadow-[0_0_20px_rgba(236,72,153,0.25)]"
+        textColor: "text-pink-300"
       }
     };
     
@@ -572,7 +565,7 @@ export default function ChecklistForm() {
               return (
                 <div
                   key={section.sectionKey}
-                  className={`bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 ${colors.glow} transition-all`}
+                  className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 transition-all"
                 >
                   {/* Section Header with Section-Specific Colors */}
                   <div className={`bg-gradient-to-r ${colors.gradient} -mx-6 -mt-6 px-6 py-4 mb-6 rounded-t-2xl border-b ${colors.border}`}>
