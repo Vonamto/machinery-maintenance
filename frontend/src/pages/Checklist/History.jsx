@@ -77,11 +77,11 @@ export default function ChecklistHistory() {
           __row_index: i + 2, // +2 because row 1 is headers, data starts at row 2
         }));
         
-        // ✅ Step 2: Sort by Date field for display (NEWEST FIRST)
+        // ✅ Step 2: Sort by Timestamp field for display (NEWEST FIRST - includes time)
         const sorted = [...withIndex].sort((a, b) => {
-          const dateA = new Date(a.Date);
-          const dateB = new Date(b.Date);
-          return dateB - dateA; // Newest first (descending order)
+          const timestampA = new Date(a.Timestamp);
+          const timestampB = new Date(b.Timestamp);
+          return timestampB - timestampA; // Newest first (descending order)
         });
 
         // Apply driver-specific filtering
