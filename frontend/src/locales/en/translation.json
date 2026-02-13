@@ -160,9 +160,9 @@
       "model": "Model / Type",
       "alerts": {
         "photoError": "Error processing photo attachment",
-        "error": "Error saving checklist",
+        "error": "❌ Please check all items before submitting",
         "success": "Checklist saved successfully!",
-        "networkError": "Network error submitting checklist"
+        "networkError": "⚠️ Network error. Please try again."
       }
     },
     "statusLabels": {
