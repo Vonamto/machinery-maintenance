@@ -11,7 +11,15 @@ import {
   AlertTriangle,
   XCircle,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  Trash2,
+  ArrowLeft,
+  ClipboardCheck,
+  Droplets,
+  Zap,
+  Circle,
+  Settings,
+  ArrowUpCircle
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
@@ -19,7 +27,7 @@ import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
 import { useTranslation } from "react-i18next";
 import { getChecklistTemplate } from "@/config/checklistTemplates";
-import { PAGE_PERMISSIONS } from "@/config/roles"; // 🆕 Import centralized roles
+import { PAGE_PERMISSIONS } from "@/config/roles";
 
 export default function ChecklistHistory() {
   const { user } = useAuth();
@@ -40,7 +48,13 @@ export default function ChecklistHistory() {
     endDate: ""
   });
 
+  // Delete mode state
+  const [deleteMode, setDeleteMode] = useState(false);
+
   const itemsPerPage = 10;
+
+  // Check if user can delete
+  const canDelete = user?.role === "Supervisor" || user?.role === "Admin";
 
   /* -------------------- ACCESS CONTROL (Centralized) -------------------- */
   useEffect(() => {
@@ -50,34 +64,46 @@ export default function ChecklistHistory() {
   }, [user, navigate]);
 
   /* -------------------- LOAD CHECKLIST DATA -------------------- */
-  useEffect(() => {
-    const loadChecklists = async () => {
-      try {
-        const response = await fetchWithAuth('/api/Checklist_Log');
-        if (response.ok) {
-          let data = await response.json();
-          
-          // Sort by date descending
-          data = data.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+  const loadChecklists = async () => {
+    setLoading(true);
+    try {
+      const response = await fetchWithAuth('/api/Checklist_Log');
+      if (response.ok) {
+        let data = await response.json();
+        
+        // ✅ Step 1: Assign __row_index based on ORIGINAL sheet position (for delete)
+        const withIndex = data.map((row, i) => ({
+          ...row,
+          __row_index: i + 2, // +2 because row 1 is headers, data starts at row 2
+        }));
+        
+        // ✅ Step 2: Sort by Timestamp field for display (NEWEST FIRST - includes time)
+        const sorted = [...withIndex].sort((a, b) => {
+          const timestampA = new Date(a.Timestamp);
+          const timestampB = new Date(b.Timestamp);
+          return timestampB - timestampA; // Newest first (descending order)
+        });
 
-          // Apply driver-specific filtering
-          if (user?.role === "Driver") {
-            const driverEquipment = equipment.filter(eq =>
-              eq["Driver 1"] === user.full_name || eq["Driver 2"] === user.full_name
-            );
-            const allowedPlates = driverEquipment.map(eq => eq["Plate Number"]);
-            data = data.filter(record => allowedPlates.includes(record["Plate Number"]));
-          }
-
-          setChecklists(data);
+        // Apply driver-specific filtering
+        if (user?.role === "Driver") {
+          const driverEquipment = equipment.filter(eq =>
+            eq["Driver 1"] === user.full_name || eq["Driver 2"] === user.full_name
+          );
+          const allowedPlates = driverEquipment.map(eq => eq["Plate Number"]);
+          const filtered = sorted.filter(record => allowedPlates.includes(record["Plate Number"]));
+          setChecklists(filtered);
+        } else {
+          setChecklists(sorted);
         }
-      } catch (error) {
-        console.error('Error loading checklists:', error);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('Error loading checklists:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadChecklists();
   }, [user, equipment]);
 
@@ -142,6 +168,51 @@ export default function ChecklistHistory() {
     setCurrentPage(1);
   };
 
+  /* -------------------- DELETE MODE HANDLERS -------------------- */
+  const toggleDeleteMode = () => {
+    setDeleteMode(!deleteMode);
+  };
+
+  const handleDelete = async (rowIndexInPage) => {
+    const actualIndex = startIndex + rowIndexInPage;
+    const rowToDelete = filteredChecklists[actualIndex];
+
+    const confirmDelete = window.confirm(
+      t("checklist.history.deleteConfirm") || 
+      "Are you sure you want to delete this checklist record? This action cannot be undone."
+    );
+    if (!confirmDelete) return;
+
+    if (!rowToDelete?.__row_index) {
+      alert(t("checklist.history.deleteError") || "Error: Unable to identify the record to delete.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetchWithAuth(
+        `/api/delete/Checklist_Log/${rowToDelete.__row_index}`,
+        { method: "DELETE" }
+      );
+      const result = await res.json();
+      
+      if (result.status === "success") {
+        // Remove from local state
+        setChecklists((prev) =>
+          prev.filter((r) => r.__row_index !== rowToDelete.__row_index)
+        );
+        alert(t("checklist.history.deleteSuccess") || "✅ Record deleted successfully!");
+      } else {
+        alert(t("checklist.history.deleteError") || "❌ Error deleting record. Please try again.");
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert(t("checklist.history.deleteError") || "❌ Error deleting record. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /* -------------------- STATUS ICON -------------------- */
   const getStatusIcon = (status, size = "w-5 h-5") => {
     switch (status) {
@@ -156,6 +227,20 @@ export default function ChecklistHistory() {
     }
   };
 
+  /* -------------------- SECTION ICON -------------------- */
+  const getSectionIcon = (sectionKey, size = 20) => {
+    const iconMap = {
+      "general_inspection": <ClipboardCheck size={size} />,
+      "fluids_check": <Droplets size={size} />,
+      "electrical": <Zap size={size} />,
+      "tires": <Circle size={size} />,
+      "emergency_equipment": <AlertTriangle size={size} />,
+      "hydraulic_system": <Settings size={size} />,
+      "lifting_system": <ArrowUpCircle size={size} />
+    };
+    return iconMap[sectionKey] || <ClipboardCheck size={size} />;
+  };
+
   /* -------------------- CALCULATE SUMMARY -------------------- */
   const calculateSummary = (checklistData) => {
     const summary = { OK: 0, Warning: 0, Fail: 0 };
@@ -167,6 +252,44 @@ export default function ChecklistHistory() {
     });
 
     return summary;
+  };
+
+  /* -------------------- CALCULATE SECTION SUMMARY -------------------- */
+  const calculateSectionSummary = (checklistData, section) => {
+    const summary = { OK: 0, Warning: 0, Fail: 0 };
+    
+    section.items.forEach(item => {
+      const itemKey = `${section.sectionKey}.${item.key}`;
+      const itemData = checklistData[itemKey];
+      if (itemData?.status && summary.hasOwnProperty(itemData.status)) {
+        summary[itemData.status]++;
+      }
+    });
+
+    return summary;
+  };
+
+  /* -------------------- GET SECTION STATUS COLOR -------------------- */
+  const getSectionStatusColor = (summary) => {
+    if (summary.Fail > 0) {
+      return {
+        border: "border-red-500/50",
+        bg: "bg-red-500/10",
+        glow: "shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+      };
+    } else if (summary.Warning > 0) {
+      return {
+        border: "border-amber-500/50",
+        bg: "bg-amber-500/10",
+        glow: "shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+      };
+    } else {
+      return {
+        border: "border-emerald-500/50",
+        bg: "bg-emerald-500/10",
+        glow: "shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+      };
+    }
   };
 
   /* -------------------- THUMBNAIL URL -------------------- */
@@ -186,7 +309,7 @@ export default function ChecklistHistory() {
   const drivers = [...new Set(checklists.map(record => record["Full Name"]).filter(Boolean))];
 
   /* -------------------- LOADING SCREEN -------------------- */
-  if (loading) {
+  if (loading && checklists.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
@@ -203,6 +326,15 @@ export default function ChecklistHistory() {
       <Navbar user={user} />
       <div className="max-w-6xl mx-auto p-6">
         
+        {/* Back Button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
+        >
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+          {t("common.back")}
+        </button>
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-6">
@@ -293,11 +425,27 @@ export default function ChecklistHistory() {
               </div>
             </div>
 
-            {/* Reset Button */}
-            <div className="flex justify-end mt-4">
+            {/* Action Buttons Row */}
+            <div className="flex justify-between mt-4">
+              {/* Delete Mode Toggle (Admin/Supervisor only) */}
+              {canDelete && (
+                <button
+                  onClick={toggleDeleteMode}
+                  className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg font-medium transition ${
+                    deleteMode
+                      ? "bg-red-600/20 text-red-400"
+                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
+                >
+                  {deleteMode ? <X size={14} /> : <Trash2 size={14} />}
+                  {deleteMode ? t("common.cancel") : t("equipment.manage.actions.delete")}
+                </button>
+              )}
+
+              {/* Reset Filters Button */}
               <button
                 onClick={resetFilters}
-                className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium transition"
+                className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium transition ml-auto"
               >
                 <X size={14} />
                 {t("maintenance.history.filters.reset")}
@@ -403,6 +551,19 @@ export default function ChecklistHistory() {
                     </div>
                   </div>
 
+                  {/* Delete Button (appears below card when in delete mode) */}
+                  {deleteMode && (
+                    <div className="border-t border-gray-700 p-4 bg-red-900/10">
+                      <button
+                        onClick={() => handleDelete(index)}
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition"
+                      >
+                        <Trash2 size={14} />
+                        {t("equipment.manage.actions.delete") || "Delete"}
+                      </button>
+                    </div>
+                  )}
+
                   {/* Expanded View */}
                   {isCardExpanded && (
                     <div className="border-t border-gray-700 p-6 bg-gray-900/20">
@@ -418,17 +579,28 @@ export default function ChecklistHistory() {
 
                           const sectionId = `${recordId}-${section.sectionKey}`;
                           const isSectionExpanded = expandedSections.has(sectionId);
+                          const sectionSummary = calculateSectionSummary(checklistData, section);
+                          const sectionColors = getSectionStatusColor(sectionSummary);
 
                           return (
-                            <div key={section.sectionKey} className="border border-gray-700 rounded-xl overflow-hidden bg-gray-800/30">
+                            <div 
+                              key={section.sectionKey} 
+                              className={`border rounded-xl overflow-hidden bg-gray-800/30 ${sectionColors.border} ${sectionColors.glow}`}
+                            >
                               {/* Section Header */}
                               <div
-                                className="p-4 cursor-pointer hover:bg-gray-700/30 transition flex items-center justify-between"
+                                className={`p-4 cursor-pointer hover:bg-gray-700/30 transition flex items-center justify-between ${sectionColors.bg}`}
                                 onClick={() => toggleSection(sectionId)}
                               >
-                                <h3 className="text-lg font-medium text-cyan-300 flex items-center gap-2">
-                                  {t(section.titleKey)}
-                                </h3>
+                                <div className="flex items-center gap-3">
+                                  <div className="text-cyan-300">
+                                    {getSectionIcon(section.sectionKey, 20)}
+                                  </div>
+                                  <h3 className="text-lg font-semibold text-cyan-300">
+                                    {t(section.titleKey)}
+                                  </h3>
+                                </div>
+                                
                                 {isSectionExpanded ? (
                                   <ChevronUp className="text-cyan-400" size={18} />
                                 ) : (

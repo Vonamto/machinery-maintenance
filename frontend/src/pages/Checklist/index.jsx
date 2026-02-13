@@ -3,12 +3,11 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Navbar from "../../components/Navbar";
-import { Card, CardContent } from "@/components/ui/card";
-import { FileText, History, ArrowLeft } from "lucide-react";
+import { Card, CardContent } from "../../components/ui/card";
+import { ClipboardCheck, History, ArrowLeft, CheckCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
-// 🔐 Centralized permissions
-import { PAGE_PERMISSIONS } from "@/config/roles";
+// Centralized permissions
+import { PAGE_PERMISSIONS } from "../../config/roles";
 
 export default function ChecklistMenu() {
   const { user } = useAuth();
@@ -20,20 +19,20 @@ export default function ChecklistMenu() {
     {
       title: t("checklist.menu.formTitle"),
       description: t("checklist.menu.formDescription"),
-      icon: <FileText className="w-8 h-8 text-white drop-shadow-md" />,
+      icon: <ClipboardCheck className="w-10 h-10 text-white drop-shadow-lg" />,
       link: "/checklist/form",
-      allowedRoles: PAGE_PERMISSIONS.CHECKLIST_FORM,
-      glow: "shadow-[0_0_15px_2px_rgba(16,185,129,0.6)]",
       gradient: "from-emerald-600 to-teal-500",
+      glow: "shadow-[0_20px_3px_rgba(16,185,129,0.5)]",
+      allowedRoles: PAGE_PERMISSIONS.CHECKLIST_FORM,
     },
     {
       title: t("checklist.menu.historyTitle"),
       description: t("checklist.menu.historyDescription"),
-      icon: <History className="w-8 h-8 text-white drop-shadow-md" />,
+      icon: <History className="w-10 h-10 text-white drop-shadow-lg" />,
       link: "/checklist/history",
-      allowedRoles: PAGE_PERMISSIONS.CHECKLIST_HISTORY,
-      glow: "shadow-[0_0_15px_2px_rgba(147,51,234,0.6)]",
       gradient: "from-purple-600 to-indigo-500",
+      glow: "shadow-[0_20px_3px_rgba(147,51,234,0.5)]",
+      allowedRoles: PAGE_PERMISSIONS.CHECKLIST_HISTORY,
     },
   ];
 
@@ -41,7 +40,7 @@ export default function ChecklistMenu() {
     card.allowedRoles.includes(role)
   );
 
-  // Redirect / message if user doesn't have permission
+  // Redirect message if user doesn't have permission
   if (visibleCards.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white flex items-center justify-center">
@@ -49,9 +48,7 @@ export default function ChecklistMenu() {
           <h1 className="text-2xl font-bold text-red-400 mb-2">
             {t("common.accessDenied")}
           </h1>
-          <p className="text-gray-400">
-            {t("common.noPermission")}
-          </p>
+          <p className="text-gray-400">{t("common.noPermission")}</p>
         </div>
       </div>
     );
@@ -60,12 +57,11 @@ export default function ChecklistMenu() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white">
       <Navbar user={user} />
-
-      <div className="p-6">
+      <div className="max-w-5xl mx-auto p-6">
         {/* Back button */}
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
+          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-8 transition group"
         >
           <ArrowLeft
             size={18}
@@ -74,24 +70,36 @@ export default function ChecklistMenu() {
           {t("common.back")}
         </button>
 
-        <h1 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">
-          {t("checklist.menu.title")}
-        </h1>
+        {/* Header with Icon, Title, and Subtitle */}
+        <div className="mb-10 flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-500 shadow-lg shadow-emerald-500/40">
+            <CheckCircle className="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">
+              {t("checklist.menu.title")}
+            </h1>
+            <p className="text-gray-400 text-sm mt-1">
+              {t("checklist.menu.subtitle")}
+            </p>
+          </div>
+        </div>
 
-        <div className="grid gap-8 sm:grid-cols-1 lg:grid-cols-2 max-w-4xl mx-auto">
+        {/* Cards Grid */}
+        <div className="grid gap-8 sm:grid-cols-2">
           {visibleCards.map((card) => (
             <Link to={card.link} key={card.link}>
               <Card
-                className={`rounded-2xl bg-gradient-to-br ${card.gradient} ${card.glow} hover:scale-[1.04] hover:brightness-110 transition-all duration-300 border border-white/10`}
+                className={`rounded-2xl bg-gradient-to-br ${card.gradient} ${card.glow} hover:scale-[1.04] hover:brightness-110 transition-all duration-300 border border-white/10 backdrop-blur-md`}
               >
-                <CardContent className="flex flex-col items-center justify-center p-8 text-center space-y-3 min-h-[200px]">
+                <CardContent className="flex flex-col items-center justify-center p-8 text-center space-y-3">
                   <div className="p-3 rounded-full bg-white/10 backdrop-blur-sm">
                     {card.icon}
                   </div>
                   <h2 className="text-xl font-semibold text-white drop-shadow-md">
                     {card.title}
                   </h2>
-                  <p className="text-gray-100/90 text-sm">
+                  <p className="text-gray-100/90 text-sm max-w-[200px]">
                     {card.description}
                   </p>
                 </CardContent>

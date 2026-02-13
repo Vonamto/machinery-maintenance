@@ -1,5 +1,5 @@
 // frontend/src/pages/Checklist/Form.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -7,7 +7,8 @@ import {
   AlertTriangle,
   XCircle,
   Camera,
-  Loader2
+  Loader2,
+  ClipboardCheck
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
@@ -15,7 +16,7 @@ import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
 import { useTranslation } from "react-i18next";
 import { getChecklistTemplate } from "@/config/checklistTemplates";
-import { PAGE_PERMISSIONS } from "@/config/roles"; // 🆕 Import centralized roles
+import { PAGE_PERMISSIONS } from "@/config/roles";
 
 export default function ChecklistForm() {
   const { user } = useAuth();
@@ -26,7 +27,7 @@ export default function ChecklistForm() {
   /* -------------------- STATE -------------------- */
   const [formData, setFormData] = useState({
     Date: new Date().toISOString().split("T")[0],
-    "Full Name": user?.full_name || "",
+    "Full Name": "",
     "Model / Type": "",
     "Plate Number": "",
     "Equipment Type": ""
@@ -40,9 +41,8 @@ export default function ChecklistForm() {
   const [plateOptions, setPlateOptions] = useState([]);
   const [driverOptions, setDriverOptions] = useState([]);
 
+  // Determine if user is a Driver
   const isDriver = user?.role === "Driver";
-  const isSupervisorOrMechanic =
-    user?.role === "Supervisor" || user?.role === "Mechanic";
 
   /* -------------------- ACCESS CONTROL (Centralized) -------------------- */
   useEffect(() => {
@@ -84,9 +84,16 @@ export default function ChecklistForm() {
           if (assigned) {
             setFormData(prev => ({
               ...prev,
+              "Full Name": user.full_name || "",
               "Model / Type": assigned["Model / Type"] || "",
               "Plate Number": assigned["Plate Number"] || "",
               "Equipment Type": assigned["Equipment Type"] || ""
+            }));
+          } else {
+            // Driver not assigned to any equipment, but set their name
+            setFormData(prev => ({
+              ...prev,
+              "Full Name": user.full_name || ""
             }));
           }
         }
@@ -100,9 +107,9 @@ export default function ChecklistForm() {
     loadInitialData();
   }, [cache, isDriver, user]);
 
-  /* -------------------- DYNAMIC DROPDOWN LOGIC (Supervisor/Mechanic) -------------------- */
+  /* -------------------- DYNAMIC DROPDOWN LOGIC (Non-Driver Roles) -------------------- */
   
-  // Update plate options based on selected model
+  // Update plate options and drivers based on selected model
   useEffect(() => {
     if (isDriver) return; // Skip for drivers
 
@@ -112,32 +119,58 @@ export default function ChecklistForm() {
       return;
     }
 
+    // Get all plates that match the selected model
     const plates = cache.getPlatesByModel ? cache.getPlatesByModel(model) : [];
     setPlateOptions(plates);
-  }, [formData["Model / Type"], cache, isDriver]);
 
-  // Update model and drivers based on selected plate
+    // Only update drivers if NO plate is selected (plate has priority over model)
+    if (!formData["Plate Number"]) {
+      // Get all drivers assigned to equipment of this model type
+      const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
+      const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === model);
+      const driversForThisModel = [...new Set(
+        equipmentOfThisModel.flatMap(e => [e["Driver 1"], e["Driver 2"]]).filter(Boolean)
+      )];
+      setDriverOptions(driversForThisModel);
+    }
+    // If plate is selected, drivers are already set by the plate useEffect, so don't override
+  }, [formData["Model / Type"], formData["Plate Number"], cache, isDriver]);
+
+  // Update model, equipment type, and drivers based on selected plate
   useEffect(() => {
     if (isDriver) return; // Skip for drivers
 
     const plate = formData["Plate Number"];
     if (!plate) {
-      setDriverOptions([]);
+      // If plate is cleared but model is still selected, restore drivers for that model
+      if (formData["Model / Type"]) {
+        const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
+        const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === formData["Model / Type"]);
+        const driversForThisModel = [...new Set(
+          equipmentOfThisModel.flatMap(e => [e["Driver 1"], e["Driver 2"]]).filter(Boolean)
+        )];
+        setDriverOptions(driversForThisModel);
+      } else {
+        setDriverOptions([]);
+      }
       return;
     }
 
+    // Get the equipment that matches this plate
     const eq = cache.getEquipmentByPlate ? cache.getEquipmentByPlate(plate) : null;
     if (eq) {
+      // Auto-fill the Model/Type and Equipment Type fields
       setFormData(prev => ({
         ...prev,
         "Model / Type": eq["Model / Type"] || prev["Model / Type"],
         "Equipment Type": eq["Equipment Type"] || prev["Equipment Type"]
       }));
 
+      // Update driver options to only show the 2 drivers for this specific equipment
       const drivers = cache.getDriversByPlate ? cache.getDriversByPlate(plate) : [];
       setDriverOptions(drivers);
     }
-  }, [formData["Plate Number"], cache, isDriver]);
+  }, [formData["Plate Number"], formData["Model / Type"], cache, isDriver]);
 
   // Update plates and model based on selected driver
   useEffect(() => {
@@ -146,11 +179,13 @@ export default function ChecklistForm() {
     const driver = formData["Full Name"];
     if (!driver) return;
 
+    // Get all equipment that this driver is assigned to
     const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
     const matches = allEquipment.filter(
       e => e["Driver 1"] === driver || e["Driver 2"] === driver
     );
 
+    // If driver is assigned to only ONE equipment, auto-fill everything
     if (matches.length === 1) {
       const eq = matches[0];
       setFormData(prev => ({
@@ -161,12 +196,25 @@ export default function ChecklistForm() {
       }));
       setPlateOptions([eq["Plate Number"]]);
       setDriverOptions([eq["Driver 1"], eq["Driver 2"]].filter(Boolean));
-    } else if (matches.length > 1) {
+    } 
+    // If driver is assigned to multiple equipment, show all matching plates and models
+    else if (matches.length > 1) {
+      const models = [...new Set(matches.map(m => m["Model / Type"]))];
+      
+      // If driver has only one model type, auto-fill model
+      if (models.length === 1) {
+        setFormData(prev => ({
+          ...prev,
+          "Model / Type": models[0]
+        }));
+      }
+      
       setPlateOptions(matches.map(m => m["Plate Number"]));
       setDriverOptions([...new Set(matches.flatMap(m => [m["Driver 1"], m["Driver 2"]]).filter(Boolean))]);
-    } else {
+    } 
+    // If no matches found, reset plate options
+    else {
       setPlateOptions([]);
-      setDriverOptions([]);
     }
   }, [formData["Full Name"], cache, isDriver]);
 
@@ -259,11 +307,14 @@ export default function ChecklistForm() {
 
   const template = getChecklistTemplate(formData["Equipment Type"]);
 
-  // Get usernames for Supervisor/Mechanic dropdown
-  const cachedUsers = cache.getUsernames ? cache.getUsernames() : cache.usernames || [];
-  const allUserNames = (cachedUsers || [])
-    .map(u => u.Name || u["Full Name"])
-    .filter(Boolean);
+  // Get all driver names from Equipment_List for dropdown (for non-Driver roles)
+  const allDriverNames = cache.getEquipment
+    ? [...new Set(
+        cache.getEquipment()
+          .flatMap(e => [e["Driver 1"], e["Driver 2"]])
+          .filter(Boolean)
+      )]
+    : [];
 
   /* -------------------- LOADING SCREEN -------------------- */
   if (loading) {
@@ -283,17 +334,36 @@ export default function ChecklistForm() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
       <div className="max-w-6xl mx-auto p-4 md:p-6">
+        {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-cyan-400 mb-6"
+          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
           {t("common.back")}
         </button>
 
+        {/* Header with Icon, Title, and Subtitle */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-500 shadow-lg shadow-emerald-500/40">
+              <ClipboardCheck className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">
+                {t("checklist.form.title")}
+              </h1>
+              <p className="text-gray-400 text-sm mt-1">
+                {t("checklist.form.subtitle")}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* BASIC INFO */}
-        <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700 mb-8">
-          <h2 className="text-cyan-400 font-semibold mb-4">
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 mb-8">
+          <h2 className="text-cyan-400 font-semibold mb-4 flex items-center gap-2">
+            <CheckCircle size={20} />
             {t("checklist.form.basicInfo")}
           </h2>
           <div className="grid grid-cols-1 gap-4">
@@ -309,16 +379,22 @@ export default function ChecklistForm() {
                 onChange={e =>
                   setFormData(prev => ({ ...prev, Date: e.target.value }))
                 }
-                className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 disabled:bg-gray-900/50 disabled:text-gray-400"
+                className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white disabled:bg-gray-900/50 disabled:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
               />
             </div>
 
             {/* Full Name / Driver */}
-            {isSupervisorOrMechanic && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {t("checklist.form.fullName")}
-                </label>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                {t("checklist.form.fullName")}
+              </label>
+              {isDriver ? (
+                <input
+                  value={formData["Full Name"]}
+                  disabled
+                  className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
+                />
+              ) : (
                 <select
                   value={formData["Full Name"]}
                   onChange={e =>
@@ -327,39 +403,32 @@ export default function ChecklistForm() {
                       "Full Name": e.target.value
                     }))
                   }
-                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                 >
                   <option value="">
                     {t("checklist.form.chooseInspector")}
                   </option>
-                  {allUserNames.map(u => (
-                    <option key={u} value={u}>
-                      {u}
+                  {(driverOptions.length ? driverOptions : allDriverNames).map(d => (
+                    <option key={d} value={d}>
+                      {d}
                     </option>
                   ))}
                 </select>
-              </div>
-            )}
-
-            {isDriver && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {t("checklist.form.fullName")}
-                </label>
-                <input
-                  value={formData["Full Name"]}
-                  disabled
-                  className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
-                />
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Model / Type */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 {t("checklist.form.model")}
               </label>
-              {isSupervisorOrMechanic ? (
+              {isDriver ? (
+                <input
+                  value={formData["Model / Type"]}
+                  disabled
+                  className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
+                />
+              ) : (
                 <select
                   value={formData["Model / Type"]}
                   onChange={e =>
@@ -369,7 +438,7 @@ export default function ChecklistForm() {
                       "Plate Number": ""
                     }))
                   }
-                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                 >
                   <option value="">
                     {t("checklist.form.chooseModel")}
@@ -378,12 +447,6 @@ export default function ChecklistForm() {
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
-              ) : (
-                <input
-                  value={formData["Model / Type"]}
-                  disabled
-                  className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
-                />
               )}
             </div>
 
@@ -392,7 +455,13 @@ export default function ChecklistForm() {
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 {t("checklist.form.plate")}
               </label>
-              {isSupervisorOrMechanic ? (
+              {isDriver ? (
+                <input
+                  value={formData["Plate Number"]}
+                  disabled
+                  className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
+                />
+              ) : (
                 <select
                   value={formData["Plate Number"]}
                   onChange={e =>
@@ -401,7 +470,7 @@ export default function ChecklistForm() {
                       "Plate Number": e.target.value
                     }))
                   }
-                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700"
+                  className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                 >
                   <option value="">
                     {t("checklist.form.choosePlate")}
@@ -415,12 +484,6 @@ export default function ChecklistForm() {
                     <option key={p} value={p}>{p}</option>
                   ))}
                 </select>
-              ) : (
-                <input
-                  value={formData["Plate Number"]}
-                  disabled
-                  className="w-full p-3 rounded-xl bg-gray-900/50 border border-gray-700 text-gray-400"
-                />
               )}
             </div>
           </div>
@@ -432,87 +495,108 @@ export default function ChecklistForm() {
             {template.map(section => (
               <div
                 key={section.sectionKey}
-                className="bg-gray-800/50 rounded-2xl p-6 border border-gray-700"
+                className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700"
               >
-                <h3 className="text-cyan-300 mb-4">
+                <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                  <CheckCircle size={20} />
                   {t(section.titleKey)}
                 </h3>
-                {section.items.map(item => {
-                  const key = `${section.sectionKey}.${item.key}`;
-                  const state = checklistData[key];
-                  return (
-                    <div
-                      key={key}
-                      className="p-3 bg-gray-900/30 rounded-lg border border-gray-700 mb-3"
-                    >
-                      <div className="flex justify-between items-center">
-                        <span>{t(`checklist.items.${item.key}`)}</span>
-                        <div className="flex gap-2">
-                          <CheckCircle
-                            size={18}
-                            onClick={() => handleStatusChange(key, "OK")}
-                            className={`cursor-pointer ${state?.status === "OK" ? "text-emerald-400" : "text-gray-500"}`}
-                          />
-                          <AlertTriangle
-                            size={18}
-                            onClick={() => handleStatusChange(key, "Warning")}
-                            className={`cursor-pointer ${state?.status === "Warning" ? "text-amber-400" : "text-gray-500"}`}
-                          />
-                          <XCircle
-                            size={18}
-                            onClick={() => handleStatusChange(key, "Fail")}
-                            className={`cursor-pointer ${state?.status === "Fail" ? "text-red-400" : "text-gray-500"}`}
-                          />
+                <div className="space-y-3">
+                  {section.items.map(item => {
+                    const key = `${section.sectionKey}.${item.key}`;
+                    const state = checklistData[key];
+                    return (
+                      <div
+                        key={key}
+                        className="p-4 bg-gray-900/40 rounded-xl border border-gray-700 hover:border-gray-600 transition-all"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-200 font-medium">
+                            {t(`checklist.items.${item.key}`)}
+                          </span>
+                          <div className="flex gap-3">
+                            <CheckCircle
+                              size={22}
+                              onClick={() => handleStatusChange(key, "OK")}
+                              className={`cursor-pointer transition-all hover:scale-110 ${
+                                state?.status === "OK" 
+                                  ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" 
+                                  : "text-gray-600 hover:text-emerald-400"
+                              }`}
+                            />
+                            <AlertTriangle
+                              size={22}
+                              onClick={() => handleStatusChange(key, "Warning")}
+                              className={`cursor-pointer transition-all hover:scale-110 ${
+                                state?.status === "Warning" 
+                                  ? "text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" 
+                                  : "text-gray-600 hover:text-amber-400"
+                              }`}
+                            />
+                            <XCircle
+                              size={22}
+                              onClick={() => handleStatusChange(key, "Fail")}
+                              className={`cursor-pointer transition-all hover:scale-110 ${
+                                state?.status === "Fail" 
+                                  ? "text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.6)]" 
+                                  : "text-gray-600 hover:text-red-400"
+                              }`}
+                            />
+                          </div>
                         </div>
-                      </div>
-                      {(state?.status === "Warning" || state?.status === "Fail") && (
-                        <div className="mt-3 space-y-2">
-                          <textarea
-                            value={state.comment}
-                            onChange={e =>
-                              handleCommentChange(key, e.target.value)
-                            }
-                            className="w-full p-2 rounded-lg bg-gray-900/70 border border-gray-700"
-                            placeholder={t("checklist.form.commentPlaceholder")}
-                          />
-                          <label className="flex items-center gap-2 cursor-pointer text-sm">
-                            <Camera size={14} />
-                            {t("checklist.form.uploadPhoto")}
-                            <input
-                              type="file"
-                              accept="image/*"
-                              hidden
+                        {(state?.status === "Warning" || state?.status === "Fail") && (
+                          <div className="mt-3 space-y-3 pt-3 border-t border-gray-700">
+                            <textarea
+                              value={state.comment}
                               onChange={e =>
-                                e.target.files &&
-                                handlePhotoUpload(key, e.target.files[0])
+                                handleCommentChange(key, e.target.value)
                               }
+                              rows={2}
+                              className="w-full p-3 rounded-lg bg-gray-900/70 border border-gray-700 text-white placeholder-gray-500 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all resize-none"
+                              placeholder={t("checklist.form.commentPlaceholder")}
                             />
-                          </label>
-                          {state.photo && (
-                            <img
-                              src={state.photo}
-                              alt="Preview"
-                              className="w-24 h-24 object-cover rounded-lg border border-gray-600"
-                            />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-400 hover:text-cyan-400 transition">
+                              <Camera size={16} />
+                              <span>{t("checklist.form.uploadPhoto")}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                hidden
+                                onChange={e =>
+                                  e.target.files &&
+                                  handlePhotoUpload(key, e.target.files[0])
+                                }
+                              />
+                            </label>
+                            {state.photo && (
+                              <img
+                                src={state.photo}
+                                alt="Preview"
+                                className="w-32 h-32 object-cover rounded-lg border-2 border-cyan-500/50 shadow-lg"
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             ))}
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all"
             >
               {submitting ? t("common.submitting") : t("common.submit")}
             </button>
           </form>
         ) : (
-          <div className="text-center text-gray-400">
-            {t("checklist.form.selectEquipmentHint") || "Please select equipment to load checklist"}
+          <div className="text-center py-16 bg-gray-800/30 rounded-2xl border border-gray-700">
+            <ClipboardCheck className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-400 text-lg">
+              {t("checklist.form.selectEquipmentHint")}
+            </p>
           </div>
         )}
       </div>
