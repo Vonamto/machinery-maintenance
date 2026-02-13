@@ -8,7 +8,12 @@ import {
   XCircle,
   Camera,
   Loader2,
-  ClipboardCheck
+  ClipboardCheck,
+  Droplets,
+  Zap,
+  Circle,
+  Settings,
+  ArrowUpCircle
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
@@ -266,6 +271,20 @@ export default function ChecklistForm() {
     reader.readAsDataURL(file);
   };
 
+  /* -------------------- SECTION ICON -------------------- */
+  const getSectionIcon = (sectionKey, size = 20) => {
+    const iconMap = {
+      "general_inspection": <ClipboardCheck size={size} />,
+      "fluids_check": <Droplets size={size} />,
+      "electrical": <Zap size={size} />,
+      "tires": <Circle size={size} />,
+      "emergency_equipment": <AlertTriangle size={size} />,
+      "hydraulic_system": <Settings size={size} />,
+      "lifting_system": <ArrowUpCircle size={size} />
+    };
+    return iconMap[sectionKey] || <ClipboardCheck size={size} />;
+  };
+
   /* -------------------- SUBMIT -------------------- */
   const handleSubmit = async e => {
     e.preventDefault();
@@ -495,12 +514,19 @@ export default function ChecklistForm() {
             {template.map(section => (
               <div
                 key={section.sectionKey}
-                className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700"
+                className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:shadow-[0_0_20px_rgba(6,182,212,0.25)] transition-all"
               >
-                <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
-                  <CheckCircle size={20} />
-                  {t(section.titleKey)}
-                </h3>
+                {/* Section Header with Gradient Background */}
+                <div className="bg-gradient-to-r from-cyan-900/30 to-teal-900/30 -mx-6 -mt-6 px-6 py-4 mb-6 rounded-t-2xl border-b border-cyan-700/30">
+                  <h3 className="text-lg font-semibold text-cyan-300 flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-cyan-500/10">
+                      {getSectionIcon(section.sectionKey, 20)}
+                    </div>
+                    {t(section.titleKey)}
+                  </h3>
+                </div>
+
+                {/* Section Items */}
                 <div className="space-y-3">
                   {section.items.map(item => {
                     const key = `${section.sectionKey}.${item.key}`;
