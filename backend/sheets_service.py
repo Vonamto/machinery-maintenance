@@ -47,7 +47,7 @@ drive_service = build("drive", "v3", credentials=creds)
 #  ✅  Google Sheets access (still uses service account)
 # =====================================================
 service_account_info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
-service_account_info["private_key"] = service_account_info["private_key"].replace("\\\\\\\\n", "\\\\n")
+service_account_info["private_key"] = service_account_info["private_key"].replace("\\\\\\\\\\\\\\\\n", "\\\\\\\\n")
 
 sheet_creds = Credentials.from_service_account_info(
     service_account_info,
@@ -388,7 +388,7 @@ def append_row(sheet_name, new_row):
         return {"status": "error", "message": str(e)}
 
 # =====================================================
-#  ✅  Update Row (Edit) - UPDATED FOR SUIVI PDF REPLACEMENT
+#  ✅  Update Row (Edit) - UPDATED FOR SUIVI PDF REPLACEMENT AND EQUIPMENT_LIST SYNC
 # =====================================================
 def update_row(sheet_name, row_index, updated_data):
     try:
@@ -468,12 +468,54 @@ def update_row(sheet_name, row_index, updated_data):
         # Update specific row
         sheet.update(range_name=f"A{row_index}:Z{row_index}", values=[updated_row_values])
 
+        # ===================================================================
+        # NEW: Auto-update Equipment_List sheet if editing Suivi
+        # ===================================================================
+        if sheet_name == "Suivi":
+            try:
+                equipment_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Equipment_List")
+                eq_headers = equipment_sheet.row_values(1)
+                
+                # Get machinery type mapping
+                machinery_types_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Machinery_Types")
+                machinery_types_data = machinery_types_sheet.get_all_records()
+                machinery_to_equipment_type = {}
+                for row in machinery_types_data:
+                    english_name = row.get('English', '')
+                    equipment_mapping = row.get('Equipment_Type_Mapping', '')
+                    if english_name and equipment_mapping:
+                        machinery_to_equipment_type[english_name] = equipment_mapping
+                
+                # Map Suivi data to Equipment_List structure
+                machinery_type = current_row.get('Machinery', '')
+                equipment_type = machinery_to_equipment_type.get(machinery_type, '')
+                
+                equipment_row = {
+                    'Status': current_row.get('Status', ''),
+                    'Equipment Type': equipment_type,
+                    'Model / Type': current_row.get('Model / Type', ''),
+                    'Plate Number': current_row.get('Plate Number', ''),
+                    'Driver 1': current_row.get('Driver 1', ''),
+                    'Driver 2': current_row.get('Driver 2', ''),
+                    'Notes': ''
+                }
+                
+                # Prepare row in correct column order
+                eq_row_to_update = [equipment_row.get(h, '') for h in eq_headers]
+                
+                # Update same row index in Equipment_List
+                equipment_sheet.update(range_name=f"A{row_index}:Z{row_index}", values=[eq_row_to_update])
+                print(f"Auto-updated Equipment_List at row {row_index}")
+            except Exception as e:
+                print(f"Auto-update to Equipment_List failed: {e}")
+                # Continue execution even if auto-update fails
+
         return {"status": "success", "updated": current_row}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 # =====================================================
-#  ✅  Delete Row - UPDATED FOR SUIVI FILE DELETION
+#  ✅  Delete Row - UPDATED FOR SUIVI FILE DELETION AND EQUIPMENT_LIST SYNC
 # =====================================================
 def delete_row(sheet_name, row_index):
     """
@@ -511,6 +553,18 @@ def delete_row(sheet_name, row_index):
         
         # Delete the row from the sheet
         sheet.delete_rows(row_index)
+        
+        # ===================================================================
+        # NEW: Auto-delete from Equipment_List sheet if deleting from Suivi
+        # ===================================================================
+        if sheet_name == "Suivi":
+            try:
+                equipment_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Equipment_List")
+                equipment_sheet.delete_rows(row_index)
+                print(f"Auto-deleted row {row_index} from Equipment_List")
+            except Exception as e:
+                print(f"Auto-delete from Equipment_List failed: {e}")
+                # Continue execution even if auto-delete fails
         
         return {"status": "success", "message": f"Row {row_index} deleted successfully"}
         
