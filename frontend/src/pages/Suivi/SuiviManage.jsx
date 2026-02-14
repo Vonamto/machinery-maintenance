@@ -16,7 +16,7 @@ import { pdfToBase64, validatePDFSize } from '../../utils/pdfUtils';
 
 const SuiviManage = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation(); // ✅ Add i18n to detect current language
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const editPlate = searchParams.get('edit');
@@ -107,6 +107,14 @@ const SuiviManage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // ✅ Helper function to get display name based on language
+  const getMachineryDisplayName = (type) => {
+    if (i18n.language === 'ar' && type.arabic) {
+      return type.arabic; // Show Arabic when language is Arabic
+    }
+    return type.english; // Show English by default
   };
 
   // ==================== HANDLERS ====================
@@ -265,7 +273,7 @@ const SuiviManage = () => {
                   </select>
                 </div>
 
-                {/* Machinery Type */}
+                {/* Machinery Type - ✅ BILINGUAL DROPDOWN */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {t('suivi.manage.form.machinery')} *
@@ -279,7 +287,7 @@ const SuiviManage = () => {
                     <option value="">{t('suivi.manage.placeholders.selectMachinery')}</option>
                     {machineryTypes.map(type => (
                       <option key={type.english} value={type.english}>
-                        {type.english}
+                        {getMachineryDisplayName(type)}
                       </option>
                     ))}
                   </select>
@@ -312,7 +320,7 @@ const SuiviManage = () => {
                     placeholder={t('suivi.manage.placeholders.plateNumber')}
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white placeholder-gray-500 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all"
                     required
-                    disabled={editPlate} // Can't change plate in edit mode
+                    disabled={editPlate}
                   />
                 </div>
 
