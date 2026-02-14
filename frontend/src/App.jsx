@@ -31,6 +31,12 @@ import EquipmentMenu from "./pages/Equipment/index";
 import EquipmentList from "./pages/Equipment/List";
 import EquipmentManage from "./pages/Equipment/Manage";
 
+// --- Suivi (Machinery Tracking) ---
+import SuiviMenu from "./pages/Suivi/index";
+import SuiviList from "./pages/Suivi/SuiviList";
+import SuiviManage from "./pages/Suivi/SuiviManage";
+import SuiviDetail from "./pages/Suivi/SuiviDetail";
+
 // --- Users ---
 import UsersManage from "./pages/Users/Manage";
 
@@ -170,6 +176,43 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.EQUIPMENT_MANAGE}>
                 <EquipmentManage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ================= Suivi (Machinery Tracking) ================= */}
+          <Route
+            path="/suivi"
+            element={
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVILIST}>
+                <SuiviMenu />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/suivi/list"
+            element={
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVILIST}>
+                <SuiviList />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/suivi/manage"
+            element={
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVIMANAGE}>
+                <SuiviManage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/suivi/detail/:plate"
+            element={
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVILIST}>
+                <SuiviDetail />
               </ProtectedRoute>
             }
           />
