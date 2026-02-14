@@ -37,6 +37,7 @@ const SuiviList = () => {
     setLoading(true);
     try {
       const data = await fetchSuivi(); // ✅ Reads from Suivi sheet
+      console.log('Fetched machinery data:', data); // Debug log
       setMachinery(data || []);
     } catch (error) {
       console.error('Error loading machinery:', error);
@@ -89,7 +90,7 @@ const SuiviList = () => {
           <div className="text-[10px] mt-0.5">
             {days < 0 
               ? t('suivi.detail.fields.expired')
-              : `(${days} ${days === 1 ? 'day' : 'days'} remaining)` // ✅ Fixed duplicate
+              : `(${days} ${days === 1 ? 'day' : 'days'} remaining)`
             }
           </div>
         )}
@@ -99,16 +100,23 @@ const SuiviList = () => {
 
   // ==================== FILTERING ====================
   const filteredMachinery = machinery.filter(item => {
+    // ✅ SAFE: Convert to string and handle undefined/null
+    const plateNumber = String(item['Plate Number'] || '').toLowerCase();
+    const modelType = String(item['Model / Type'] || '').toLowerCase();
+    const search = searchTerm.toLowerCase();
+    
     const matchesSearch = 
-      item['Plate Number']?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item['Model / Type']?.toLowerCase().includes(searchTerm.toLowerCase()); // ✅ Fixed field name
+      plateNumber.includes(search) ||
+      modelType.includes(search);
+      
     const matchesStatus = !statusFilter || item.Status === statusFilter;
     const matchesType = !typeFilter || item.Machinery === typeFilter;
+    
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const uniqueStatuses = [...new Set(machinery.map(m => m.Status))];
-  const uniqueTypes = [...new Set(machinery.map(m => m.Machinery))];
+  const uniqueStatuses = [...new Set(machinery.map(m => m.Status).filter(Boolean))];
+  const uniqueTypes = [...new Set(machinery.map(m => m.Machinery).filter(Boolean))];
 
   // ==================== ACTIONS ====================
   const handleEdit = (item) => {
@@ -402,7 +410,7 @@ const SuiviList = () => {
                           {item.Machinery}
                         </td>
 
-                        {/* Model - ✅ Fixed field name */}
+                        {/* Model */}
                         <td className="px-4 py-3 text-sm text-white font-medium">
                           {item['Model / Type']}
                         </td>
