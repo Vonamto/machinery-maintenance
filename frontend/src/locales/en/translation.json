@@ -678,6 +678,145 @@
       }
     }
   },
+    },
+  "suivi": {
+    "menu": {
+      "back": "Back",
+      "title": "Suivi - Machinery Tracking",
+      "subtitle": "Comprehensive machinery document and inspection management",
+      "cards": {
+        "list": {
+          "title": "View Machinery List",
+          "description": "Browse all tracked machinery with document status"
+        },
+        "manage": {
+          "title": "Manage Machinery",
+          "description": "Add or edit machinery entries and documents"
+        }
+      }
+    },
+    "list": {
+      "title": "Machinery Tracking - Suivi",
+      "subtitle": "Click on machinery to view detailed information",
+      "loading": "Loading machinery list...",
+      "noMachinery": "No machinery found.",
+      "search": "Search by plate or model...",
+      "filterStatus": "Filter by Status",
+      "filterType": "Filter by Type",
+      "allStatus": "All Status",
+      "allTypes": "All Types",
+      "viewDetails": "View Details",
+      "table": {
+        "status": "Status",
+        "machinery": "Machinery",
+        "model": "Model / Type",
+        "plate": "Plate Number",
+        "driver1": "Driver 1",
+        "driver2": "Driver 2",
+        "insurance": "Insurance",
+        "technical": "Technical Inspection",
+        "certificate": "Certificate",
+        "documents": "Documents"
+      }
+    },
+    "manage": {
+      "title": "Manage Machinery",
+      "subtitle": "Add, edit, or remove machinery entries",
+      "addButton": "Add Machinery",
+      "cancelButton": "Cancel",
+      "editButton": "Edit",
+      "deleteButton": "Delete",
+      "backButton": "Back to List",
+      "form": {
+        "title": "Add New Machinery",
+        "editTitle": "Edit Machinery",
+        "basicInfo": "Basic Information",
+        "documents": "Document Information",
+        "inspectionDates": "Inspection Dates",
+        "driverDocuments": "Driver Documents",
+        "status": "Status *",
+        "machinery": "Machinery Type *",
+        "modelType": "Model / Type *",
+        "plateNumber": "Plate Number *",
+        "driver1": "Driver 1",
+        "driver2": "Driver 2",
+        "insurance": "Insurance Expiry",
+        "technical": "Technical Inspection Expiry",
+        "certificate": "Certificate Expiry",
+        "inspectionDate": "Last Inspection Date",
+        "nextInspection": "Next Inspection Date",
+        "machineryDocuments": "Machinery Documents (PDF)",
+        "driver1Documents": "Driver 1 Documents (PDF)",
+        "driver2Documents": "Driver 2 Documents (PDF)",
+        "uploadPDF": "Upload PDF",
+        "replacePDF": "Replace PDF",
+        "viewPDF": "View Document",
+        "certificateNA": "Certificate N/A",
+        "save": "Save Machinery",
+        "saving": "Saving...",
+        "add": "Add Machinery",
+        "adding": "Adding...",
+        "placeholders": {
+          "selectStatus": "--- Select Status ---",
+          "selectMachinery": "--- Select Machinery Type ---",
+          "modelType": "e.g., Mercedes Actros",
+          "plateNumber": "e.g., ABC-123",
+          "selectDriver": "--- Select Driver ---"
+        }
+      },
+      "alerts": {
+        "missingFields": "Please fill in Status, Machinery Type, Model/Type, and Plate Number.",
+        "pdfTooLarge": "PDF file is too large. Maximum size is 10MB.",
+        "invalidFile": "Please upload a valid PDF file.",
+        "addSuccess": "✅ Machinery added successfully!",
+        "editSuccess": "✅ Machinery updated successfully!",
+        "deleteSuccess": "✅ Machinery deleted successfully!",
+        "error": "❌ Error: {{message}}",
+        "deleteConfirm": "Are you sure you want to delete this machinery entry?\n\nPlate: {{plate}}\nThis will also delete all associated documents.\n\nThis action cannot be undone."
+      }
+    },
+    "detail": {
+      "title": "Machinery Details",
+      "back": "Back to List",
+      "edit": "Edit Machinery",
+      "delete": "Delete",
+      "loading": "Loading details...",
+      "notFound": "Machinery not found",
+      "sections": {
+        "basicInfo": "Basic Information",
+        "documents": "Documents & Expiry Dates",
+        "inspection": "Inspection Schedule",
+        "drivers": "Assigned Drivers"
+      },
+      "fields": {
+        "status": "Status",
+        "machinery": "Machinery Type",
+        "model": "Model / Type",
+        "plate": "Plate Number",
+        "driver1": "Driver 1",
+        "driver2": "Driver 2",
+        "insurance": "Insurance",
+        "technical": "Technical Inspection",
+        "certificate": "Certificate",
+        "inspectionDate": "Last Inspection",
+        "nextInspection": "Next Inspection",
+        "documents": "Machinery Documents",
+        "driver1Doc": "Driver 1 Documents",
+        "driver2Doc": "Driver 2 Documents",
+        "noDocument": "No document uploaded",
+        "viewDocument": "View Document",
+        "daysRemaining": "{{days}} days remaining",
+        "daysOverdue": "{{days}} days overdue",
+        "expiresIn": "Expires in {{days}} days",
+        "expired": "Expired",
+        "notApplicable": "N/A"
+      }
+    },
+    "status": {
+      "permanent": "Permanent",
+      "callOff": "Call Off"
+    }
+
   "users": {
     "manage": {
       "title": "Manage Users",
