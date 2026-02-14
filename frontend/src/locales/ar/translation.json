@@ -679,6 +679,144 @@
       }
     }
   },
+  "suivi": {
+    "menu": {
+      "back": " رجوع ",
+      "title": " سويفي - تتبع الآليات ",
+      "subtitle": " إدارة شاملة لوثائق وفحوصات الآليات ",
+      "cards": {
+        "list": {
+          "title": " عرض قائمة الآليات ",
+          "description": " تصفح جميع الآليات المتتبعة مع حالة الوثائق "
+        },
+        "manage": {
+          "title": " إدارة الآليات ",
+          "description": " إضافة أو تعديل مدخلات الآليات والوثائق "
+        }
+      }
+    },
+    "list": {
+      "title": " تتبع الآليات - سويفي ",
+      "subtitle": " انقر على الآلية لعرض المعلومات التفصيلية ",
+      "loading": " جارٍ تحميل قائمة الآليات ...",
+      "noMachinery": " لا توجد آليات .",
+      "search": " البحث برقم اللوحة أو الطراز ...",
+      "filterStatus": " تصفية حسب الحالة ",
+      "filterType": " تصفية حسب النوع ",
+      "allStatus": " جميع الحالات ",
+      "allTypes": " جميع الأنواع ",
+      "viewDetails": " عرض التفاصيل ",
+      "table": {
+        "status": " الحالة ",
+        "machinery": " الآلية ",
+        "model": " الطراز / النوع ",
+        "plate": " رقم اللوحة ",
+        "driver1": " السائق 1 ",
+        "driver2": " السائق 2 ",
+        "insurance": " التأمين ",
+        "technical": " الفحص الفني ",
+        "certificate": " الشهادة ",
+        "documents": " الوثائق "
+      }
+    },
+    "manage": {
+      "title": " إدارة الآليات ",
+      "subtitle": " إضافة أو تعديل أو إزالة مدخلات الآليات ",
+      "addButton": " إضافة آلية ",
+      "cancelButton": " إلغاء ",
+      "editButton": " تعديل ",
+      "deleteButton": " حذف ",
+      "backButton": " رجوع للقائمة ",
+      "form": {
+        "title": " إضافة آلية جديدة ",
+        "editTitle": " تعديل الآلية ",
+        "basicInfo": " المعلومات الأساسية ",
+        "documents": " معلومات الوثائق ",
+        "inspectionDates": " تواريخ الفحص ",
+        "driverDocuments": " وثائق السائقين ",
+        "status": " الحالة *",
+        "machinery": " نوع الآلية *",
+        "modelType": " الطراز / النوع *",
+        "plateNumber": " رقم اللوحة *",
+        "driver1": " السائق 1 ",
+        "driver2": " السائق 2 ",
+        "insurance": " انتهاء التأمين ",
+        "technical": " انتهاء الفحص الفني ",
+        "certificate": " انتهاء الشهادة ",
+        "inspectionDate": " تاريخ آخر فحص ",
+        "nextInspection": " تاريخ الفحص القادم ",
+        "machineryDocuments": " وثائق الآلية (PDF) ",
+        "driver1Documents": " وثائق السائق 1 (PDF) ",
+        "driver2Documents": " وثائق السائق 2 (PDF) ",
+        "uploadPDF": " رفع PDF ",
+        "replacePDF": " استبدال PDF ",
+        "viewPDF": " عرض الوثيقة ",
+        "certificateNA": " الشهادة غير مطلوبة ",
+        "save": " حفظ الآلية ",
+        "saving": " جاري الحفظ ...",
+        "add": " إضافة آلية ",
+        "adding": " جاري الإضافة ...",
+        "placeholders": {
+          "selectStatus": "---  اختر الحالة  ---",
+          "selectMachinery": "---  اختر نوع الآلية  ---",
+          "modelType": " مثال : مرسيدس أكتروس ",
+          "plateNumber": " مثال : أ ب ج - 123 ",
+          "selectDriver": "---  اختر السائق  ---"
+        }
+      },
+      "alerts": {
+        "missingFields": " يرجى ملء الحالة، نوع الآلية، الطراز/النوع، ورقم اللوحة .",
+        "pdfTooLarge": " حجم ملف PDF كبير جداً. الحد الأقصى 10 ميجابايت .",
+        "invalidFile": " يرجى رفع ملف PDF صالح .",
+        "addSuccess": " ✅ تمت إضافة الآلية بنجاح !",
+        "editSuccess": " ✅ تم تحديث الآلية بنجاح !",
+        "deleteSuccess": " ✅ تم حذف الآلية بنجاح !",
+        "error": " ❌ خطأ : {{message}}",
+        "deleteConfirm": " هل أنت متأكد من حذف هذه الآلية ؟\n\n رقم اللوحة : {{plate}}\n سيتم حذف جميع الوثائق المرتبطة أيضاً .\n\n لا يمكن التراجع عن هذا الإجراء ."
+      }
+    },
+    "detail": {
+      "title": " تفاصيل الآلية ",
+      "back": " رجوع للقائمة ",
+      "edit": " تعديل الآلية ",
+      "delete": " حذف ",
+      "loading": " جاري تحميل التفاصيل ...",
+      "notFound": " لم يتم العثور على الآلية ",
+      "sections": {
+        "basicInfo": " المعلومات الأساسية ",
+        "documents": " الوثائق وتواريخ الانتهاء ",
+        "inspection": " جدول الفحص ",
+        "drivers": " السائقون المعينون "
+      },
+      "fields": {
+        "status": " الحالة ",
+        "machinery": " نوع الآلية ",
+        "model": " الطراز / النوع ",
+        "plate": " رقم اللوحة ",
+        "driver1": " السائق 1 ",
+        "driver2": " السائق 2 ",
+        "insurance": " التأمين ",
+        "technical": " الفحص الفني ",
+        "certificate": " الشهادة ",
+        "inspectionDate": " آخر فحص ",
+        "nextInspection": " الفحص القادم ",
+        "documents": " وثائق الآلية ",
+        "driver1Doc": " وثائق السائق 1 ",
+        "driver2Doc": " وثائق السائق 2 ",
+        "noDocument": " لم يتم رفع وثيقة ",
+        "viewDocument": " عرض الوثيقة ",
+        "daysRemaining": " {{days}} يوم متبقي ",
+        "daysOverdue": " متأخر {{days}} يوم ",
+        "expiresIn": " ينتهي خلال {{days}} يوم ",
+        "expired": " منتهي ",
+        "notApplicable": " غير مطلوب "
+      }
+    },
+    "status": {
+      "permanent": " دائم ",
+      "callOff": " مؤقت "
+    }
+  },
   "users": {
     "manage": {
       "title": " إدارة المستخدمين ",
