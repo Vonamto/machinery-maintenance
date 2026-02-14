@@ -47,7 +47,7 @@ drive_service = build("drive", "v3", credentials=creds)
 #  ✅  Google Sheets access (still uses service account)
 # =====================================================
 service_account_info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
-service_account_info["private_key"] = service_account_info["private_key"].replace("\\\\n", "\\n")
+service_account_info["private_key"] = service_account_info["private_key"].replace("\\\\\\\\n", "\\\\n")
 
 sheet_creds = Credentials.from_service_account_info(
     service_account_info,
@@ -59,10 +59,12 @@ sheet_creds = Credentials.from_service_account_info(
 client = gspread.authorize(sheet_creds)
 
 # =====================================================
-#  ✅  Your Google Sheet ID and Drive Folder
+#  ✅  Your Google Sheet ID and Drive Folders
 # =====================================================
 SPREADSHEET_ID = "1j5PbpbLeQFVxofnO69BlluIw851-LZtOCV5HM4NhNOM"
 FOLDER_A_ID = "1LXuX4GDaIPsnc0F5yizlL5znfMl22RnD"  # Main photo folder
+FOLDERAID_MACHINERY_DOCS = '1NPywJrjTCvobQetVqoGg7V4AbhLcfAXf'  # Machinery Documents folder
+FOLDERAID_OPERATORS = '1PRg64C-cG7s1ok31BCaUybJwY68O2t3u'  # Operators folder
 
 # =====================================================
 #  ✅  Utility: Current Algeria Time
@@ -119,6 +121,95 @@ def save_image_to_drive(base64_string, filename, subfolder_name):
         return f"ERROR_UPLOAD"
 
 # =====================================================
+#  ✅  NEW: Upload PDF to Google Drive
+# =====================================================
+def save_pdf_to_drive(base64_string, filename, parent_folder_id):
+    """
+    Upload Base64 PDF to Google Drive
+    
+    Args:
+        base64_string: Base64 encoded PDF string
+        filename: Name for the uploaded file
+        parent_folder_id: Google Drive folder ID where file will be stored
+    
+    Returns:
+        Google Drive shareable link or empty string on error
+    """
+    try:
+        if not base64_string or 'base64,' not in base64_string:
+            print("Invalid base64 string")
+            return ""
+        
+        # Decode PDF data
+        pdf_data = base64.b64decode(base64_string.split('base64,')[-1])
+        file_stream = io.BytesIO(pdf_data)
+        
+        # Prepare file metadata
+        file_metadata = {
+            'name': filename,
+            'parents': [parent_folder_id]
+        }
+        
+        # Upload to Drive
+        media = MediaIoBaseUpload(file_stream, mimetype='application/pdf', resumable=True)
+        uploaded_file = drive_service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id'
+        ).execute()
+        
+        # Make file publicly readable
+        drive_service.permissions().create(
+            fileId=uploaded_file['id'],
+            body={'type': 'anyone', 'role': 'reader'}
+        ).execute()
+        
+        # Return viewable link
+        file_link = f"https://drive.google.com/file/d/{uploaded_file['id']}/view"
+        print(f"PDF uploaded successfully: {filename} -> {file_link}")
+        return file_link
+        
+    except Exception as e:
+        print(f"PDF Upload Error: {str(e)}")
+        return ""
+
+# =====================================================
+#  ✅  NEW: Delete File from Google Drive
+# =====================================================
+def delete_file_from_drive(file_url):
+    """
+    Delete a file from Google Drive using its shareable URL
+    
+    Args:
+        file_url: Google Drive file URL (e.g., https://drive.google.com/file/d/FILE_ID/view)
+    
+    Returns:
+        True if deleted successfully, False otherwise
+    """
+    try:
+        if not file_url or 'drive.google.com' not in file_url:
+            return False
+        
+        # Extract file ID from URL
+        # URL format: https://drive.google.com/file/d/FILE_ID/view or https://drive.google.com/uc?id=FILE_ID
+        if '/file/d/' in file_url:
+            file_id = file_url.split('/file/d/')[1].split('/')[0]
+        elif 'id=' in file_url:
+            file_id = file_url.split('id=')[1].split('&')[0]
+        else:
+            print(f"Cannot extract file ID from URL: {file_url}")
+            return False
+        
+        # Delete file
+        drive_service.files().delete(fileId=file_id).execute()
+        print(f"File deleted successfully: {file_id}")
+        return True
+        
+    except Exception as e:
+        print(f"Error deleting file: {str(e)}")
+        return False
+
+# =====================================================
 #  ✅  Copy to Maintenance_Log
 # =====================================================
 def copy_to_maintenance_log(source_sheet, data):
@@ -164,7 +255,7 @@ def get_sheet_data(sheet_name):
         return jsonify({"error": str(e)})
 
 # =====================================================
-#  ✅  Append Row (Add) - UPDATED FOR CHECKLIST
+#  ✅  Append Row (Add) - UPDATED FOR CHECKLIST & SUIVI
 # =====================================================
 def append_row(sheet_name, new_row):
     try:
@@ -211,6 +302,29 @@ def append_row(sheet_name, new_row):
                     new_row[key] = save_image_to_drive(new_row[key], filename, sheet_name)
 
         # ---------------------------------------------------
+        #  NEW: SPECIAL LOGIC for Suivi Sheet - PDF Documents
+        # ---------------------------------------------------
+        if sheet_name == "Suivi":
+            plate_number = new_row.get('Plate Number', 'Unknown')
+            driver1_name = new_row.get('Driver 1', 'Unknown').replace(' ', '_')
+            driver2_name = new_row.get('Driver 2', 'Unknown').replace(' ', '_')
+            
+            # Handle Machinery Documents PDF
+            if 'Documents' in new_row and isinstance(new_row['Documents'], str) and new_row['Documents'].startswith('data:application/pdf'):
+                filename = f"Machinery_{plate_number}_Documents.pdf"
+                new_row['Documents'] = save_pdf_to_drive(new_row['Documents'], filename, FOLDERAID_MACHINERY_DOCS)
+            
+            # Handle Driver 1 Documents PDF
+            if 'Driver 1 Doc' in new_row and isinstance(new_row['Driver 1 Doc'], str) and new_row['Driver 1 Doc'].startswith('data:application/pdf'):
+                filename = f"Driver1_{driver1_name}_{plate_number}.pdf"
+                new_row['Driver 1 Doc'] = save_pdf_to_drive(new_row['Driver 1 Doc'], filename, FOLDERAID_OPERATORS)
+            
+            # Handle Driver 2 Documents PDF
+            if 'Driver 2 Doc' in new_row and isinstance(new_row['Driver 2 Doc'], str) and new_row['Driver 2 Doc'].startswith('data:application/pdf'):
+                filename = f"Driver2_{driver2_name}_{plate_number}.pdf"
+                new_row['Driver 2 Doc'] = save_pdf_to_drive(new_row['Driver 2 Doc'], filename, FOLDERAID_OPERATORS)
+
+        # ---------------------------------------------------
         #  Write to Sheet
         # ---------------------------------------------------
         row_to_add = []
@@ -223,18 +337,50 @@ def append_row(sheet_name, new_row):
 
         sheet.append_row(row_to_add)
 
-        # ============================================================
-        # 🔴 CHANGE MADE: Auto-copy to Maintenance_Log REMOVED
-        # ============================================================
-        # Previously, Cleaning_Log entries were automatically copied to Maintenance_Log.
-        # This has been disabled as per user request.
-        # 
-        # OLD CODE (now removed):
-        # if sheet_name == "Cleaning_Log":
-        #     copy_to_maintenance_log("Cleaning_Log", new_row)
-        #
-        # Cleaning logs are now ONLY stored in Cleaning_Log sheet.
-        # ============================================================
+        # ---------------------------------------------------
+        #  NEW: Auto-copy Suivi data to Equipment_List sheet (DYNAMIC MAPPING)
+        # ---------------------------------------------------
+        if sheet_name == "Suivi":
+            try:
+                equipment_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Equipment_List")
+                eq_headers = equipment_sheet.row_values(1)
+                
+                # Get machinery type mapping dynamically from Machinery_Types sheet
+                machinery_types_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Machinery_Types")
+                machinery_types_data = machinery_types_sheet.get_all_records()
+                
+                # Build mapping dictionary from sheet data
+                machinery_to_equipment_type = {}
+                for row in machinery_types_data:
+                    english_name = row.get('English', '')
+                    equipment_mapping = row.get('Equipment_Type_Mapping', '')
+                    if english_name and equipment_mapping:
+                        machinery_to_equipment_type[english_name] = equipment_mapping
+                
+                # Map Suivi data to Equipment_List structure
+                machinery_type = new_row.get('Machinery', '')
+                equipment_type = machinery_to_equipment_type.get(machinery_type, '')
+                
+                equipment_row = {
+                    'Status': new_row.get('Status', ''),
+                    'Equipment Type': equipment_type,
+                    'Model / Type': new_row.get('Model / Type', ''),
+                    'Plate Number': new_row.get('Plate Number', ''),
+                    'Driver 1': new_row.get('Driver 1', ''),
+                    'Driver 2': new_row.get('Driver 2', ''),
+                    'Notes': ''
+                }
+                
+                # Prepare row in correct column order
+                eq_row_to_add = [equipment_row.get(h, '') for h in eq_headers]
+                
+                # Append to Equipment_List
+                equipment_sheet.append_row(eq_row_to_add)
+                print(f"Auto-copied to Equipment_List: {plate_number}")
+                
+            except Exception as e:
+                print(f"Auto-copy to Equipment_List failed: {str(e)}")
+                # Continue execution even if auto-copy fails
 
         return {"status": "success", "added": new_row, "timestamp": current_time}
 
@@ -242,7 +388,7 @@ def append_row(sheet_name, new_row):
         return {"status": "error", "message": str(e)}
 
 # =====================================================
-#  ✅  Update Row (Edit)
+#  ✅  Update Row (Edit) - UPDATED FOR SUIVI PDF REPLACEMENT
 # =====================================================
 def update_row(sheet_name, row_index, updated_data):
     try:
@@ -263,6 +409,50 @@ def update_row(sheet_name, row_index, updated_data):
                 filename = f"{sheet_name}_{key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                 updated_data[key] = save_image_to_drive(value, filename, sheet_name)
 
+        # ---------------------------------------------------
+        #  NEW: Handle PDF uploads and replacements for Suivi sheet
+        # ---------------------------------------------------
+        if sheet_name == "Suivi":
+            plate_number = updated_data.get('Plate Number') or current_row.get('Plate Number', 'Unknown')
+            driver1_name = (updated_data.get('Driver 1') or current_row.get('Driver 1', 'Unknown')).replace(' ', '_')
+            driver2_name = (updated_data.get('Driver 2') or current_row.get('Driver 2', 'Unknown')).replace(' ', '_')
+            
+            # Handle Machinery Documents replacement
+            if 'Documents' in updated_data and isinstance(updated_data['Documents'], str):
+                if updated_data['Documents'].startswith('data:application/pdf'):
+                    # Delete old file if exists
+                    old_doc_url = current_row.get('Documents', '')
+                    if old_doc_url:
+                        delete_file_from_drive(old_doc_url)
+                    
+                    # Upload new file
+                    filename = f"Machinery_{plate_number}_Documents.pdf"
+                    updated_data['Documents'] = save_pdf_to_drive(updated_data['Documents'], filename, FOLDERAID_MACHINERY_DOCS)
+            
+            # Handle Driver 1 Documents replacement
+            if 'Driver 1 Doc' in updated_data and isinstance(updated_data['Driver 1 Doc'], str):
+                if updated_data['Driver 1 Doc'].startswith('data:application/pdf'):
+                    # Delete old file
+                    old_doc_url = current_row.get('Driver 1 Doc', '')
+                    if old_doc_url:
+                        delete_file_from_drive(old_doc_url)
+                    
+                    # Upload new file
+                    filename = f"Driver1_{driver1_name}_{plate_number}.pdf"
+                    updated_data['Driver 1 Doc'] = save_pdf_to_drive(updated_data['Driver 1 Doc'], filename, FOLDERAID_OPERATORS)
+            
+            # Handle Driver 2 Documents replacement
+            if 'Driver 2 Doc' in updated_data and isinstance(updated_data['Driver 2 Doc'], str):
+                if updated_data['Driver 2 Doc'].startswith('data:application/pdf'):
+                    # Delete old file
+                    old_doc_url = current_row.get('Driver 2 Doc', '')
+                    if old_doc_url:
+                        delete_file_from_drive(old_doc_url)
+                    
+                    # Upload new file
+                    filename = f"Driver2_{driver2_name}_{plate_number}.pdf"
+                    updated_data['Driver 2 Doc'] = save_pdf_to_drive(updated_data['Driver 2 Doc'], filename, FOLDERAID_OPERATORS)
+
         # Merge updated fields
         for key, value in updated_data.items():
             current_row[key] = value
@@ -272,9 +462,6 @@ def update_row(sheet_name, row_index, updated_data):
             completion_date = get_current_time()
             if "Completion Date" in headers:
                 current_row["Completion Date"] = completion_date
-            
-            # Optionally copy to Maintenance Log if it's a request
-            # copy_to_maintenance_log(sheet_name, current_row)
 
         updated_row_values = [current_row.get(h, "") for h in headers]
         
@@ -286,12 +473,46 @@ def update_row(sheet_name, row_index, updated_data):
         return {"status": "error", "message": str(e)}
 
 # =====================================================
-#  ✅  Delete Row
+#  ✅  Delete Row - UPDATED FOR SUIVI FILE DELETION
 # =====================================================
 def delete_row(sheet_name, row_index):
+    """
+    Delete a row from the sheet and associated files from Drive
+    
+    Args:
+        sheet_name: Name of the Google Sheet
+        row_index: Row number to delete (1-indexed)
+    
+    Returns:
+        JSON response with status
+    """
     try:
         sheet = client.open_by_key(SPREADSHEET_ID).worksheet(sheet_name)
+        
+        # For Suivi sheet, delete associated documents from Drive first
+        if sheet_name == "Suivi":
+            try:
+                # Get the row data before deleting
+                row_data = sheet.row_values(row_index)
+                headers = sheet.row_values(1)
+                row_dict = dict(zip(headers, row_data))
+                
+                # Delete documents if they exist
+                doc_fields = ['Documents', 'Driver 1 Doc', 'Driver 2 Doc']
+                for field in doc_fields:
+                    doc_url = row_dict.get(field, '')
+                    if doc_url:
+                        delete_file_from_drive(doc_url)
+                        print(f"Deleted {field}: {doc_url}")
+                
+            except Exception as e:
+                print(f"Error deleting files from Drive: {str(e)}")
+                # Continue with row deletion even if file deletion fails
+        
+        # Delete the row from the sheet
         sheet.delete_rows(row_index)
+        
         return {"status": "success", "message": f"Row {row_index} deleted successfully"}
+        
     except Exception as e:
         return {"status": "error", "message": str(e)}
