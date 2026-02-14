@@ -1,79 +1,81 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FaList, FaCog, FaArrowLeft } from 'react-icons/fa';
+import { FaArrowLeft, FaList, FaPlus } from 'react-icons/fa';
+import Navbar from '../../components/Navbar';
+import { useAuth } from '../../context/AuthContext';
+import { Card, CardContent } from '@/components/ui/card';
+import { PAGE_PERMISSIONS } from '@/config/roles';
 
 const SuiviMenu = () => {
-  const navigate = useNavigate();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const menuCards = [
+  useEffect(() => {
+    if (!PAGE_PERMISSIONS.SUIVILIST.includes(user?.role)) {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  const cards = [
     {
       title: t('suivi.menu.cards.list.title'),
       description: t('suivi.menu.cards.list.description'),
-      icon: <FaList size={40} />,
-      path: '/suivi/list',
-      color: 'from-blue-500 to-blue-600'
+      link: '/suivi/list',
+      icon: <FaList className="w-8 h-8 text-white" />,
+      gradient: 'from-blue-600 to-cyan-500',
+      glow: 'shadow-[0_0_15px_2px_rgba(59,130,246,0.6)]',
+      allowed: PAGE_PERMISSIONS.SUIVILIST,
     },
     {
       title: t('suivi.menu.cards.manage.title'),
       description: t('suivi.menu.cards.manage.description'),
-      icon: <FaCog size={40} />,
-      path: '/suivi/manage',
-      color: 'from-green-500 to-green-600'
-    }
+      link: '/suivi/manage',
+      icon: <FaPlus className="w-8 h-8 text-white" />,
+      gradient: 'from-green-600 to-emerald-500',
+      glow: 'shadow-[0_0_15px_2px_rgba(16,185,129,0.6)]',
+      allowed: PAGE_PERMISSIONS.SUIVIMANAGE,
+    },
   ];
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4 transition-colors"
-          >
-            <FaArrowLeft />
-            <span>{t('suivi.menu.back')}</span>
-          </button>
-          
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            {t('suivi.menu.title')}
-          </h1>
-          <p className="text-gray-600 text-lg">
-            {t('suivi.menu.subtitle')}
-          </p>
-        </div>
+  const visibleCards = cards.filter((card) => card.allowed.includes(user?.role));
 
-        {/* Menu Cards */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {menuCards.map((card, index) => (
-            <div
-              key={index}
-              onClick={() => navigate(card.path)}
-              className="group cursor-pointer bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1"
-            >
-              <div className={`bg-gradient-to-r ${card.color} p-6 text-white`}>
-                <div className="flex items-center justify-center mb-4">
-                  {card.icon}
-                </div>
-                <h2 className="text-2xl font-bold text-center mb-2">
-                  {card.title}
-                </h2>
-              </div>
-              
-              <div className="p-6">
-                <p className="text-gray-600 text-center">
-                  {card.description}
-                </p>
-              </div>
-              
-              <div className="px-6 pb-6">
-                <div className="w-full bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg py-3 text-center font-semibold text-gray-700 group-hover:from-blue-500 group-hover:to-blue-600 group-hover:text-white transition-all duration-300">
-                  {t('common.next')} →
-                </div>
-              </div>
-            </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white">
+      <Navbar user={user} />
+
+      <div className="p-6">
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 text-gray-300 hover:text-white mb-6 transition-colors"
+        >
+          <FaArrowLeft />
+          <span>{t('suivi.menu.back')}</span>
+        </button>
+
+        <h1 className="text-3xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-rose-500">
+          {t('suivi.menu.title')}
+        </h1>
+        <p className="text-gray-400 mb-8">{t('suivi.menu.subtitle')}</p>
+
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-2 max-w-4xl">
+          {visibleCards.map((card) => (
+            <Link to={card.link} key={card.link}>
+              <Card
+                className={`rounded-2xl bg-gradient-to-br ${card.gradient} ${card.glow} hover:scale-[1.04] hover:brightness-110 transition-all duration-300 border border-white/10`}
+              >
+                <CardContent className="flex flex-col items-center justify-center p-8 text-center space-y-3">
+                  <div className="p-3 rounded-full bg-white/10 backdrop-blur-sm">
+                    {card.icon}
+                  </div>
+                  <h2 className="text-xl font-semibold text-white drop-shadow-md">
+                    {card.title}
+                  </h2>
+                  <p className="text-gray-100/90 text-sm">{card.description}</p>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       </div>
