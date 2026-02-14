@@ -47,7 +47,7 @@ drive_service = build("drive", "v3", credentials=creds)
 #  ✅  Google Sheets access (still uses service account)
 # =====================================================
 service_account_info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
-service_account_info["private_key"] = service_account_info["private_key"].replace("\\\\\\\\\\\\\\\\n", "\\\\\\\\n")
+service_account_info["private_key"] = service_account_info["private_key"].replace("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n", "\\\\\\\\\\\\\\\\n")
 
 sheet_creds = Credentials.from_service_account_info(
     service_account_info,
@@ -244,12 +244,26 @@ def copy_to_maintenance_log(source_sheet, data):
         return {"status": "error", "message": f"Failed to copy: {e}"}
 
 # =====================================================
-#  ✅  Get Sheet Data
+#  ✅  Get Sheet Data (WITH ROW INDEX)
 # =====================================================
 def get_sheet_data(sheet_name):
+    """
+    Fetch all records from a Google Sheet and add row index
+    
+    Args:
+        sheet_name: Name of the Google Sheet
+    
+    Returns:
+        JSON response with data including rowindex for each row
+    """
     try:
         sheet = client.open_by_key(SPREADSHEET_ID).worksheet(sheet_name)
         rows = sheet.get_all_records()
+        
+        # ✅ ADD ROW INDEX TO EACH ROW (starting from row 2, since row 1 is headers)
+        for index, row in enumerate(rows, start=2):
+            row['rowindex'] = index
+        
         return jsonify(rows)
     except Exception as e:
         return jsonify({"error": str(e)})
