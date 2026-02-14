@@ -57,6 +57,20 @@ SHEET_PERMISSIONS = {
         "delete": [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
     },
 
+"Suivi": {
+    'view': [ROLES['SUPERVISOR'], ROLES['MECHANIC'], ROLES['DRIVER'], ROLES['ADMIN'], ROLES['GUEST'], ROLES['MANAGER']],
+    'add': [ROLES['SUPERVISOR'], ROLES['ADMIN'], ROLES['GUEST']],
+    'edit': [ROLES['SUPERVISOR'], ROLES['ADMIN'], ROLES['GUEST']],
+    'delete': [ROLES['SUPERVISOR'], ROLES['ADMIN']],
+},
+    
+"Machinery_Types": {
+    'view': [ROLES['SUPERVISOR'], ROLES['MECHANIC'], ROLES['DRIVER'], ROLES['ADMIN'], ROLES['GUEST'], ROLES['MANAGER']],
+    'add': [ROLES['ADMIN']],
+    'edit': [ROLES['ADMIN']],
+    'delete': [ROLES['ADMIN']],
+},
+
     "Users": {
         "view":   [ROLES["ADMIN"]],    # 🔒 Only Admin (Supervisor removed)
         "add":    [ROLES["ADMIN"]],    # 🔒 Only Admin
