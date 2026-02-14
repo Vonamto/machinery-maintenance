@@ -16,7 +16,7 @@ import { pdfToBase64, validatePDFSize } from '../../utils/pdfUtils';
 
 const SuiviManage = () => {
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation(); // ✅ Add i18n to detect current language
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const editPlate = searchParams.get('edit');
@@ -27,11 +27,11 @@ const SuiviManage = () => {
   const [machineryTypes, setMachineryTypes] = useState([]);
   const [existingData, setExistingData] = useState(null);
 
-  // Form fields
+  // Form fields - ✅ FIXED: Changed 'Model Type' to 'Model / Type'
   const [formData, setFormData] = useState({
     Status: '',
     Machinery: '',
-    'Model Type': '',
+    'Model / Type': '',  // ✅ Fixed to match sheet header
     'Plate Number': '',
     'Driver 1': '',
     'Driver 2': '',
@@ -81,7 +81,7 @@ const SuiviManage = () => {
           setFormData({
             Status: existing.Status || '',
             Machinery: existing.Machinery || '',
-            'Model Type': existing['Model Type'] || '',
+            'Model / Type': existing['Model / Type'] || '',  // ✅ Fixed
             'Plate Number': existing['Plate Number'] || '',
             'Driver 1': existing['Driver 1'] || '',
             'Driver 2': existing['Driver 2'] || '',
@@ -109,12 +109,12 @@ const SuiviManage = () => {
     }
   };
 
-  // ✅ Helper function to get display name based on language
+  // Helper function to get display name based on language
   const getMachineryDisplayName = (type) => {
     if (i18n.language === 'ar' && type.arabic) {
-      return type.arabic; // Show Arabic when language is Arabic
+      return type.arabic;
     }
-    return type.english; // Show English by default
+    return type.english;
   };
 
   // ==================== HANDLERS ====================
@@ -156,8 +156,8 @@ const SuiviManage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
-    if (!formData.Status || !formData.Machinery || !formData['Model Type'] || !formData['Plate Number']) {
+    // Validation - ✅ FIXED: Updated validation check
+    if (!formData.Status || !formData.Machinery || !formData['Model / Type'] || !formData['Plate Number']) {
       alert(t('suivi.manage.alerts.missingFields'));
       return;
     }
@@ -273,7 +273,7 @@ const SuiviManage = () => {
                   </select>
                 </div>
 
-                {/* Machinery Type - ✅ BILINGUAL DROPDOWN */}
+                {/* Machinery Type */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {t('suivi.manage.form.machinery')} *
@@ -293,15 +293,15 @@ const SuiviManage = () => {
                   </select>
                 </div>
 
-                {/* Model Type - FREE TEXT INPUT */}
+                {/* Model / Type - FREE TEXT INPUT - ✅ FIXED field name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {t('suivi.manage.form.modelType')} *
                   </label>
                   <input
                     type="text"
-                    value={formData['Model Type']}
-                    onChange={(e) => handleInputChange('Model Type', e.target.value)}
+                    value={formData['Model / Type']}  // ✅ Fixed
+                    onChange={(e) => handleInputChange('Model / Type', e.target.value)}  // ✅ Fixed
                     placeholder={t('suivi.manage.placeholders.modelType')}
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white placeholder-gray-500 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all"
                     required
