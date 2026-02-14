@@ -19,6 +19,15 @@ export const daysUntilDate = (dateString) => {
 };
 
 /**
+ * Calculate days until expiry (alias for daysUntilDate)
+ * @param {string} dateString - Date in YYYY-MM-DD format
+ * @returns {number} Days remaining (negative if expired)
+ */
+export const getDaysUntilExpiry = (dateString) => {
+  return daysUntilDate(dateString);
+};
+
+/**
  * Get badge color class based on days remaining
  * @param {string} dateString - Date in YYYY-MM-DD format
  * @returns {string} Tailwind CSS classes for badge
@@ -56,4 +65,13 @@ export const formatDisplayDate = (dateString) => {
     month: 'short',
     year: 'numeric'
   });
+};
+
+/**
+ * Format date for display (alias for formatDisplayDate)
+ * @param {string} dateString - Date in YYYY-MM-DD format
+ * @returns {string} Formatted date
+ */
+export const formatDateForDisplay = (dateString) => {
+  return formatDisplayDate(dateString);
 };
