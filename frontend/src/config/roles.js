@@ -65,7 +65,7 @@ export const ACTION_PERMISSIONS = {
 
   // ========== Suivi (Machinery Tracking) ==========
   SUIVI_ADD: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.GUEST],
-  SUIVI_EDIT: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.GUEST],
+  SUIVI_EDIT: [ROLES.SUPERVISOR, ROLES.ADMIN],
   SUIVI_DELETE: [ROLES.SUPERVISOR, ROLES.ADMIN],
 
   // ========== Users Management ==========
