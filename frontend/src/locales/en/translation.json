@@ -10,7 +10,10 @@
     "yes": "Yes",
     "no": "No",
     "upload": "Upload",
-    "camera": "Camera"
+    "camera": "Camera",
+    "edit": "Edit",
+    "delete": "Delete",
+    "actions": "Actions"
   },
   "auth": {
     "loginTitle": "Machinery Maintenance Login",
@@ -700,8 +703,6 @@
       "loading": "Loading machinery list...",
       "noMachinery": "No machinery found.",
       "search": "Search by plate or model...",
-      "filterStatus": "Filter by Status",
-      "filterType": "Filter by Type",
       "allStatus": "All Status",
       "allTypes": "All Types",
       "viewDetails": "View Details",
@@ -714,78 +715,69 @@
         "driver2": "Driver 2",
         "insurance": "Insurance",
         "technical": "Technical Inspection",
-        "certificate": "Certificate",
-        "documents": "Documents"
+        "certificate": "Certificate"
       }
     },
     "manage": {
-      "title": "Manage Machinery",
-      "subtitle": "Add, edit, or remove machinery entries",
-      "addButton": "Add Machinery",
-      "cancelButton": "Cancel",
-      "editButton": "Edit",
-      "deleteButton": "Delete",
-      "backButton": "Back to List",
+      "subtitle": "Add or edit machinery tracking entries with document management",
+      "addButton": "Add New Machinery",
       "form": {
         "title": "Add New Machinery",
         "editTitle": "Edit Machinery",
         "basicInfo": "Basic Information",
-        "documents": "Document Information",
-        "inspectionDates": "Inspection Dates",
-        "driverDocuments": "Driver Documents",
-        "status": "Status *",
-        "machinery": "Machinery Type *",
-        "modelType": "Model / Type *",
-        "plateNumber": "Plate Number *",
+        "inspectionDates": "Document Expiry Dates",
+        "driverDocuments": "Document Uploads",
+        "status": "Status",
+        "machinery": "Machinery Type",
+        "modelType": "Model / Type",
+        "plateNumber": "Plate Number",
         "driver1": "Driver 1",
         "driver2": "Driver 2",
         "insurance": "Insurance Expiry",
         "technical": "Technical Inspection Expiry",
         "certificate": "Certificate Expiry",
-        "inspectionDate": "Last Inspection Date",
-        "nextInspection": "Next Inspection Date",
+        "certificateNA": "Certificate N/A",
+        "inspectionDate": "Inspection Date",
+        "nextInspection": "Next Inspection",
         "machineryDocuments": "Machinery Documents (PDF)",
         "driver1Documents": "Driver 1 Documents (PDF)",
         "driver2Documents": "Driver 2 Documents (PDF)",
-        "uploadPDF": "Upload PDF",
-        "replacePDF": "Replace PDF",
-        "viewPDF": "View Document",
-        "certificateNA": "Certificate N/A",
-        "save": "Save Machinery",
+        "viewPDF": "View Existing PDF",
+        "save": "Save Changes",
         "saving": "Saving...",
         "add": "Add Machinery",
-        "adding": "Adding...",
-        "placeholders": {
-          "selectStatus": "--- Select Status ---",
-          "selectMachinery": "--- Select Machinery Type ---",
-          "modelType": "e.g., Mercedes Actros",
-          "plateNumber": "e.g., ABC-123",
-          "selectDriver": "--- Select Driver ---"
-        }
+        "adding": "Adding..."
+      },
+      "placeholders": {
+        "selectStatus": "--- Select Status ---",
+        "selectMachinery": "--- Select Machinery Type ---",
+        "modelType": "e.g., Mercedes Actros 1844",
+        "plateNumber": "e.g., 01-ABC-123",
+        "selectDriver": "Enter driver name"
       },
       "alerts": {
-        "missingFields": "Please fill in Status, Machinery Type, Model/Type, and Plate Number.",
-        "pdfTooLarge": "PDF file is too large. Maximum size is 10MB.",
+        "missingFields": "Please fill in all required fields: Status, Machinery Type, Model/Type, and Plate Number.",
         "invalidFile": "Please upload a valid PDF file.",
+        "pdfTooLarge": "PDF file is too large. Maximum size is 10MB.",
         "addSuccess": "✅ Machinery added successfully!",
         "editSuccess": "✅ Machinery updated successfully!",
         "deleteSuccess": "✅ Machinery deleted successfully!",
-        "error": "❌ Error: {{message}}",
-        "deleteConfirm": "Are you sure you want to delete this machinery entry?\n\nPlate: {{plate}}\nThis will also delete all associated documents.\n\nThis action cannot be undone."
+        "deleteConfirm": "Are you sure you want to delete machinery with plate number {plate}?\n\nThis will also remove the entry from Equipment_List.\n\nThis action cannot be undone.",
+        "error": "❌ Error",
+        "networkError": "Network error. Please try again."
       }
     },
     "detail": {
-      "title": "Machinery Details",
       "back": "Back to List",
       "edit": "Edit Machinery",
-      "delete": "Delete",
-      "loading": "Loading details...",
-      "notFound": "Machinery not found",
+      "delete": "Delete Machinery",
+      "loading": "Loading machinery details...",
+      "notFound": "Machinery not found.",
       "sections": {
         "basicInfo": "Basic Information",
-        "documents": "Documents & Expiry Dates",
-        "inspection": "Inspection Schedule",
-        "drivers": "Assigned Drivers"
+        "drivers": "Assigned Drivers",
+        "documents": "Document Expiry Status",
+        "inspection": "Inspection Schedule"
       },
       "fields": {
         "status": "Status",
@@ -794,26 +786,20 @@
         "plate": "Plate Number",
         "driver1": "Driver 1",
         "driver2": "Driver 2",
-        "insurance": "Insurance",
-        "technical": "Technical Inspection",
-        "certificate": "Certificate",
-        "inspectionDate": "Last Inspection",
+        "insurance": "Insurance Expiry",
+        "technical": "Technical Inspection Expiry",
+        "certificate": "Certificate Expiry",
+        "inspectionDate": "Inspection Date",
         "nextInspection": "Next Inspection",
         "documents": "Machinery Documents",
-        "driver1Doc": "Driver 1 Documents",
-        "driver2Doc": "Driver 2 Documents",
-        "noDocument": "No document uploaded",
         "viewDocument": "View Document",
-        "daysRemaining": "{{days}} days remaining",
-        "daysOverdue": "{{days}} days overdue",
-        "expiresIn": "Expires in {{days}} days",
-        "expired": "Expired",
-        "notApplicable": "N/A"
+        "notApplicable": "N/A",
+        "expired": "EXPIRED"
       }
     },
     "status": {
       "permanent": "Permanent",
-      "callOff": "Call Off"
+      "callOff": "Call-Off"
     }
   },
   "users": {
