@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Search, Edit, Trash2, Plus, FileText, Loader2, Hash } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
-import { PAGE_PERMISSIONS } from '../../config/roles';
+import { PAGE_PERMISSIONS, canUserPerformAction } from '../../config/roles';
 import { fetchSuivi, deleteSuiviEntry, fetchMachineryTypes } from '../../api/api';
 import { formatDateForDisplay, getDaysUntilExpiry } from '../../utils/dateUtils';
 
@@ -22,6 +22,12 @@ const SuiviList = () => {
   const [typeFilter, setTypeFilter] = useState('');
   const [actionMode, setActionMode] = useState(null); // null, 'edit', 'delete'
   const [deletingIndex, setDeletingIndex] = useState(null); // Track which row is being deleted
+
+  // ✅ Centralized permission checks from roles.js
+  const canAdd = canUserPerformAction(user?.role, 'SUIVI_ADD');
+  const canEdit = canUserPerformAction(user?.role, 'SUIVI_EDIT');
+  const canDelete = canUserPerformAction(user?.role, 'SUIVI_DELETE');
+  const canManage = canEdit || canDelete; // Show action mode if user has either permission
 
   // ==================== ACCESS CONTROL ====================
   useEffect(() => {
@@ -151,10 +157,21 @@ const SuiviList = () => {
 
   // ==================== ACTIONS ====================
   const handleEdit = (item) => {
+    // ✅ Check permission before editing
+    if (!canEdit) {
+      alert(t("requests.grease.menu.accessDenied.message"));
+      return;
+    }
     navigate(`/suivi/manage?edit=${item['Plate Number']}`);
   };
 
   const handleDelete = async (item, index) => {
+    // ✅ Check permission before deleting
+    if (!canDelete) {
+      alert(t("requests.grease.menu.accessDenied.message"));
+      return;
+    }
+    
     const confirmed = window.confirm(
       t('suivi.manage.alerts.deleteConfirm')
         .replace('{plate}', item['Plate Number'])
@@ -270,8 +287,8 @@ const SuiviList = () => {
               </div>
             </div>
 
-            {/* Add New Button */}
-            {PAGE_PERMISSIONS.SUIVIMANAGE.includes(user?.role) && (
+            {/* ✅ Add New Button - Only show if user has add permission */}
+            {canAdd && (
               <button
                 onClick={() => navigate('/suivi/manage')}
                 className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white rounded-xl transition-all shadow-lg shadow-green-500/50"
@@ -283,33 +300,41 @@ const SuiviList = () => {
           </div>
         </div>
 
-        {/* ACTION MODE SELECTOR (Desktop only) */}
-        {PAGE_PERMISSIONS.SUIVIMANAGE.includes(user?.role) && (
+        {/* ✅ ACTION MODE SELECTOR (Desktop only) - Show only if user has edit or delete permission */}
+        {canManage && (
           <div className="hidden lg:flex items-center gap-4 mb-6 bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 p-4">
             {/* ✅ FIX 2: Using translation key for "Action:" */}
             <span className="text-sm font-medium text-gray-300">{t('common.actions')}:</span>
-            <button
-              onClick={() => setActionMode(actionMode === 'edit' ? null : 'edit')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all ${
-                actionMode === 'edit'
-                  ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/50'
-                  : 'bg-gray-900/70 border-gray-600 text-gray-300 hover:border-blue-500'
-              }`}
-            >
-              <Edit size={16} />
-              <span>{t('common.edit')}</span>
-            </button>
-            <button
-              onClick={() => setActionMode(actionMode === 'delete' ? null : 'delete')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all ${
-                actionMode === 'delete'
-                  ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-500/50'
-                  : 'bg-gray-900/70 border-gray-600 text-gray-300 hover:border-red-500'
-              }`}
-            >
-              <Trash2 size={16} />
-              <span>{t('common.delete')}</span>
-            </button>
+            
+            {/* ✅ Edit button - Show only if user has edit permission */}
+            {canEdit && (
+              <button
+                onClick={() => setActionMode(actionMode === 'edit' ? null : 'edit')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all ${
+                  actionMode === 'edit'
+                    ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/50'
+                    : 'bg-gray-900/70 border-gray-600 text-gray-300 hover:border-blue-500'
+                }`}
+              >
+                <Edit size={16} />
+                <span>{t('common.edit')}</span>
+              </button>
+            )}
+            
+            {/* ✅ Delete button - Show only if user has delete permission */}
+            {canDelete && (
+              <button
+                onClick={() => setActionMode(actionMode === 'delete' ? null : 'delete')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all ${
+                  actionMode === 'delete'
+                    ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-500/50'
+                    : 'bg-gray-900/70 border-gray-600 text-gray-300 hover:border-red-500'
+                }`}
+              >
+                <Trash2 size={16} />
+                <span>{t('common.delete')}</span>
+              </button>
+            )}
 
             {/* ✅ FIX 2: Using translation keys for info messages */}
             {actionMode && (
