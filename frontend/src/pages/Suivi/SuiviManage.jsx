@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Upload, FileText, CheckCircle, Save, Plus, Loader2 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
+import { useCache } from '../../context/CacheContext';
 import { PAGE_PERMISSIONS } from '../../config/roles';
 import { 
   fetchMachineryTypes, 
@@ -18,6 +19,7 @@ const SuiviManage = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const cache = useCache();
   const [searchParams] = useSearchParams();
   const editPlate = searchParams.get('edit');
 
@@ -27,11 +29,11 @@ const SuiviManage = () => {
   const [machineryTypes, setMachineryTypes] = useState([]);
   const [existingData, setExistingData] = useState(null);
 
-  // Form fields - ✅ FIXED: Changed 'Model Type' to 'Model / Type'
+  // Form fields
   const [formData, setFormData] = useState({
     Status: '',
     Machinery: '',
-    'Model / Type': '',  // ✅ Fixed to match sheet header
+    'Model / Type': '',
     'Plate Number': '',
     'Driver 1': '',
     'Driver 2': '',
@@ -81,7 +83,7 @@ const SuiviManage = () => {
           setFormData({
             Status: existing.Status || '',
             Machinery: existing.Machinery || '',
-            'Model / Type': existing['Model / Type'] || '',  // ✅ Fixed
+            'Model / Type': existing['Model / Type'] || '',
             'Plate Number': existing['Plate Number'] || '',
             'Driver 1': existing['Driver 1'] || '',
             'Driver 2': existing['Driver 2'] || '',
@@ -156,7 +158,7 @@ const SuiviManage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation - ✅ FIXED: Updated validation check
+    // Validation
     if (!formData.Status || !formData.Machinery || !formData['Model / Type'] || !formData['Plate Number']) {
       alert(t('suivi.manage.alerts.missingFields'));
       return;
@@ -191,6 +193,11 @@ const SuiviManage = () => {
 
       if (result.status === 'success') {
         alert(editPlate ? t('suivi.manage.alerts.editSuccess') : t('suivi.manage.alerts.addSuccess'));
+        
+        // ✅ FIX: Force cache refresh and add delay before navigation
+        await cache.forceRefreshEquipment?.();
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
         navigate('/suivi/list');
       } else {
         alert(t('suivi.manage.alerts.error') + ': ' + (result.message || 'Unknown error'));
@@ -223,9 +230,9 @@ const SuiviManage = () => {
       <Navbar user={user} />
       
       <div className="max-w-5xl mx-auto p-6">
-        {/* Header */}
+        {/* ✅ FIX 1: Back button now goes back instead of /suivi/list */}
         <button
-          onClick={() => navigate('/suivi/list')}
+          onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-pink-400 hover:text-pink-300 mb-6 transition-colors group"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
@@ -293,15 +300,15 @@ const SuiviManage = () => {
                   </select>
                 </div>
 
-                {/* Model / Type - FREE TEXT INPUT - ✅ FIXED field name */}
+                {/* Model / Type - FREE TEXT INPUT */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {t('suivi.manage.form.modelType')} *
                   </label>
                   <input
                     type="text"
-                    value={formData['Model / Type']}  // ✅ Fixed
-                    onChange={(e) => handleInputChange('Model / Type', e.target.value)}  // ✅ Fixed
+                    value={formData['Model / Type']}
+                    onChange={(e) => handleInputChange('Model / Type', e.target.value)}
                     placeholder={t('suivi.manage.placeholders.modelType')}
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white placeholder-gray-500 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all"
                     required
@@ -454,15 +461,16 @@ const SuiviManage = () => {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {t('suivi.manage.form.machineryDocuments')}
                   </label>
-                  <div className="flex items-center gap-4">
+                  {/* ✅ FIX 3: Mobile styling fix for PDF upload */}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                     <input
                       type="file"
                       accept=".pdf"
                       onChange={(e) => handlePDFUpload('Documents', e.target.files[0])}
-                      className="flex-1 p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-600 file:text-white hover:file:bg-pink-700 transition-all"
+                      className="flex-1 p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-600 file:text-white hover:file:bg-pink-700 transition-all text-sm"
                     />
                     {pdfFiles.Documents && (
-                      <span className="text-sm text-green-400 flex items-center gap-1">
+                      <span className="text-sm text-green-400 flex items-center gap-1 whitespace-nowrap">
                         <CheckCircle size={16} /> {pdfFiles.Documents.name}
                       </span>
                     )}
@@ -471,7 +479,7 @@ const SuiviManage = () => {
                         href={existingData.Documents}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-pink-400 hover:underline flex items-center gap-1"
+                        className="text-sm text-pink-400 hover:underline flex items-center gap-1 whitespace-nowrap"
                       >
                         <FileText size={16} /> {t('suivi.manage.form.viewPDF')}
                       </a>
@@ -485,15 +493,15 @@ const SuiviManage = () => {
                     {t('suivi.manage.form.driver1Documents')}
                     {formData['Driver 1'] && <span className="text-gray-500 ml-2">({formData['Driver 1']})</span>}
                   </label>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                     <input
                       type="file"
                       accept=".pdf"
                       onChange={(e) => handlePDFUpload('Driver 1 Doc', e.target.files[0])}
-                      className="flex-1 p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-600 file:text-white hover:file:bg-pink-700 transition-all"
+                      className="flex-1 p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-600 file:text-white hover:file:bg-pink-700 transition-all text-sm"
                     />
                     {pdfFiles['Driver 1 Doc'] && (
-                      <span className="text-sm text-green-400 flex items-center gap-1">
+                      <span className="text-sm text-green-400 flex items-center gap-1 whitespace-nowrap">
                         <CheckCircle size={16} /> {pdfFiles['Driver 1 Doc'].name}
                       </span>
                     )}
@@ -502,7 +510,7 @@ const SuiviManage = () => {
                         href={existingData['Driver 1 Doc']}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-pink-400 hover:underline flex items-center gap-1"
+                        className="text-sm text-pink-400 hover:underline flex items-center gap-1 whitespace-nowrap"
                       >
                         <FileText size={16} /> {t('suivi.manage.form.viewPDF')}
                       </a>
@@ -516,15 +524,15 @@ const SuiviManage = () => {
                     {t('suivi.manage.form.driver2Documents')}
                     {formData['Driver 2'] && <span className="text-gray-500 ml-2">({formData['Driver 2']})</span>}
                   </label>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                     <input
                       type="file"
                       accept=".pdf"
                       onChange={(e) => handlePDFUpload('Driver 2 Doc', e.target.files[0])}
-                      className="flex-1 p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-600 file:text-white hover:file:bg-pink-700 transition-all"
+                      className="flex-1 p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-600 file:text-white hover:file:bg-pink-700 transition-all text-sm"
                     />
                     {pdfFiles['Driver 2 Doc'] && (
-                      <span className="text-sm text-green-400 flex items-center gap-1">
+                      <span className="text-sm text-green-400 flex items-center gap-1 whitespace-nowrap">
                         <CheckCircle size={16} /> {pdfFiles['Driver 2 Doc'].name}
                       </span>
                     )}
@@ -533,7 +541,7 @@ const SuiviManage = () => {
                         href={existingData['Driver 2 Doc']}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-pink-400 hover:underline flex items-center gap-1"
+                        className="text-sm text-pink-400 hover:underline flex items-center gap-1 whitespace-nowrap"
                       >
                         <FileText size={16} /> {t('suivi.manage.form.viewPDF')}
                       </a>
@@ -547,7 +555,7 @@ const SuiviManage = () => {
             <div className="flex justify-end gap-4 pt-6 border-t border-gray-700">
               <button
                 type="button"
-                onClick={() => navigate('/suivi/list')}
+                onClick={() => navigate(-1)}
                 className="px-6 py-3 border border-gray-600 text-gray-300 rounded-xl hover:bg-gray-700 transition-colors"
                 disabled={submitting}
               >
