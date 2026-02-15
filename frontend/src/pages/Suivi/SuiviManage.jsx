@@ -145,7 +145,6 @@ const SuiviManage = () => {
     setPdfFiles(prev => ({ ...prev, [field]: file }));
   };
 
-  // ✅ NEW: Remove uploaded file
   const handleRemoveFile = (field) => {
     setPdfFiles(prev => ({ ...prev, [field]: null }));
   };
@@ -215,7 +214,7 @@ const SuiviManage = () => {
     }
   };
 
-  // ✅ NEW: Custom File Upload Component
+  // ✅ FIXED: Custom File Upload Component with better UI
   const FileUploadField = ({ field, label }) => {
     const fileInputRef = React.useRef(null);
 
@@ -228,9 +227,9 @@ const SuiviManage = () => {
           )}
         </label>
         
-        <div className="flex flex-col gap-3">
-          {/* Custom Upload Button */}
-          <div className="flex items-center gap-3">
+        <div className="space-y-3">
+          {/* Upload Button */}
+          <div>
             <input
               ref={fileInputRef}
               type="file"
@@ -246,35 +245,35 @@ const SuiviManage = () => {
               <Upload size={16} />
               {t('suivi.manage.form.chooseFile')}
             </button>
-            
-            {/* Show selected file or existing file */}
-            {pdfFiles[field] ? (
-              <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2 flex-1">
-                <FileText size={16} className="text-green-400 flex-shrink-0" />
-                <span className="text-sm text-green-400 truncate flex-1">{pdfFiles[field].name}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveFile(field)}
-                  className="text-red-400 hover:text-red-300 transition-colors flex-shrink-0"
-                  title={t('common.delete')}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            ) : editPlate && existingData?.[field] && existingData[field] !== 'N/A' ? (
-              <a
-                href={existingData[field]}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-pink-400 hover:text-pink-300 hover:underline text-sm transition-colors"
-              >
-                <FileText size={16} />
-                {t('suivi.manage.form.viewPDF')}
-              </a>
-            ) : (
-              <span className="text-sm text-gray-500">{t('suivi.manage.form.noFileChosen')}</span>
-            )}
           </div>
+
+          {/* ✅ FIX: File info shown separately below button */}
+          {pdfFiles[field] ? (
+            <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2">
+              <FileText size={16} className="text-green-400 flex-shrink-0" />
+              <span className="text-sm text-green-400 truncate flex-1 min-w-0">{pdfFiles[field].name}</span>
+              <button
+                type="button"
+                onClick={() => handleRemoveFile(field)}
+                className="text-red-400 hover:text-red-300 transition-colors flex-shrink-0"
+                title={t('common.delete')}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ) : editPlate && existingData?.[field] && existingData[field] !== 'N/A' ? (
+            <a
+              href={existingData[field]}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-pink-400 hover:text-pink-300 hover:underline text-sm transition-colors"
+            >
+              <FileText size={16} />
+              {t('suivi.manage.form.viewPDF')}
+            </a>
+          ) : (
+            <span className="text-sm text-gray-500">{t('suivi.manage.form.noFileChosen')}</span>
+          )}
         </div>
       </div>
     );
@@ -517,7 +516,7 @@ const SuiviManage = () => {
               </div>
             </div>
 
-            {/* ✅ DOCUMENT UPLOADS - Using Custom Component */}
+            {/* DOCUMENT UPLOADS */}
             <div>
               <h2 className="text-xl font-semibold text-pink-400 mb-4 flex items-center gap-2">
                 <Upload size={20} />
