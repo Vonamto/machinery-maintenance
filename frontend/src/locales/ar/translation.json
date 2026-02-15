@@ -10,7 +10,10 @@
     "yes": " نعم ",
     "no": " لا ",
     "upload": " رفع ",
-    "camera": " الكاميرا "
+    "camera": " الكاميرا ",
+    "edit": " تعديل ",
+    "delete": " حذف ",
+    "actions": " الإجراءات "
   },
   "auth": {
     "loginTitle": " تسجيل الدخول إلى نظام الصيانة ",
@@ -55,6 +58,10 @@
     "checklist": {
       "title": " قائمة السلامة ",
       "description": " قائمة التحقق اليومية للسلامة "
+    },
+    "suivi": {
+      "title": " سويفي - تتبع الآليات ",
+      "description": " تتبع وثائق وفحوصات الآليات "
     }
   },
   "maintenance": {
@@ -675,7 +682,7 @@
         "deleteSuccess": " ✅ تمت إزالة المعدات بنجاح !",
         "error": " ❌ خطأ : {{message}}",
         "networkError": " خطأ في الشبكة ",
-        "deleteConfirm": " هل أنت متأكد من رغبتك في حذف المعدات \"{{plateNumber}}\" بشكل دائم ؟\n\n لا يمكن التراجع عن هذا الإجراء ."
+        "deleteConfirm": " هل أنت متأكد من رغبتك في حذف المعدات \\\"{{plateNumber}}\\\" بشكل دائم ؟\\n\\n لا يمكن التراجع عن هذا الإجراء ."
       }
     }
   },
@@ -716,12 +723,14 @@
         "insurance": " التأمين ",
         "technical": " الفحص الفني ",
         "certificate": " الشهادة ",
-        "documents": " الوثائق "
+        "documents": " الوثائق ",
+        "inspectionDate": " تاريخ الفحص ",
+        "nextInspection": " الفحص القادم "
       }
     },
     "manage": {
       "title": " إدارة الآليات ",
-      "subtitle": " إضافة أو تعديل أو إزالة مدخلات الآليات ",
+      "subtitle": " إضافة أو تعديل مدخلات الآليات مع إدارة الوثائق ",
       "addButton": " إضافة آلية ",
       "cancelButton": " إلغاء ",
       "editButton": " تعديل ",
@@ -732,8 +741,8 @@
         "editTitle": " تعديل الآلية ",
         "basicInfo": " المعلومات الأساسية ",
         "documents": " معلومات الوثائق ",
-        "inspectionDates": " تواريخ الفحص ",
-        "driverDocuments": " وثائق السائقين ",
+        "inspectionDates": " تواريخ انتهاء الوثائق ",
+        "driverDocuments": " رفع الوثائق ",
         "status": " الحالة *",
         "machinery": " نوع الآلية *",
         "modelType": " الطراز / النوع *",
@@ -743,48 +752,49 @@
         "insurance": " انتهاء التأمين ",
         "technical": " انتهاء الفحص الفني ",
         "certificate": " انتهاء الشهادة ",
-        "inspectionDate": " تاريخ آخر فحص ",
-        "nextInspection": " تاريخ الفحص القادم ",
+        "certificateNA": " الشهادة غير مطلوبة ",
+        "inspectionDate": " تاريخ الفحص ",
+        "nextInspection": " الفحص القادم ",
         "machineryDocuments": " وثائق الآلية (PDF) ",
         "driver1Documents": " وثائق السائق 1 (PDF) ",
         "driver2Documents": " وثائق السائق 2 (PDF) ",
         "uploadPDF": " رفع PDF ",
         "replacePDF": " استبدال PDF ",
-        "viewPDF": " عرض الوثيقة ",
-        "certificateNA": " الشهادة غير مطلوبة ",
-        "save": " حفظ الآلية ",
+        "viewPDF": " عرض الوثيقة الموجودة ",
+        "save": " حفظ التغييرات ",
         "saving": " جاري الحفظ ...",
         "add": " إضافة آلية ",
-        "adding": " جاري الإضافة ...",
-        "placeholders": {
-          "selectStatus": "---  اختر الحالة  ---",
-          "selectMachinery": "---  اختر نوع الآلية  ---",
-          "modelType": " مثال : مرسيدس أكتروس ",
-          "plateNumber": " مثال : أ ب ج - 123 ",
-          "selectDriver": "---  اختر السائق  ---"
-        }
+        "adding": " جاري الإضافة ..."
+      },
+      "placeholders": {
+        "selectStatus": "---  اختر الحالة  ---",
+        "selectMachinery": "---  اختر نوع الآلية  ---",
+        "modelType": " مثال : مرسيدس أكتروس 1844 ",
+        "plateNumber": " مثال : 01-أ ب ج-123 ",
+        "selectDriver": " أدخل اسم السائق "
       },
       "alerts": {
-        "missingFields": " يرجى ملء الحالة، نوع الآلية، الطراز/النوع، ورقم اللوحة .",
+        "missingFields": " يرجى ملء جميع الحقول المطلوبة: الحالة، نوع الآلية، الطراز/النوع، ورقم اللوحة .",
         "pdfTooLarge": " حجم ملف PDF كبير جداً. الحد الأقصى 10 ميجابايت .",
         "invalidFile": " يرجى رفع ملف PDF صالح .",
         "addSuccess": " ✅ تمت إضافة الآلية بنجاح !",
         "editSuccess": " ✅ تم تحديث الآلية بنجاح !",
         "deleteSuccess": " ✅ تم حذف الآلية بنجاح !",
-        "error": " ❌ خطأ : {{message}}",
-        "deleteConfirm": " هل أنت متأكد من حذف هذه الآلية ؟\n\n رقم اللوحة : {{plate}}\n سيتم حذف جميع الوثائق المرتبطة أيضاً .\n\n لا يمكن التراجع عن هذا الإجراء ."
+        "deleteConfirm": " هل أنت متأكد من حذف الآلية برقم اللوحة {plate} ؟\\n\\n سيتم أيضاً إزالة الإدخال من قائمة المعدات .\\n\\n لا يمكن التراجع عن هذا الإجراء .",
+        "error": " ❌ خطأ ",
+        "networkError": " خطأ في الشبكة. يرجى المحاولة مرة أخرى ."
       }
     },
     "detail": {
       "title": " تفاصيل الآلية ",
       "back": " رجوع للقائمة ",
       "edit": " تعديل الآلية ",
-      "delete": " حذف ",
+      "delete": " حذف الآلية ",
       "loading": " جاري تحميل التفاصيل ...",
       "notFound": " لم يتم العثور على الآلية ",
       "sections": {
         "basicInfo": " المعلومات الأساسية ",
-        "documents": " الوثائق وتواريخ الانتهاء ",
+        "documents": " حالة انتهاء الوثائق ",
         "inspection": " جدول الفحص ",
         "drivers": " السائقون المعينون "
       },
@@ -795,10 +805,10 @@
         "plate": " رقم اللوحة ",
         "driver1": " السائق 1 ",
         "driver2": " السائق 2 ",
-        "insurance": " التأمين ",
-        "technical": " الفحص الفني ",
-        "certificate": " الشهادة ",
-        "inspectionDate": " آخر فحص ",
+        "insurance": " انتهاء التأمين ",
+        "technical": " انتهاء الفحص الفني ",
+        "certificate": " انتهاء الشهادة ",
+        "inspectionDate": " تاريخ الفحص ",
         "nextInspection": " الفحص القادم ",
         "documents": " وثائق الآلية ",
         "driver1Doc": " وثائق السائق 1 ",
@@ -860,7 +870,7 @@
         "editSuccess": " ✅ تمت تحديث بيانات المستخدم بنجاح !",
         "error": " ❌ خطأ : {{message}}",
         "networkError": " خطأ في الشبكة ",
-        "deleteConfirm": " هل أنت متأكد من رغبتك في حذف المستخدم \"{{username}}\" ؟\n\n لا يمكن التراجع عن هذا الإجراء ."
+        "deleteConfirm": " هل أنت متأكد من رغبتك في حذف المستخدم \\\"{{username}}\\\" ؟\\n\\n لا يمكن التراجع عن هذا الإجراء ."
       }
     }
   }
