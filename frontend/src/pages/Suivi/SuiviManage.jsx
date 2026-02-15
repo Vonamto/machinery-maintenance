@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Upload, FileText, CheckCircle, Save, Plus, Loader2 } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, CheckCircle, Save, Plus, Loader2, X } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { useCache } from '../../context/CacheContext';
@@ -145,6 +145,11 @@ const SuiviManage = () => {
     setPdfFiles(prev => ({ ...prev, [field]: file }));
   };
 
+  // ✅ NEW: Remove uploaded file
+  const handleRemoveFile = (field) => {
+    setPdfFiles(prev => ({ ...prev, [field]: null }));
+  };
+
   const handleCertificateNAChange = (checked) => {
     setCertificateNA(checked);
     if (checked) {
@@ -194,7 +199,7 @@ const SuiviManage = () => {
       if (result.status === 'success') {
         alert(editPlate ? t('suivi.manage.alerts.editSuccess') : t('suivi.manage.alerts.addSuccess'));
         
-        // ✅ FIX: Force cache refresh and add delay before navigation
+        // Force cache refresh and add delay before navigation
         await cache.forceRefreshEquipment?.();
         await new Promise(resolve => setTimeout(resolve, 300));
         
@@ -208,6 +213,71 @@ const SuiviManage = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // ✅ NEW: Custom File Upload Component
+  const FileUploadField = ({ field, label }) => {
+    const fileInputRef = React.useRef(null);
+
+    return (
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-2">
+          {label}
+          {field.includes('Driver') && formData[field.replace(' Doc', '')] && (
+            <span className="text-gray-500 ml-2">({formData[field.replace(' Doc', '')]})</span>
+          )}
+        </label>
+        
+        <div className="flex flex-col gap-3">
+          {/* Custom Upload Button */}
+          <div className="flex items-center gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf"
+              onChange={(e) => handlePDFUpload(field, e.target.files[0])}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-4 py-2.5 bg-pink-600 hover:bg-pink-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+            >
+              <Upload size={16} />
+              {t('suivi.manage.form.chooseFile')}
+            </button>
+            
+            {/* Show selected file or existing file */}
+            {pdfFiles[field] ? (
+              <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2 flex-1">
+                <FileText size={16} className="text-green-400 flex-shrink-0" />
+                <span className="text-sm text-green-400 truncate flex-1">{pdfFiles[field].name}</span>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveFile(field)}
+                  className="text-red-400 hover:text-red-300 transition-colors flex-shrink-0"
+                  title={t('common.delete')}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : editPlate && existingData?.[field] && existingData[field] !== 'N/A' ? (
+              <a
+                href={existingData[field]}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-pink-400 hover:text-pink-300 hover:underline text-sm transition-colors"
+              >
+                <FileText size={16} />
+                {t('suivi.manage.form.viewPDF')}
+              </a>
+            ) : (
+              <span className="text-sm text-gray-500">{t('suivi.manage.form.noFileChosen')}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // ==================== RENDER ====================
@@ -230,7 +300,6 @@ const SuiviManage = () => {
       <Navbar user={user} />
       
       <div className="max-w-5xl mx-auto p-6">
-        {/* ✅ FIX 1: Back button now goes back instead of /suivi/list */}
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-pink-400 hover:text-pink-300 mb-6 transition-colors group"
@@ -300,7 +369,7 @@ const SuiviManage = () => {
                   </select>
                 </div>
 
-                {/* Model / Type - FREE TEXT INPUT */}
+                {/* Model / Type */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {t('suivi.manage.form.modelType')} *
@@ -315,7 +384,7 @@ const SuiviManage = () => {
                   />
                 </div>
 
-                {/* Plate Number - FREE TEXT INPUT */}
+                {/* Plate Number */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {t('suivi.manage.form.plateNumber')} *
@@ -331,7 +400,7 @@ const SuiviManage = () => {
                   />
                 </div>
 
-                {/* Driver 1 - FREE TEXT INPUT */}
+                {/* Driver 1 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {t('suivi.manage.form.driver1')}
@@ -345,7 +414,7 @@ const SuiviManage = () => {
                   />
                 </div>
 
-                {/* Driver 2 - FREE TEXT INPUT */}
+                {/* Driver 2 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {t('suivi.manage.form.driver2')}
@@ -448,106 +517,26 @@ const SuiviManage = () => {
               </div>
             </div>
 
-            {/* DOCUMENT UPLOADS */}
+            {/* ✅ DOCUMENT UPLOADS - Using Custom Component */}
             <div>
               <h2 className="text-xl font-semibold text-pink-400 mb-4 flex items-center gap-2">
                 <Upload size={20} />
                 {t('suivi.manage.form.driverDocuments')}
               </h2>
               
-              <div className="space-y-4">
-                {/* Machinery Documents */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {t('suivi.manage.form.machineryDocuments')}
-                  </label>
-                  {/* ✅ FIX 3: Mobile styling fix for PDF upload */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={(e) => handlePDFUpload('Documents', e.target.files[0])}
-                      className="flex-1 p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-600 file:text-white hover:file:bg-pink-700 transition-all text-sm"
-                    />
-                    {pdfFiles.Documents && (
-                      <span className="text-sm text-green-400 flex items-center gap-1 whitespace-nowrap">
-                        <CheckCircle size={16} /> {pdfFiles.Documents.name}
-                      </span>
-                    )}
-                    {editPlate && existingData?.Documents && !pdfFiles.Documents && (
-                      <a
-                        href={existingData.Documents}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-pink-400 hover:underline flex items-center gap-1 whitespace-nowrap"
-                      >
-                        <FileText size={16} /> {t('suivi.manage.form.viewPDF')}
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                {/* Driver 1 Documents */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {t('suivi.manage.form.driver1Documents')}
-                    {formData['Driver 1'] && <span className="text-gray-500 ml-2">({formData['Driver 1']})</span>}
-                  </label>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={(e) => handlePDFUpload('Driver 1 Doc', e.target.files[0])}
-                      className="flex-1 p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-600 file:text-white hover:file:bg-pink-700 transition-all text-sm"
-                    />
-                    {pdfFiles['Driver 1 Doc'] && (
-                      <span className="text-sm text-green-400 flex items-center gap-1 whitespace-nowrap">
-                        <CheckCircle size={16} /> {pdfFiles['Driver 1 Doc'].name}
-                      </span>
-                    )}
-                    {editPlate && existingData?.['Driver 1 Doc'] && !pdfFiles['Driver 1 Doc'] && (
-                      <a
-                        href={existingData['Driver 1 Doc']}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-pink-400 hover:underline flex items-center gap-1 whitespace-nowrap"
-                      >
-                        <FileText size={16} /> {t('suivi.manage.form.viewPDF')}
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                {/* Driver 2 Documents */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {t('suivi.manage.form.driver2Documents')}
-                    {formData['Driver 2'] && <span className="text-gray-500 ml-2">({formData['Driver 2']})</span>}
-                  </label>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={(e) => handlePDFUpload('Driver 2 Doc', e.target.files[0])}
-                      className="flex-1 p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-600 file:text-white hover:file:bg-pink-700 transition-all text-sm"
-                    />
-                    {pdfFiles['Driver 2 Doc'] && (
-                      <span className="text-sm text-green-400 flex items-center gap-1 whitespace-nowrap">
-                        <CheckCircle size={16} /> {pdfFiles['Driver 2 Doc'].name}
-                      </span>
-                    )}
-                    {editPlate && existingData?.['Driver 2 Doc'] && !pdfFiles['Driver 2 Doc'] && (
-                      <a
-                        href={existingData['Driver 2 Doc']}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-pink-400 hover:underline flex items-center gap-1 whitespace-nowrap"
-                      >
-                        <FileText size={16} /> {t('suivi.manage.form.viewPDF')}
-                      </a>
-                    )}
-                  </div>
-                </div>
+              <div className="space-y-6">
+                <FileUploadField 
+                  field="Documents" 
+                  label={t('suivi.manage.form.machineryDocuments')} 
+                />
+                <FileUploadField 
+                  field="Driver 1 Doc" 
+                  label={t('suivi.manage.form.driver1Documents')} 
+                />
+                <FileUploadField 
+                  field="Driver 2 Doc" 
+                  label={t('suivi.manage.form.driver2Documents')} 
+                />
               </div>
             </div>
 
