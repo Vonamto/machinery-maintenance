@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
 import { useTranslation } from "react-i18next";
-import { ROLES, PAGE_PERMISSIONS } from "@/config/roles"; // 🆕 Import centralized roles
+import { ROLES, PAGE_PERMISSIONS, canUserPerformAction } from "@/config/roles"; // 🆕 Import centralized roles & permission checker
 
 export default function UsersManage() {
   const { user } = useAuth();
@@ -25,6 +25,11 @@ export default function UsersManage() {
     Role: "Driver",
     "Full Name": "",
   });
+
+  // ✅ Centralized permission checks from roles.js
+  const canAdd = canUserPerformAction(user?.role, 'USERS_ADD');
+  const canEdit = canUserPerformAction(user?.role, 'USERS_EDIT');
+  const canDelete = canUserPerformAction(user?.role, 'USERS_DELETE');
 
   // 🔒 Centralized access control using roles.js
   if (!PAGE_PERMISSIONS.USERS.includes(user?.role)) {
@@ -73,6 +78,13 @@ export default function UsersManage() {
 
   const handleAddUser = async (e) => {
     e.preventDefault();
+    
+    // ✅ Check permission before adding
+    if (!canAdd) {
+      alert(t("requests.grease.menu.accessDenied.message"));
+      return;
+    }
+    
     if (!newUser.Username || !newUser.Password || !newUser["Full Name"]) {
       alert(t("users.manage.alerts.missingFields"));
       return;
@@ -113,6 +125,12 @@ export default function UsersManage() {
   };
 
   const handleDeleteUser = async (rowIndex, username) => {
+    // ✅ Check permission before deleting
+    if (!canDelete) {
+      alert(t("requests.grease.menu.accessDenied.message"));
+      return;
+    }
+    
     const confirmed = window.confirm(
       t("users.manage.alerts.deleteConfirm", { username: username })
     );
@@ -142,6 +160,12 @@ export default function UsersManage() {
   };
 
   const handleEditClick = (row) => {
+    // ✅ Check permission before editing
+    if (!canEdit) {
+      alert(t("requests.grease.menu.accessDenied.message"));
+      return;
+    }
+    
     setEditingRow({
       ...row,
       data: {
@@ -162,6 +186,13 @@ export default function UsersManage() {
 
   const handleSaveEdit = async (e) => {
     e.preventDefault();
+    
+    // ✅ Check permission before saving edit
+    if (!canEdit) {
+      alert(t("requests.grease.menu.accessDenied.message"));
+      return;
+    }
+    
     const { __row_index, data } = editingRow;
 
     if (!data.Username || !data.Password || !data["Full Name"]) {
@@ -235,24 +266,27 @@ export default function UsersManage() {
             </div>
           </div>
 
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm sm:text-base rounded-xl font-semibold shadow-lg transition-all whitespace-nowrap ${
-              showAddForm
-                ? "bg-gray-700 hover:bg-gray-600 text-white"
-                : "bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white shadow-green-500/30"
-            }`}
-          >
-            {showAddForm ? t("users.manage.cancelButton") : (
-              <>
-                <Plus size={18} /> {t("users.manage.addButton")}
-              </>
-            )}
-          </button>
+          {/* ✅ Only show Add button if user has permission */}
+          {canAdd && (
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm sm:text-base rounded-xl font-semibold shadow-lg transition-all whitespace-nowrap ${
+                showAddForm
+                  ? "bg-gray-700 hover:bg-gray-600 text-white"
+                  : "bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white shadow-green-500/30"
+              }`}
+            >
+              {showAddForm ? t("users.manage.cancelButton") : (
+                <>
+                  <Plus size={18} /> {t("users.manage.addButton")}
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Add Form */}
-        {showAddForm && (
+        {showAddForm && canAdd && (
           <div className="mb-8 bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-green-400">{t("users.manage.addForm.title")}</h2>
             <form onSubmit={handleAddUser} className="space-y-4">
@@ -265,7 +299,7 @@ export default function UsersManage() {
         )}
 
         {/* Edit Form */}
-        {editingRow && (
+        {editingRow && canEdit && (
           <div className="mb-8 bg-gray-800/40 border border-gray-700 rounded-2xl p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-blue-400">{t("users.manage.editForm.title")}</h2>
             <form onSubmit={handleSaveEdit} className="space-y-4">
@@ -318,22 +352,36 @@ export default function UsersManage() {
                   <td className="p-4 text-sm">{t(`roles.${r.Role}`)}</td>
                   <td className="p-4">
                     <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => handleEditClick(r)}
-                        disabled={saving}
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg text-sm font-medium text-white transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50"
-                      >
-                        <Pencil size={14} />
-                        {t("users.manage.actions.edit")}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(r.__row_index, r.Username)}
-                        disabled={saving}
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg text-sm font-medium text-white transition-all shadow-lg shadow-red-500/30 disabled:opacity-50"
-                      >
-                        <Trash2 size={14} />
-                        {t("users.manage.actions.delete")}
-                      </button>
+                      {/* ✅ Only show Edit button if user has permission */}
+                      {canEdit && (
+                        <button
+                          onClick={() => handleEditClick(r)}
+                          disabled={saving}
+                          className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg text-sm font-medium text-white transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50"
+                        >
+                          <Pencil size={14} />
+                          {t("users.manage.actions.edit")}
+                        </button>
+                      )}
+                      
+                      {/* ✅ Only show Delete button if user has permission */}
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDeleteUser(r.__row_index, r.Username)}
+                          disabled={saving}
+                          className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg text-sm font-medium text-white transition-all shadow-lg shadow-red-500/30 disabled:opacity-50"
+                        >
+                          <Trash2 size={14} />
+                          {t("users.manage.actions.delete")}
+                        </button>
+                      )}
+                      
+                      {/* ✅ Show message if no permissions */}
+                      {!canEdit && !canDelete && (
+                        <span className="text-gray-500 text-sm italic">
+                          {t("requests.grease.menu.accessDenied.message")}
+                        </span>
+                      )}
                     </div>
                   </td>
                 </tr>
