@@ -114,12 +114,20 @@ const SuiviList = () => {
     );
   };
 
-  // Render normal date (non-expiry) like Inspection Date
+  // ✅ FIX 3: Render normal date styled like other columns
   const renderDateCell = (dateStr) => {
     if (!dateStr || dateStr === 'N/A') {
-      return <span className="text-gray-500 text-xs">-</span>;
+      return (
+        <div className="inline-block px-3 py-1 rounded-lg text-xs font-medium bg-gray-500/20 text-gray-400 border border-gray-500/30">
+          -
+        </div>
+      );
     }
-    return <span className="text-gray-300 text-xs">{formatDateForDisplay(dateStr)}</span>;
+    return (
+      <div className="inline-block px-3 py-1 rounded-lg text-xs font-medium bg-gray-600/20 text-gray-300 border border-gray-600/40">
+        {formatDateForDisplay(dateStr)}
+      </div>
+    );
   };
 
   // ==================== FILTERING ====================
@@ -186,12 +194,13 @@ const SuiviList = () => {
       className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 hover:border-pink-500 transition-all p-5 cursor-pointer"
     >
       <div className="flex justify-between items-start mb-3">
+        {/* ✅ FIX 1: Using translation key for mobile status */}
         <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
           item.Status === 'Permanent' 
             ? 'bg-green-500/20 text-green-400' 
             : 'bg-orange-500/20 text-orange-400'
         }`}>
-          {item.Status}
+          {item.Status === 'Permanent' ? t('suivi.status.permanent') : t('suivi.status.callOff')}
         </span>
       </div>
       
@@ -235,7 +244,6 @@ const SuiviList = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
       
-      {/* ✅ FIX: Increased max-width from max-w-7xl to max-w-[1600px] */}
       <div className="max-w-[1600px] mx-auto p-6">
         {/* Header */}
         <div className="mb-6">
@@ -278,7 +286,8 @@ const SuiviList = () => {
         {/* ACTION MODE SELECTOR (Desktop only) */}
         {PAGE_PERMISSIONS.SUIVIMANAGE.includes(user?.role) && (
           <div className="hidden lg:flex items-center gap-4 mb-6 bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 p-4">
-            <span className="text-sm font-medium text-gray-300">Action:</span>
+            {/* ✅ FIX 2: Using translation key for "Action:" */}
+            <span className="text-sm font-medium text-gray-300">{t('common.actions')}:</span>
             <button
               onClick={() => setActionMode(actionMode === 'edit' ? null : 'edit')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all ${
@@ -302,14 +311,14 @@ const SuiviList = () => {
               <span>{t('common.delete')}</span>
             </button>
 
-            {/* Info/Warning Message */}
+            {/* ✅ FIX 2: Using translation keys for info messages */}
             {actionMode && (
               <div className={`ml-4 text-sm ${
                 actionMode === 'edit' ? 'text-blue-400' : 'text-red-400'
               }`}>
                 {actionMode === 'edit' 
-                  ? 'ℹ️ Edit mode active - Click edit button to modify entries'
-                  : '⚠️ Delete mode active - Deletes from both Suivi & Equipment_List sheets'
+                  ? `ℹ️ ${t('suivi.list.editModeActive')}`
+                  : `⚠️ ${t('suivi.list.deleteModeActive')}`
                 }
               </div>
             )}
@@ -385,7 +394,6 @@ const SuiviList = () => {
                       <th className="px-3 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.insurance')}</th>
                       <th className="px-3 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.technical')}</th>
                       <th className="px-3 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.certificate')}</th>
-                      {/* ✅ FIX: Using translation keys instead of hardcoded text */}
                       <th className="px-3 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.inspectionDate')}</th>
                       <th className="px-3 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.nextInspection')}</th>
                       {actionMode && (
