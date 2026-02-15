@@ -1,10 +1,10 @@
 // frontend/src/context/CacheContext.jsx
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { fetchEquipmentList, fetchUsernames } from "../api/api";
+import { fetchWithAuth } from "../api/api";
 
 /**
  * CacheContext
- * - Caches Equipment_List and Usernames (safe list) in memory + localStorage
+ * - Caches Suivi (machinery tracking data) and Usernames (safe list) in memory + localStorage
  * - TTL-based refresh (default 5 minutes)
  * - Exposes helpers:
  *    getEquipment(), forceRefreshEquipment()
@@ -14,16 +14,17 @@ import { fetchEquipmentList, fetchUsernames } from "../api/api";
  *   const { equipment, usernames, loading } = useCache();
  *
  * Implementation notes:
- * - Backend endpoints used: /api/equipment and /api/usernames (protected)
+ * - Backend endpoints used: /api/suivi and /api/usernames (protected)
  * - Auth token is read from localStorage at call time
+ * - "equipment" variable name kept for backward compatibility, but now contains Suivi data
  */
 
 const CacheContext = createContext(null);
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const LS_KEYS = {
-  equipment: "cache_equipment_v1",
-  equipment_ts: "cache_equipment_ts_v1",
+  equipment: "cache_equipment_v2", // Changed from v1 to v2 to invalidate old Equipment_List cache
+  equipment_ts: "cache_equipment_ts_v2",
   usernames: "cache_usernames_v1",
   usernames_ts: "cache_usernames_ts_v1",
 };
@@ -80,7 +81,7 @@ export function CacheProvider({ children }) {
     setUsernames(arr || []);
   };
 
-  // Fetch equipment from backend using api helper (reads token inside api)
+  // Fetch equipment from backend (now uses Suivi sheet endpoint)
   const refreshEquipment = useCallback(async (force = false) => {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -90,11 +91,14 @@ export function CacheProvider({ children }) {
     }
     try {
       setLoadingEquipment(true);
-      const data = await fetchEquipmentList(token);
-      // Expecting array of rows: [{ "Model / Type": "...", "Plate Number": "...", "Driver 1": "...", "Driver 2": "..." }, ...]
+      // ✅ CHANGED: Now fetching from /api/suivi instead of /api/equipment
+      const response = await fetchWithAuth("/api/suivi");
+      const data = await response.json();
+      // Expecting array of rows from Suivi sheet:
+      // [{ "Status": "...", "Machinery": "...", "Model / Type": "...", "Plate Number": "...", "Driver 1": "...", "Driver 2": "...", ... }, ...]
       persistEquipment(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Cache: refreshEquipment failed", err);
+      console.error("Cache: refreshEquipment failed (Suivi endpoint)", err);
     } finally {
       setLoadingEquipment(false);
     }
@@ -109,7 +113,9 @@ export function CacheProvider({ children }) {
     }
     try {
       setLoadingUsernames(true);
-      const data = await fetchUsernames(token);
+      // Using fetchWithAuth for consistency
+      const response = await fetchWithAuth("/api/usernames");
+      const data = await response.json();
       // Expecting [{ Name: 'Full Name', Role: 'Mechanic' }, ...]
       persistUsernames(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -141,18 +147,19 @@ export function CacheProvider({ children }) {
 
   // Exposed API
   const value = {
-    equipment,
+    equipment, // Now contains Suivi sheet data
     usernames,
     loadingEquipment,
     loadingUsernames,
     // helpers
-    getEquipment: () => equipment,
+    getEquipment: () => equipment, // Returns Suivi data
     getModels: () => {
-      // unique models list sorted
+      // unique models list sorted (from Suivi sheet "Model / Type" column)
       const models = [...new Set((equipment || []).map((r) => r["Model / Type"]).filter(Boolean))];
       return models.sort();
     },
     getPlatesByModel: (model) => {
+      // Filter Suivi sheet by Model / Type
       if (!model) return [];
       return (equipment || [])
         .filter((r) => r["Model / Type"] === model)
@@ -160,17 +167,19 @@ export function CacheProvider({ children }) {
         .filter(Boolean);
     },
     getEquipmentByPlate: (plate) => {
+      // Find row in Suivi sheet by Plate Number
       if (!plate) return null;
       return (equipment || []).find((r) => r["Plate Number"] === plate) || null;
     },
     getDriversByPlate: (plate) => {
+      // Extract Driver 1 and Driver 2 from Suivi sheet row
       const eq = (equipment || []).find((r) => r["Plate Number"] === plate);
       if (!eq) return [];
       return [eq["Driver 1"], eq["Driver 2"]].filter(Boolean);
     },
     getUsernames: () => usernames,
     // force refresh (manual)
-    forceRefreshEquipment: () => refreshEquipment(true),
+    forceRefreshEquipment: () => refreshEquipment(true), // Forces refresh of Suivi data
     forceRefreshUsernames: () => refreshUsernames(true),
   };
 
