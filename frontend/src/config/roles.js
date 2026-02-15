@@ -44,3 +44,45 @@ export const PAGE_PERMISSIONS = {
   // Users
   USERS: [ROLES.ADMIN],  // 🔒 Only Admin (Supervisor removed)
 };
+
+/* ================= Action Permissions ================= */
+// Based on backend/permissions.py - Single source of truth for who can perform actions
+
+export const ACTION_PERMISSIONS = {
+  // ========== Cleaning History ==========
+  CLEANINGHISTORY_DELETE: [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // ========== Maintenance History ==========
+  MAINTENANCEHISTORY_DELETE: [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // ========== Checklist History ==========
+  CHECKLISTHISTORY_DELETE: [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // ========== Equipment ==========
+  EQUIPMENT_ADD: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.GUEST],
+  EQUIPMENT_EDIT: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.GUEST],
+  EQUIPMENT_DELETE: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.GUEST],
+
+  // ========== Suivi (Machinery Tracking) ==========
+  SUIVI_ADD: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.GUEST],
+  SUIVI_EDIT: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.GUEST],
+  SUIVI_DELETE: [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // ========== Users Management ==========
+  USERS_ADD: [ROLES.ADMIN],
+  USERS_EDIT: [ROLES.ADMIN],
+  USERS_DELETE: [ROLES.ADMIN],
+};
+
+/* ================= Helper Functions ================= */
+
+/**
+ * Check if user can perform a specific action
+ * @param {string} userRole - The role of the current user
+ * @param {string} actionKey - The action key from ACTION_PERMISSIONS
+ * @returns {boolean} - True if user has permission, false otherwise
+ */
+export function canUserPerformAction(userRole, actionKey) {
+  const allowedRoles = ACTION_PERMISSIONS[actionKey] || [];
+  return allowedRoles.includes(userRole);
+}
