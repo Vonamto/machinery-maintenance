@@ -749,6 +749,8 @@
         "certificateNA": " الشهادة غير مطلوبة ",
         "inspectionDate": " تاريخ الفحص ",
         "nextInspection": "فحص السلامة القادم",
+        "chooseFile": " اختر ملف ",
+        "noFileChosen": " لم يتم اختيار ملف ",
         "machineryDocuments": " وثائق الآلية (PDF) ",
         "driver1Documents": " وثائق السائق 1 (PDF) ",
         "driver2Documents": " وثائق السائق 2 (PDF) ",
