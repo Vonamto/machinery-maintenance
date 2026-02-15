@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
 import { fetchWithAuth } from "@/api/api";
 import { useTranslation } from "react-i18next";
+import { canUserPerformAction } from "@/config/roles";
 
 /* ---------------- Helpers ---------------- */
 
@@ -58,6 +59,9 @@ export default function CleaningHistory() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // ✅ Check if user can delete (Centralized from roles.js)
+  const canDelete = canUserPerformAction(user?.role, 'CLEANINGHISTORY_DELETE');
 
   /* ---------------- Load Cleaning Log ---------------- */
 
@@ -317,7 +321,7 @@ export default function CleaningHistory() {
           </div>
 
           <div className="flex justify-between mt-4">
-            {user?.role === "Supervisor" && (
+            {canDelete && (
               <button
                 onClick={() => setDeleteMode(v => !v)}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${
@@ -331,7 +335,7 @@ export default function CleaningHistory() {
 
             <button
               onClick={resetFilters}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm ml-auto"
             >
               <XCircle size={14} />
               {t("cleaning.history.filters.reset")}
