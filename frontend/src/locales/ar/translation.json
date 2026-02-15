@@ -741,8 +741,8 @@
         "plateNumber": " رقم اللوحة ",
         "driver1": " السائق 1 ",
         "driver2": " السائق 2 ",
-        "insurance": " انتهاء التأمين ",
-        "technical": " انتهاء الفحص الفني ",
+        "insurance": "تاريخ انتهاء التأمين",
+        "technical": "تاريخ انتهاء الفحص الفني",
         "certificate": "شهادة المطابقة الفنية",
         "certificateNA": " الشهادة غير مطلوبة ",
         "inspectionDate": " تاريخ الفحص ",
@@ -783,9 +783,9 @@
       "notFound": " لم يتم العثور على الآلية ",
       "sections": {
         "basicInfo": " المعلومات الأساسية ",
-        "drivers": " السائقون المعينون ",
-        "documents": " حالة انتهاء الوثائق ",
-        "inspection": " جدول الفحص "
+        "drivers": " السائقون ",
+        "documents": " حالة الوثائق ",
+        "inspection": "جدول فحص السلامة"
       },
       "fields": {
         "status": " الحالة ",
@@ -794,9 +794,9 @@
         "plate": " رقم اللوحة ",
         "driver1": " السائق 1 ",
         "driver2": " السائق 2 ",
-        "insurance": " انتهاء التأمين ",
-        "technical": " انتهاء الفحص الفني ",
-        "certificate": " انتهاء الشهادة ",
+        "insurance": "تاريخ انتهاء التأمين",
+        "technical": "تاريخ انتهاء الفحص الفني",
+        "certificate": "تاريخ انتهاء شهادة المطابقة الفنية",
         "inspectionDate": " تاريخ الفحص ",
         "nextInspection": " الفحص القادم ",
         "documents": " وثائق الآلية ",
