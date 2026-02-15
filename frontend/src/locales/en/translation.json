@@ -706,6 +706,8 @@
       "subtitle": "Machinery detailed information",
       "loading": "Loading machinery list...",
       "noMachinery": "No machinery found.",
+      "editModeActive": "Edit mode active",
+      "deleteModeActive": "Delete mode active",
       "search": "Search by plate or model...",
       "allStatus": "All Status",
       "allTypes": "All Types",
