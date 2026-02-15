@@ -747,6 +747,8 @@
         "certificateNA": "Certificate N/A",
         "inspectionDate": "Inspection Date",
         "nextInspection": "Next Inspection",
+        "chooseFile": "Choose File",
+        "noFileChosen": "No file chosen",
         "machineryDocuments": "Machinery Documents (PDF)",
         "driver1Documents": "Driver 1 Documents (PDF)",
         "driver2Documents": "Driver 2 Documents (PDF)",
