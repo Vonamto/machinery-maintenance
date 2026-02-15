@@ -2,21 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Edit, Trash2, FileText, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, FileText, Loader2, Calendar } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { PAGE_PERMISSIONS } from '../../config/roles';
-import { fetchSuivi, deleteSuiviEntry } from '../../api/api';
+import { fetchSuivi, deleteSuiviEntry, fetchMachineryTypes } from '../../api/api';
 import { formatDateForDisplay, getDaysUntilExpiry } from '../../utils/dateUtils';
 
 const SuiviDetail = () => {
   const navigate = useNavigate();
   const { plate } = useParams();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false); // ✅ NEW: Track delete loading state
   const [machinery, setMachinery] = useState(null);
+  const [machineryTypes, setMachineryTypes] = useState([]);
 
   // ==================== ACCESS CONTROL ====================
   useEffect(() => {
@@ -33,11 +35,16 @@ const SuiviDetail = () => {
   const loadMachineryDetail = async () => {
     setLoading(true);
     try {
-      const data = await fetchSuivi(); // ✅ Reads from Suivi sheet
-      const found = data.find(item => item['Plate Number'] === plate);
+      const [suiviData, typesData] = await Promise.all([
+        fetchSuivi(),
+        fetchMachineryTypes()
+      ]);
+      
+      const found = suiviData.find(item => item['Plate Number'] === plate);
       
       if (found) {
         setMachinery(found);
+        setMachineryTypes(typesData || []);
       } else {
         alert(t('suivi.detail.notFound'));
         navigate('/suivi/list');
@@ -49,6 +56,15 @@ const SuiviDetail = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // ✅ Helper function to get display name based on language
+  const getMachineryDisplayName = (englishName) => {
+    if (i18n.language === 'ar') {
+      const type = machineryTypes.find(t => t.english === englishName);
+      return type?.arabic || englishName;
+    }
+    return englishName;
   };
 
   // ==================== EXPIRY STATUS LOGIC ====================
@@ -97,10 +113,31 @@ const SuiviDetail = () => {
             <div className="text-xs mt-1">
               {days < 0 
                 ? t('suivi.detail.fields.expired')
-                : `(${days} ${days === 1 ? 'day' : 'days'} remaining)` // ✅ Fixed duplicate
+                : `(${days} ${days === 1 ? 'day' : 'days'} remaining)`
               }
             </div>
           )}
+        </div>
+      </div>
+    );
+  };
+
+  // ✅ NEW: Render normal date (non-expiry)
+  const renderDateBadge = (dateStr, label) => {
+    if (!dateStr || dateStr === 'N/A') {
+      return (
+        <div className="mb-4">
+          <div className="text-sm font-medium text-gray-300 mb-2">{label}</div>
+          <span className="text-gray-500 text-sm">-</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mb-4">
+        <div className="text-sm font-medium text-gray-300 mb-2">{label}</div>
+        <div className="inline-block px-3 py-2 rounded-lg text-sm font-medium bg-gray-600/20 text-gray-300 border border-gray-600/50">
+          <div className="font-semibold">{formatDateForDisplay(dateStr)}</div>
         </div>
       </div>
     );
@@ -111,7 +148,7 @@ const SuiviDetail = () => {
     navigate(`/suivi/manage?edit=${plate}`);
   };
 
-  // ✅ DELETE FROM BOTH SHEETS (backend handles automatically)
+  // ✅ FIX: DELETE with loading state
   const handleDelete = async () => {
     const confirmed = window.confirm(
       t('suivi.manage.alerts.deleteConfirm').replace('{plate}', plate)
@@ -119,8 +156,9 @@ const SuiviDetail = () => {
     
     if (!confirmed) return;
 
+    setDeleting(true); // Start loading
+
     try {
-      // Backend deleteSuiviEntry already deletes from both Suivi and Equipment_List
       const result = await deleteSuiviEntry(machinery.rowindex || 2);
       if (result.status === 'success') {
         alert(t('suivi.manage.alerts.deleteSuccess'));
@@ -131,6 +169,8 @@ const SuiviDetail = () => {
     } catch (error) {
       console.error('Error deleting:', error);
       alert(t('suivi.manage.alerts.networkError'));
+    } finally {
+      setDeleting(false); // Stop loading
     }
   };
 
@@ -164,20 +204,22 @@ const SuiviDetail = () => {
       <div className="max-w-3xl mx-auto p-6">
         {/* Header */}
         <button
-          onClick={() => navigate('/suivi/list')}
+          onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-pink-400 hover:text-pink-300 mb-6 transition-colors group"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
           <span>{t('suivi.detail.back')}</span>
         </button>
 
-        {/* Title Section */}
+        {/* ✅ FIX 6: Removed truck icon from title section */}
         <div className="bg-gradient-to-r from-pink-600 to-rose-500 text-white rounded-t-2xl p-6 shadow-lg shadow-pink-500/50">
           <h1 className="text-3xl font-bold mb-2">
-            🚛 {machinery.Machinery}
+            {getMachineryDisplayName(machinery.Machinery)}
           </h1>
-          <p className="text-lg opacity-90">{machinery['Model / Type']}</p> {/* ✅ Fixed field name */}
-          <p className="text-xl font-semibold mt-2">🚗 {machinery['Plate Number']}</p>
+          <p className="text-lg opacity-90">{machinery['Model / Type']}</p>
+          <p className="text-xl font-semibold mt-2 flex items-center gap-2">
+            <span className="text-pink-200">#</span> {machinery['Plate Number']}
+          </p>
         </div>
 
         {/* Content */}
@@ -205,12 +247,12 @@ const SuiviDetail = () => {
 
               <div>
                 <span className="text-sm font-medium text-gray-400">{t('suivi.detail.fields.machinery')}</span>
-                <p className="mt-1 text-white">{machinery.Machinery}</p>
+                <p className="mt-1 text-white">{getMachineryDisplayName(machinery.Machinery)}</p>
               </div>
 
               <div>
                 <span className="text-sm font-medium text-gray-400">{t('suivi.detail.fields.model')}</span>
-                <p className="mt-1 text-white">{machinery['Model / Type']}</p> {/* ✅ Fixed field name */}
+                <p className="mt-1 text-white">{machinery['Model / Type']}</p>
               </div>
             </div>
           </div>
@@ -269,6 +311,21 @@ const SuiviDetail = () => {
             </div>
           </div>
 
+          {/* ✅ NEW: Inspection Schedule Section */}
+          <div>
+            <h2 className="text-xl font-semibold text-pink-400 mb-4 pb-2 border-b border-gray-700 flex items-center gap-2">
+              <Calendar size={20} />
+              {t('suivi.detail.sections.inspection')}
+            </h2>
+            
+            <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-700 space-y-4">
+              {/* Inspection Date (non-expiry) */}
+              {renderDateBadge(machinery['Inspection Date'], t('suivi.detail.fields.inspectionDate'))}
+              {/* Next Inspection (expiry) */}
+              {renderExpiryBadge(machinery['Next Inspection'], t('suivi.detail.fields.nextInspection'))}
+            </div>
+          </div>
+
           {/* Machinery Documents */}
           {machinery.Documents && machinery.Documents !== 'N/A' && (
             <div>
@@ -291,17 +348,29 @@ const SuiviDetail = () => {
             <div className="flex gap-4 pt-6 border-t border-gray-700">
               <button
                 onClick={handleEdit}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white rounded-xl transition-all shadow-lg shadow-blue-500/50"
+                disabled={deleting}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-all shadow-lg shadow-blue-500/50"
               >
                 <Edit size={18} />
                 <span>{t('suivi.detail.edit')}</span>
               </button>
+              {/* ✅ FIX: Delete button with loading state */}
               <button
                 onClick={handleDelete}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-700 hover:to-rose-600 text-white rounded-xl transition-all shadow-lg shadow-red-500/50"
+                disabled={deleting}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-700 hover:to-rose-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-all shadow-lg shadow-red-500/50"
               >
-                <Trash2 size={18} />
-                <span>{t('suivi.detail.delete')}</span>
+                {deleting ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={18} />
+                    <span>{t('suivi.detail.delete')}</span>
+                  </>
+                )}
               </button>
             </div>
           )}
