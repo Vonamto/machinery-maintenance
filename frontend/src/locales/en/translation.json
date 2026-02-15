@@ -58,6 +58,10 @@
     "checklist": {
       "title": "Safety Checklist",
       "description": "Daily Checklist For Machinery"
+    },
+    "suivi": {
+      "title": "Machinery Tracking",
+      "description": "Track machinery documents and inspections"
     }
   },
   "maintenance": {
@@ -684,7 +688,7 @@
   "suivi": {
     "menu": {
       "back": "Back",
-      "title": "Suivi - Machinery Tracking",
+      "title": "Machinery Management System",
       "subtitle": "Comprehensive machinery document and inspection management",
       "cards": {
         "list": {
@@ -698,8 +702,8 @@
       }
     },
     "list": {
-      "title": "Machinery Tracking - Suivi",
-      "subtitle": "Click on machinery to view detailed information",
+      "title": "Machinery Status List",
+      "subtitle": "Machinery detailed information",
       "loading": "Loading machinery list...",
       "noMachinery": "No machinery found.",
       "search": "Search by plate or model...",
