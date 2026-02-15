@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Edit, Trash2, FileText, Loader2, Calendar } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
-import { PAGE_PERMISSIONS } from '../../config/roles';
+import { PAGE_PERMISSIONS, canUserPerformAction } from '../../config/roles';
 import { fetchSuivi, deleteSuiviEntry, fetchMachineryTypes } from '../../api/api';
 import { formatDateForDisplay, getDaysUntilExpiry } from '../../utils/dateUtils';
 
@@ -20,9 +20,13 @@ const SuiviDetail = () => {
   const [machinery, setMachinery] = useState(null);
   const [machineryTypes, setMachineryTypes] = useState([]);
 
+  // ✅ Centralized permission checks from roles.js
+  const canEdit = canUserPerformAction(user?.role, 'SUIVI_EDIT');
+  const canDelete = canUserPerformAction(user?.role, 'SUIVI_DELETE');
+
   // ==================== ACCESS CONTROL ====================
   useEffect(() => {
-    if (!PAGE_PERMISSIONS.SUIVILIST.includes(user?.role)) {
+    if (!PAGE_PERMISSIONS.SUIVIDETAIL.includes(user?.role)) {
       navigate('/');
     }
   }, [user, navigate]);
@@ -145,10 +149,21 @@ const SuiviDetail = () => {
 
   // ==================== ACTIONS ====================
   const handleEdit = () => {
+    // ✅ Check permission before editing
+    if (!canEdit) {
+      alert(t("requests.grease.menu.accessDenied.message"));
+      return;
+    }
     navigate(`/suivi/manage?edit=${plate}`);
   };
 
   const handleDelete = async () => {
+    // ✅ Check permission before deleting
+    if (!canDelete) {
+      alert(t("requests.grease.menu.accessDenied.message"));
+      return;
+    }
+    
     const confirmed = window.confirm(
       t('suivi.manage.alerts.deleteConfirm').replace('{plate}', plate)
     );
@@ -342,34 +357,39 @@ const SuiviDetail = () => {
             </div>
           )}
 
-          {/* Action Buttons */}
-          {PAGE_PERMISSIONS.SUIVIMANAGE.includes(user?.role) && (
+          {/* Action Buttons - ✅ Show only if user has permissions */}
+          {(canEdit || canDelete) && (
             <div className="flex gap-4 pt-6 border-t border-gray-700">
-              <button
-                onClick={handleEdit}
-                disabled={deleting}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-all shadow-lg shadow-blue-500/50"
-              >
-                <Edit size={18} />
-                <span>{t('suivi.detail.edit')}</span>
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-700 hover:to-rose-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-all shadow-lg shadow-red-500/50"
-              >
-                {deleting ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    <span>{t('common.loading')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Trash2 size={18} />
-                    <span>{t('suivi.detail.delete')}</span>
-                  </>
-                )}
-              </button>
+              {canEdit && (
+                <button
+                  onClick={handleEdit}
+                  disabled={deleting}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-all shadow-lg shadow-blue-500/50"
+                >
+                  <Edit size={18} />
+                  <span>{t('suivi.detail.edit')}</span>
+                </button>
+              )}
+              
+              {canDelete && (
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-700 hover:to-rose-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-all shadow-lg shadow-red-500/50"
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>{t('common.loading')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={18} />
+                      <span>{t('suivi.detail.delete')}</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           )}
         </div>
