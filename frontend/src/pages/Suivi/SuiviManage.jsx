@@ -214,7 +214,7 @@ const SuiviManage = () => {
     }
   };
 
-  // ✅ FIXED: Custom File Upload Component with border outline and fixed width
+  // Custom File Upload Component
   const FileUploadField = ({ field, label }) => {
     const fileInputRef = React.useRef(null);
 
@@ -247,7 +247,7 @@ const SuiviManage = () => {
             </button>
           </div>
 
-          {/* ✅ FIX: File info with fixed max width and better styling */}
+          {/* File info with fixed max width */}
           {pdfFiles[field] ? (
             <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2 max-w-md">
               <FileText size={16} className="text-green-400 flex-shrink-0" />
@@ -463,12 +463,20 @@ const SuiviManage = () => {
                   />
                 </div>
 
-                {/* Certificate with NA option */}
+                {/* ✅ FIX: Certificate with consistent structure (no checkbox affecting height) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {t('suivi.manage.form.certificate')}
                   </label>
-                  <div className="flex items-center gap-4 mb-2">
+                  <input
+                    type="date"
+                    value={certificateNA ? '' : formData.Certificate}
+                    onChange={(e) => handleInputChange('Certificate', e.target.value)}
+                    disabled={certificateNA}
+                    className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all disabled:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                  {/* ✅ Checkbox moved below input */}
+                  <div className="flex items-center gap-2 mt-2">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -479,13 +487,6 @@ const SuiviManage = () => {
                       <span className="text-sm text-gray-400">{t('suivi.manage.form.certificateNA')}</span>
                     </label>
                   </div>
-                  <input
-                    type="date"
-                    value={certificateNA ? '' : formData.Certificate}
-                    onChange={(e) => handleInputChange('Certificate', e.target.value)}
-                    disabled={certificateNA}
-                    className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all disabled:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
-                  />
                 </div>
 
                 {/* Inspection Date */}
