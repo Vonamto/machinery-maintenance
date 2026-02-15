@@ -38,7 +38,6 @@ const SuiviList = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // ✅ FIX 4: Load machinery types for translation
       const [machineryData, typesData] = await Promise.all([
         fetchSuivi(),
         fetchMachineryTypes()
@@ -55,7 +54,7 @@ const SuiviList = () => {
     }
   };
 
-  // ✅ FIX 4: Helper function to get display name based on language
+  // Helper function to get display name based on language
   const getMachineryDisplayName = (englishName) => {
     if (i18n.language === 'ar') {
       const type = machineryTypes.find(t => t.english === englishName);
@@ -147,7 +146,6 @@ const SuiviList = () => {
     navigate(`/suivi/manage?edit=${item['Plate Number']}`);
   };
 
-  // ✅ FIX: DELETE with loading state
   const handleDelete = async (item, index) => {
     const confirmed = window.confirm(
       t('suivi.manage.alerts.deleteConfirm')
@@ -156,13 +154,13 @@ const SuiviList = () => {
     
     if (!confirmed) return;
 
-    setDeletingIndex(index); // Show loading on this specific row
+    setDeletingIndex(index);
 
     try {
       const result = await deleteSuiviEntry(item.rowindex || 2);
       if (result.status === 'success') {
         alert(t('suivi.manage.alerts.deleteSuccess'));
-        loadData(); // Reload list
+        loadData();
       } else {
         alert(t('suivi.manage.alerts.error') + ': ' + (result.message || 'Unknown error'));
       }
@@ -170,7 +168,7 @@ const SuiviList = () => {
       console.error('Error deleting machinery:', error);
       alert(t('suivi.manage.alerts.networkError'));
     } finally {
-      setDeletingIndex(null); // Clear loading state
+      setDeletingIndex(null);
     }
   };
 
@@ -198,15 +196,12 @@ const SuiviList = () => {
       </div>
       
       <div className="space-y-2">
-        {/* ✅ FIX 4: Translated machinery type */}
         <div className="text-lg font-bold text-white">
           {getMachineryDisplayName(item.Machinery)}
         </div>
-        {/* ✅ FIX 5: Model/Type below machinery, smaller text */}
         <div className="text-sm text-gray-400">
           {item['Model / Type']}
         </div>
-        {/* ✅ FIX 5: Changed icon from car to Hash */}
         <div className="flex items-center gap-2 text-gray-300">
           <Hash size={16} className="text-pink-400" />
           <span className="font-medium">{item['Plate Number']}</span>
@@ -240,7 +235,8 @@ const SuiviList = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
       
-      <div className="max-w-7xl mx-auto p-6">
+      {/* ✅ FIX: Increased max-width from max-w-7xl to max-w-[1600px] */}
+      <div className="max-w-[1600px] mx-auto p-6">
         {/* Header */}
         <div className="mb-6">
           <button
@@ -379,22 +375,21 @@ const SuiviList = () => {
                 <table className="w-full">
                   <thead className="bg-gray-900/70 sticky top-0 z-10">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">#</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.status')}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.machinery')}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.model')}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.plate')}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.driver1')}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.driver2')}</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.insurance')}</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.technical')}</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.certificate')}</th>
-                      {/* ✅ NEW: Inspection Date */}
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">Inspection Date</th>
-                      {/* ✅ NEW: Next Inspection */}
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">Next Inspection</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">#</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.status')}</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.machinery')}</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.model')}</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.plate')}</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.driver1')}</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.driver2')}</th>
+                      <th className="px-3 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.insurance')}</th>
+                      <th className="px-3 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.technical')}</th>
+                      <th className="px-3 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.certificate')}</th>
+                      {/* ✅ FIX: Using translation keys instead of hardcoded text */}
+                      <th className="px-3 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.inspectionDate')}</th>
+                      <th className="px-3 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.nextInspection')}</th>
                       {actionMode && (
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('common.actions')}</th>
+                        <th className="px-3 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('common.actions')}</th>
                       )}
                     </tr>
                   </thead>
@@ -404,8 +399,8 @@ const SuiviList = () => {
                         key={index}
                         className="hover:bg-gray-700/30 transition-colors"
                       >
-                        <td className="px-4 py-3 text-sm text-gray-400">{index + 1}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-3 text-sm text-gray-400">{index + 1}</td>
+                        <td className="px-3 py-3">
                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
                             item.Status === 'Permanent' 
                               ? 'bg-green-500/20 text-green-400' 
@@ -414,18 +409,17 @@ const SuiviList = () => {
                             {item.Status === 'Permanent' ? t('suivi.status.permanent') : t('suivi.status.callOff')}
                           </span>
                         </td>
-                        {/* ✅ FIX 4: Translated machinery */}
-                        <td className="px-4 py-3 text-sm text-gray-200">{getMachineryDisplayName(item.Machinery)}</td>
-                        <td className="px-4 py-3 text-sm text-white font-medium">{item['Model / Type']}</td>
+                        <td className="px-3 py-3 text-sm text-gray-200">{getMachineryDisplayName(item.Machinery)}</td>
+                        <td className="px-3 py-3 text-sm text-white font-medium">{item['Model / Type']}</td>
                         <td 
                           onClick={() => handleDocumentClick(item.Documents)}
-                          className="px-4 py-3 text-sm text-pink-400 font-semibold cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded"
+                          className="px-3 py-3 text-sm text-pink-400 font-semibold cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded"
                         >
                           {item['Plate Number']}
                         </td>
                         <td 
                           onClick={() => handleDocumentClick(item['Driver 1 Doc'])}
-                          className={`px-4 py-3 text-sm font-medium ${
+                          className={`px-3 py-3 text-sm font-medium ${
                             item['Driver 1'] 
                               ? 'text-blue-400 cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded' 
                               : 'text-gray-500'
@@ -435,7 +429,7 @@ const SuiviList = () => {
                         </td>
                         <td 
                           onClick={() => handleDocumentClick(item['Driver 2 Doc'])}
-                          className={`px-4 py-3 text-sm font-medium ${
+                          className={`px-3 py-3 text-sm font-medium ${
                             item['Driver 2'] 
                               ? 'text-blue-400 cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded' 
                               : 'text-gray-500'
@@ -443,17 +437,15 @@ const SuiviList = () => {
                         >
                           {item['Driver 2'] || '-'}
                         </td>
-                        <td className="px-4 py-3 text-center">{renderExpiryCell(item.Insurance)}</td>
-                        <td className="px-4 py-3 text-center">{renderExpiryCell(item['Technical Inspection'])}</td>
-                        <td className="px-4 py-3 text-center">{renderExpiryCell(item.Certificate)}</td>
-                        {/* ✅ NEW: Inspection Date (non-expiry) */}
-                        <td className="px-4 py-3 text-center">{renderDateCell(item['Inspection Date'])}</td>
-                        {/* ✅ NEW: Next Inspection (expiry) */}
-                        <td className="px-4 py-3 text-center">{renderExpiryCell(item['Next Inspection'])}</td>
+                        <td className="px-3 py-3 text-center">{renderExpiryCell(item.Insurance)}</td>
+                        <td className="px-3 py-3 text-center">{renderExpiryCell(item['Technical Inspection'])}</td>
+                        <td className="px-3 py-3 text-center">{renderExpiryCell(item.Certificate)}</td>
+                        <td className="px-3 py-3 text-center">{renderDateCell(item['Inspection Date'])}</td>
+                        <td className="px-3 py-3 text-center">{renderExpiryCell(item['Next Inspection'])}</td>
 
                         {/* Actions Column */}
                         {actionMode === 'edit' && (
-                          <td className="px-4 py-3 text-center">
+                          <td className="px-3 py-3 text-center">
                             <button
                               onClick={() => handleEdit(item)}
                               className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
@@ -464,8 +456,7 @@ const SuiviList = () => {
                           </td>
                         )}
                         {actionMode === 'delete' && (
-                          <td className="px-4 py-3 text-center">
-                            {/* ✅ FIX: Delete button with loading state */}
+                          <td className="px-3 py-3 text-center">
                             <button
                               onClick={() => handleDelete(item, index)}
                               disabled={deletingIndex === index}
