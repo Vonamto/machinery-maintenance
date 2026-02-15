@@ -715,7 +715,9 @@
         "driver2": "Driver 2",
         "insurance": "Insurance",
         "technical": "Technical Inspection",
-        "certificate": "Certificate"
+        "certificate": "Certificate",
+        "inspectionDate": "Inspection Date",
+        "nextInspection": "Next Inspection"
       }
     },
     "manage": {
