@@ -16,7 +16,7 @@ const SuiviDetail = () => {
   const { user } = useAuth();
   
   const [loading, setLoading] = useState(true);
-  const [deleting, setDeleting] = useState(false); // ✅ NEW: Track delete loading state
+  const [deleting, setDeleting] = useState(false);
   const [machinery, setMachinery] = useState(null);
   const [machineryTypes, setMachineryTypes] = useState([]);
 
@@ -58,7 +58,7 @@ const SuiviDetail = () => {
     }
   };
 
-  // ✅ Helper function to get display name based on language
+  // Helper function to get display name based on language
   const getMachineryDisplayName = (englishName) => {
     if (i18n.language === 'ar') {
       const type = machineryTypes.find(t => t.english === englishName);
@@ -122,7 +122,7 @@ const SuiviDetail = () => {
     );
   };
 
-  // ✅ NEW: Render normal date (non-expiry)
+  // Render normal date (non-expiry)
   const renderDateBadge = (dateStr, label) => {
     if (!dateStr || dateStr === 'N/A') {
       return (
@@ -148,7 +148,6 @@ const SuiviDetail = () => {
     navigate(`/suivi/manage?edit=${plate}`);
   };
 
-  // ✅ FIX: DELETE with loading state
   const handleDelete = async () => {
     const confirmed = window.confirm(
       t('suivi.manage.alerts.deleteConfirm').replace('{plate}', plate)
@@ -156,7 +155,7 @@ const SuiviDetail = () => {
     
     if (!confirmed) return;
 
-    setDeleting(true); // Start loading
+    setDeleting(true);
 
     try {
       const result = await deleteSuiviEntry(machinery.rowindex || 2);
@@ -170,7 +169,7 @@ const SuiviDetail = () => {
       console.error('Error deleting:', error);
       alert(t('suivi.manage.alerts.networkError'));
     } finally {
-      setDeleting(false); // Stop loading
+      setDeleting(false);
     }
   };
 
@@ -211,7 +210,6 @@ const SuiviDetail = () => {
           <span>{t('suivi.detail.back')}</span>
         </button>
 
-        {/* ✅ FIX 6: Removed truck icon from title section */}
         <div className="bg-gradient-to-r from-pink-600 to-rose-500 text-white rounded-t-2xl p-6 shadow-lg shadow-pink-500/50">
           <h1 className="text-3xl font-bold mb-2">
             {getMachineryDisplayName(machinery.Machinery)}
@@ -235,12 +233,13 @@ const SuiviDetail = () => {
               <div>
                 <span className="text-sm font-medium text-gray-400">{t('suivi.detail.fields.status')}</span>
                 <div className="mt-1">
+                  {/* ✅ FIX: Using translation keys for Status */}
                   <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
                     machinery.Status === 'Permanent' 
                       ? 'bg-green-500/20 text-green-400' 
                       : 'bg-orange-500/20 text-orange-400'
                   }`}>
-                    {machinery.Status}
+                    {machinery.Status === 'Permanent' ? t('suivi.status.permanent') : t('suivi.status.callOff')}
                   </span>
                 </div>
               </div>
@@ -311,7 +310,7 @@ const SuiviDetail = () => {
             </div>
           </div>
 
-          {/* ✅ NEW: Inspection Schedule Section */}
+          {/* Inspection Schedule Section */}
           <div>
             <h2 className="text-xl font-semibold text-pink-400 mb-4 pb-2 border-b border-gray-700 flex items-center gap-2">
               <Calendar size={20} />
@@ -354,7 +353,6 @@ const SuiviDetail = () => {
                 <Edit size={18} />
                 <span>{t('suivi.detail.edit')}</span>
               </button>
-              {/* ✅ FIX: Delete button with loading state */}
               <button
                 onClick={handleDelete}
                 disabled={deleting}
@@ -363,7 +361,7 @@ const SuiviDetail = () => {
                 {deleting ? (
                   <>
                     <Loader2 size={18} className="animate-spin" />
-                    <span>Deleting...</span>
+                    <span>{t('common.loading')}</span>
                   </>
                 ) : (
                   <>
