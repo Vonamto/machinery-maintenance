@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Upload, FileText, CheckCircle, Save, Plus, Loader2, X } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, CheckCircle, Save, Plus, Loader2, X, AlertCircle } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { useCache } from '../../context/CacheContext';
-import { PAGE_PERMISSIONS } from '../../config/roles';
+import { PAGE_PERMISSIONS, canUserPerformAction } from '../../config/roles';
 import { 
   fetchMachineryTypes, 
   addSuiviEntry, 
@@ -54,12 +54,29 @@ const SuiviManage = () => {
   // Certificate NA checkbox
   const [certificateNA, setCertificateNA] = useState(false);
 
+  // ✅ Centralized permission checks from roles.js
+  const canAdd = canUserPerformAction(user?.role, 'SUIVI_ADD');
+  const canEdit = canUserPerformAction(user?.role, 'SUIVI_EDIT');
+
   // ==================== ACCESS CONTROL ====================
   useEffect(() => {
     if (!PAGE_PERMISSIONS.SUIVIMANAGE.includes(user?.role)) {
       navigate('/');
+      return;
     }
-  }, [user, navigate]);
+
+    // ✅ Additional check: if editing, user must have edit permission
+    if (editPlate && !canEdit) {
+      navigate('/suivi/list');
+      return;
+    }
+
+    // ✅ Additional check: if adding, user must have add permission
+    if (!editPlate && !canAdd) {
+      navigate('/suivi/list');
+      return;
+    }
+  }, [user, navigate, editPlate, canAdd, canEdit]);
 
   // ==================== LOAD INITIAL DATA ====================
   useEffect(() => {
@@ -161,6 +178,17 @@ const SuiviManage = () => {
   // ==================== SUBMIT ====================
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // ✅ Check permissions before submitting
+    if (editPlate && !canEdit) {
+      alert(t("requests.grease.menu.accessDenied.message"));
+      return;
+    }
+
+    if (!editPlate && !canAdd) {
+      alert(t("requests.grease.menu.accessDenied.message"));
+      return;
+    }
 
     // Validation
     if (!formData.Status || !formData.Machinery || !formData['Model / Type'] || !formData['Plate Number']) {
