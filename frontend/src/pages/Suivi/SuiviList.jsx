@@ -144,23 +144,49 @@ const SuiviList = () => {
   };
 
   // ==================== FILTERING ====================
-  const filteredMachinery = machinery.filter(item => {
-    const plateNumber = String(item['Plate Number'] || '').toLowerCase();
-    const modelType = String(item['Model / Type'] || '').toLowerCase();
-    const search = searchTerm.toLowerCase();
+  // ✅ FIXED: Always include trailer with its parent machinery
+  const filteredMachinery = (() => {
+    const result = [];
     
-    const matchesSearch = 
-      plateNumber.includes(search) ||
-      modelType.includes(search);
+    for (let i = 0; i < machinery.length; i++) {
+      const item = machinery[i];
       
-    const matchesStatus = !statusFilter || item.Status === statusFilter;
-    const matchesType = !typeFilter || item.Machinery === typeFilter;
+      // Skip if this is a trailer row (it will be added via its parent machinery)
+      if (isTrailerRow(item)) {
+        continue;
+      }
+      
+      // Apply filters to main machinery only
+      const plateNumber = String(item['Plate Number'] || '').toLowerCase();
+      const modelType = String(item['Model / Type'] || '').toLowerCase();
+      const search = searchTerm.toLowerCase();
+      
+      const matchesSearch = 
+        plateNumber.includes(search) ||
+        modelType.includes(search);
+        
+      const matchesStatus = !statusFilter || item.Status === statusFilter;
+      const matchesType = !typeFilter || item.Machinery === typeFilter;
+      
+      // If main machinery matches all filters
+      if (matchesSearch && matchesStatus && matchesType) {
+        // Add the main machinery
+        result.push(item);
+        
+        // ✅ ALWAYS include trailer if it exists (next row)
+        const nextRow = machinery[i + 1];
+        if (nextRow && isTrailerRow(nextRow)) {
+          result.push(nextRow);
+        }
+      }
+    }
     
-    return matchesSearch && matchesStatus && matchesType;
-  });
+    return result;
+  })();
 
   const uniqueStatuses = [...new Set(machinery.map(m => m.Status).filter(Boolean))];
-  const uniqueTypes = [...new Set(machinery.map(m => m.Machinery).filter(Boolean))];
+  // ✅ FIX 2: Filter out 'Trailer' from type options
+  const uniqueTypes = [...new Set(machinery.map(m => m.Machinery).filter(Boolean))].filter(type => type !== 'Trailer');
 
   // ==================== ACTIONS ====================
   const handleEdit = (item) => {
@@ -379,7 +405,7 @@ const SuiviList = () => {
               />
             </div>
 
-            {/* Status Filter */}
+            {/* Status Filter - ✅ FIX 1: Use translation keys for status values */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -387,11 +413,13 @@ const SuiviList = () => {
             >
               <option value="">{t('suivi.list.allStatus')}</option>
               {uniqueStatuses.map(status => (
-                <option key={status} value={status}>{status}</option>
+                <option key={status} value={status}>
+                  {status === 'Permanent' ? t('suivi.status.permanent') : t('suivi.status.callOff')}
+                </option>
               ))}
             </select>
 
-            {/* Type Filter */}
+            {/* Type Filter - ✅ FIX 2: Trailer is already filtered out above */}
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
