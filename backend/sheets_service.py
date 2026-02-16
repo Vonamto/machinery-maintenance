@@ -319,8 +319,8 @@ def append_row(sheet_name, new_row):
         #  ✅ UPDATED: SPECIAL LOGIC for Suivi Sheet - TRAILER SUPPORT + NO EQUIPMENT_LIST
         # ========================================================================
         if sheet_name == "Suivi":
-            # Get machinery type mapping from MachineryTypes sheet
-            machinery_types_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("MachineryTypes")
+            # Get machinery type mapping from Machinery_Types sheet
+            machinery_types_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Machinery_Types")
             machinery_types_data = machinery_types_sheet.get_all_records()
             
             # Build mapping dictionary: Machinery name -> Equipment Type
@@ -481,7 +481,7 @@ def update_row(sheet_name, row_index, updated_data):
         # ========================================================================
         if sheet_name == "Suivi":
             # Get machinery type mapping
-            machinery_types_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("MachineryTypes")
+            machinery_types_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Machinery_Types")
             machinery_types_data = machinery_types_sheet.get_all_records()
             machinery_to_equipment_type = {}
             for row in machinery_types_data:
