@@ -328,7 +328,7 @@ export default function ChecklistHistory() {
         
         {/* Back Button */}
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/checklist')}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
