@@ -753,6 +753,14 @@
         "driver1Documents": "Driver 1 Documents (PDF)",
         "driver2Documents": "Driver 2 Documents (PDF)",
         "viewPDF": "View Existing PDF",
+        "trailerInfo": "Trailer Information",
+        "hasTrailer": "Has Trailer",
+        "trailerModel": "Trailer Model/Type",
+        "trailerPlate": "Trailer Plate Number",
+        "trailerInsurance": "Trailer Insurance Expiry",
+        "trailerTechnical": "Trailer Technical Inspection",
+        "trailerCertificate": "Trailer Certificate",
+        "trailerDocuments": "Trailer Documents",
         "save": "Save Changes",
         "saving": "Saving...",
         "add": "Add Machinery",
@@ -763,6 +771,8 @@
         "selectMachinery": "--- Select Machinery Type ---",
         "modelType": "e.g., Mercedes Actros 1844",
         "plateNumber": "e.g., 01-ABC-123",
+        "trailerModel": "Enter trailer model",
+        "trailerPlate": "Enter trailer plate",
         "selectDriver": "Enter driver name"
       },
       "alerts": {
@@ -774,6 +784,7 @@
         "deleteSuccess": "✅ Machinery deleted successfully!",
         "deleteConfirm": "Are you sure you want to delete machinery with plate number {plate}?\n\nThis will also remove the entry from Equipment_List.\n\nThis action cannot be undone.",
         "error": "❌ Error",
+        "missingTrailerFields": "Please fill in Trailer Model/Type and Plate Number",
         "networkError": "Network error. Please try again."
       }
     },
@@ -782,9 +793,14 @@
       "edit": "Edit Machinery",
       "delete": "Delete Machinery",
       "loading": "Loading machinery details...",
+      "hasTrailer": "Has Trailer",
+      "trailerInfo": "Trailer",
+      "truckDocuments": "Truck Documents",
+      "trailerDocuments": "Trailer Documents",
       "notFound": "Machinery not found.",
       "sections": {
         "basicInfo": "Basic Information",
+        "machineryDocuments": "Machinery Documents",
         "drivers": "Assigned Drivers",
         "documents": "Document Expiry Status",
         "inspection": "Inspection Schedule"
