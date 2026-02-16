@@ -6,7 +6,7 @@ import { ArrowLeft, Search, Edit, Trash2, Plus, FileText, Loader2, Hash, Truck }
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { PAGE_PERMISSIONS, canUserPerformAction } from '../../config/roles';
-import { fetchSuivi, deleteSuiviEntry, fetchMachineryTypes, fetchUsernames } from '../../api/api';
+import { fetchSuivi, deleteSuiviEntry, fetchMachineryTypes } from '../../api/api';
 import { formatDateForDisplay, getDaysUntilExpiry } from '../../utils/dateUtils';
 
 const SuiviList = () => {
@@ -52,21 +52,31 @@ const SuiviList = () => {
     return item.Machinery === 'Trailer';
   };
 
-  // ✅ NEW: Get driver's full name from Users sheet by username
+  // ✅ FIXED: Get driver's full name from Users sheet by username
   const getDriverFullName = async (username) => {
     try {
       const token = localStorage.getItem('token');
-      const usersData = await fetchUsernames(token);
+      // Fetch full users data from /api/users endpoint
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://machinerybackend.onrender.com'}/api/users`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to fetch users data');
+        return null;
+      }
+      
+      const usersData = await response.json();
       console.log('📋 Users data:', usersData);
       
-      // Find the user with matching username (case-insensitive)
+      // Find the user with matching Username (case-insensitive)
       const foundUser = usersData.find(u => 
-        u.Name && u.Name.toLowerCase() === username.toLowerCase()
+        u.Username && u.Username.toLowerCase() === username.toLowerCase()
       );
       
-      if (foundUser) {
-        console.log(`✅ Found full name for ${username}: ${foundUser.Name}`);
-        return foundUser.Name;
+      if (foundUser && foundUser['Full Name']) {
+        console.log(`✅ Found full name for username "${username}": "${foundUser['Full Name']}"`);
+        return foundUser['Full Name'];
       } else {
         console.log(`❌ Could not find full name for username: ${username}`);
         return null;
@@ -77,10 +87,11 @@ const SuiviList = () => {
     }
   };
 
-  // ✅ FIXED: Helper to filter machinery for drivers by Full Name
+  // ✅ FIXED: Helper to filter machinery for drivers by Full Name (case-insensitive)
   const filterMachineryForDriver = (machineryData, driverFullName) => {
     console.log('🔍 filterMachineryForDriver called with Full Name:', driverFullName);
     const result = [];
+    const driverNameLower = driverFullName.toLowerCase().trim();
     
     for (let i = 0; i < machineryData.length; i++) {
       const item = machineryData[i];
@@ -88,16 +99,16 @@ const SuiviList = () => {
       // Skip if this is a standalone trailer row (will be added via its parent)
       if (isTrailerRow(item)) continue;
       
-      const driver1 = item['Driver 1'] || '';
-      const driver2 = item['Driver 2'] || '';
+      const driver1 = (item['Driver 1'] || '').toLowerCase().trim();
+      const driver2 = (item['Driver 2'] || '').toLowerCase().trim();
       
-      // ✅ EXACT match by Full Name
-      const isDriver1 = driver1.trim() === driverFullName.trim();
-      const isDriver2 = driver2.trim() === driverFullName.trim();
+      // ✅ Case-insensitive match by Full Name
+      const isDriver1 = driver1 === driverNameLower;
+      const isDriver2 = driver2 === driverNameLower;
       
       console.log(`  Checking machinery ${item['Plate Number']}:`);
-      console.log(`    Driver 1: "${driver1}" === "${driverFullName}"? ${isDriver1}`);
-      console.log(`    Driver 2: "${driver2}" === "${driverFullName}"? ${isDriver2}`);
+      console.log(`    Driver 1: "${item['Driver 1']}" === "${driverFullName}"? ${isDriver1}`);
+      console.log(`    Driver 2: "${item['Driver 2']}" === "${driverFullName}"? ${isDriver2}`);
       
       if (isDriver1 || isDriver2) {
         // Add the main machinery
@@ -147,7 +158,7 @@ const SuiviList = () => {
         
         if (driverFullName) {
           console.log(`✅ Retrieved Full Name: "${driverFullName}"`);
-          // Step 2: Filter machinery by full name
+          // Step 2: Filter machinery by full name (case-insensitive)
           filteredData = filterMachineryForDriver(machineryData, driverFullName);
           console.log(`✅ Filtered results (${filteredData.length} items):`, filteredData);
         } else {
