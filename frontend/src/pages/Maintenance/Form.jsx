@@ -103,7 +103,7 @@ export default function MaintenanceForm() {
     // Only update drivers if NO plate is selected (plate has priority over model)
     if (!form["Plate Number"]) {
       // Get all drivers assigned to equipment of this model type
-      const allEquipment = cache.getEquipment ? cache.getEquipmentList() : [];
+      const allEquipment = cache.getEquipmentList ? cache.getEquipmentList() : [];
       const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === model);
       const driversForThisModel = [
         ...new Set(
@@ -125,7 +125,7 @@ export default function MaintenanceForm() {
     if (!plate) {
       // If plate is cleared but model is still selected, restore drivers for that model
       if (form["Model / Type"]) {
-        const allEquipment = cache.getEquipment ? cache.getEquipmentList() : [];
+        const allEquipment = cache.getEquipmentList ? cache.getEquipmentList() : [];
         const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === form["Model / Type"]);
         const driversForThisModel = [
           ...new Set(
@@ -162,7 +162,7 @@ export default function MaintenanceForm() {
     if (!driver) return;
 
     // Get all equipment that this driver is assigned to
-    const allEquipment = cache.getEquipment ? cache.getEquipmentList() : cache.equipment || [];
+    const allEquipment = cache.getEquipmentList ? cache.getEquipmentList() : cache.equipment || [];
     const matches = (allEquipment || []).filter(
       (e) => e["Driver 1"] === driver || e["Driver 2"] === driver || e["Driver"] === driver
     );
@@ -345,7 +345,7 @@ export default function MaintenanceForm() {
                 <option value="">{t("maintenance.form.choosePlate")}</option>
                 {(plateOptions.length
                   ? plateOptions
-                  : cache.getEquipment?.() || []
+                  : cache.getEquipmentList?.() || []
                 ).map((p) => {
                   const plate =
                     typeof p === "string" ? p : p["Plate Number"];
@@ -373,7 +373,7 @@ export default function MaintenanceForm() {
                   ? driverOptions
                   : Array.from(
                       new Set(
-                        (cache.getEquipment?.() || [])
+                        (cache.getEquipmentList?.() || [])
                           .flatMap((e) => [
                             e["Driver 1"],
                             e["Driver 2"],
