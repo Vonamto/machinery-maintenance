@@ -151,7 +151,7 @@ export default function App() {
           <Route
             path="/suivi"
             element={
-              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVILIST}>
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVI}>  {/* ✅ Changed from SUIVILIST to SUIVI */}
                 <SuiviMenu />
               </ProtectedRoute>
             }
@@ -178,7 +178,7 @@ export default function App() {
           <Route
             path="/suivi/detail/:plate"
             element={
-              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVILIST}>
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVIDETAIL}>  {/* ✅ Changed from SUIVILIST to SUIVIDETAIL */}
                 <SuiviDetail />
               </ProtectedRoute>
             }
