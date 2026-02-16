@@ -28,6 +28,7 @@ const SuiviManage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [machineryTypes, setMachineryTypes] = useState([]);
   const [existingData, setExistingData] = useState(null);
+  const [existingTrailerUrl, setExistingTrailerUrl] = useState(''); // ✅ NEW: Store trailer doc URL
 
   // Form fields
   const [formData, setFormData] = useState({
@@ -144,6 +145,9 @@ const SuiviManage = () => {
               'Trailer Technical': nextRow['Technical Inspection'] || '',
               'Trailer Certificate': nextRow.Certificate || '',
             });
+
+            // ✅ FIXED: Store trailer document URL
+            setExistingTrailerUrl(nextRow.Documents || '');
 
             // Check trailer certificate NA
             if (nextRow.Certificate === 'N/A') {
@@ -315,6 +319,9 @@ const SuiviManage = () => {
         if (trailerPdfFile) {
           const base64 = await pdfToBase64(trailerPdfFile);
           payload['Trailer Documents'] = base64;
+        } else if (editPlate && existingTrailerUrl) {
+          // Keep existing trailer PDF if not replacing
+          payload['Trailer Documents'] = existingTrailerUrl;
         } else {
           payload['Trailer Documents'] = '';
         }
@@ -383,17 +390,19 @@ const SuiviManage = () => {
 
           {/* File info with fixed max width */}
           {pdfFiles[field] ? (
-            <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2 max-w-md">
-              <FileText size={16} className="text-green-400 flex-shrink-0" />
-              <span className="text-sm text-green-400 truncate">{pdfFiles[field].name}</span>
-              <button
-                type="button"
-                onClick={() => handleRemoveFile(field)}
-                className="text-red-400 hover:text-red-300 transition-colors flex-shrink-0 ml-2"
-                title={t('common.delete')}
-              >
-                <X size={16} />
-              </button>
+            <div className="w-full">
+              <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2 max-w-full">
+                <FileText size={16} className="text-green-400 flex-shrink-0" />
+                <span className="text-sm text-green-400 truncate">{pdfFiles[field].name}</span>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveFile(field)}
+                  className="text-red-400 hover:text-red-300 transition-colors flex-shrink-0 ml-2"
+                  title={t('common.delete')}
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
           ) : editPlate && existingUrl && existingUrl !== 'N/A' ? (
             <a
@@ -443,19 +452,21 @@ const SuiviManage = () => {
             </button>
           </div>
 
-          {/* File info */}
+          {/* File info - ✅ FIXED: Added wrapper and changed max-w-md to max-w-full */}
           {trailerPdfFile ? (
-            <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2 max-w-md">
-              <FileText size={16} className="text-green-400 flex-shrink-0" />
-              <span className="text-sm text-green-400 truncate">{trailerPdfFile.name}</span>
-              <button
-                type="button"
-                onClick={handleRemoveTrailerFile}
-                className="text-red-400 hover:text-red-300 transition-colors flex-shrink-0 ml-2"
-                title={t('common.delete')}
-              >
-                <X size={16} />
-              </button>
+            <div className="w-full">
+              <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2 max-w-full">
+                <FileText size={16} className="text-green-400 flex-shrink-0" />
+                <span className="text-sm text-green-400 truncate">{trailerPdfFile.name}</span>
+                <button
+                  type="button"
+                  onClick={handleRemoveTrailerFile}
+                  className="text-red-400 hover:text-red-300 transition-colors flex-shrink-0 ml-2"
+                  title={t('common.delete')}
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
           ) : editPlate && existingUrl && existingUrl !== 'N/A' ? (
             <a
@@ -579,7 +590,7 @@ const SuiviManage = () => {
                   />
                 </div>
 
-                {/* Plate Number */}
+                {/* Plate Number - ✅ FIXED: Removed disabled={editPlate} */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {t('suivi.manage.form.plateNumber')} *
@@ -591,7 +602,6 @@ const SuiviManage = () => {
                     placeholder={t('suivi.manage.placeholders.plateNumber')}
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white placeholder-gray-500 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all"
                     required
-                    disabled={editPlate}
                   />
                 </div>
 
@@ -840,8 +850,8 @@ const SuiviManage = () => {
                     </div>
                   </div>
 
-                  {/* Trailer Document Upload */}
-                  <TrailerFileUploadField existingUrl={null} />
+                  {/* Trailer Document Upload - ✅ FIXED: Changed existingUrl from null to existingTrailerUrl */}
+                  <TrailerFileUploadField existingUrl={existingTrailerUrl} />
                 </div>
               )}
             </div>
