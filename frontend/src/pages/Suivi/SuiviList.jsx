@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Search, Edit, Trash2, Plus, FileText, Loader2, Hash } from 'lucide-react';
+import { ArrowLeft, Search, Edit, Trash2, Plus, FileText, Loader2, Hash, Truck } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { PAGE_PERMISSIONS, canUserPerformAction } from '../../config/roles';
@@ -50,6 +50,8 @@ const SuiviList = () => {
       ]);
       
       console.log('Fetched machinery data:', machineryData);
+      
+      // ✅ Keep ALL rows including trailers (don't filter)
       setMachinery(machineryData || []);
       setMachineryTypes(typesData || []);
     } catch (error) {
@@ -67,6 +69,11 @@ const SuiviList = () => {
       return type?.arabic || englishName;
     }
     return englishName;
+  };
+
+  // ✅ Helper to check if row is a trailer
+  const isTrailerRow = (item) => {
+    return item.Machinery === 'Trailer';
   };
 
   // ==================== EXPIRY STATUS LOGIC (20 DAYS) ====================
@@ -120,7 +127,7 @@ const SuiviList = () => {
     );
   };
 
-  // ✅ FIX 3: Render normal date styled like other columns
+  // Render normal date styled like other columns
   const renderDateCell = (dateStr) => {
     if (!dateStr || dateStr === 'N/A') {
       return (
@@ -182,6 +189,7 @@ const SuiviList = () => {
     setDeletingIndex(index);
 
     try {
+      // ✅ Backend will automatically delete linked trailer if exists
       const result = await deleteSuiviEntry(item.rowindex || 2);
       if (result.status === 'success') {
         alert(t('suivi.manage.alerts.deleteSuccess'));
@@ -204,43 +212,51 @@ const SuiviList = () => {
   };
 
   // ==================== MOBILE CARD VIEW ====================
-  const renderMobileCard = (item, index) => (
-    <div
-      key={index}
-      onClick={() => navigate(`/suivi/detail/${item['Plate Number']}`)}
-      className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 hover:border-pink-500 transition-all p-5 cursor-pointer"
-    >
-      <div className="flex justify-between items-start mb-3">
-        {/* ✅ FIX 1: Using translation key for mobile status */}
-        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-          item.Status === 'Permanent' 
-            ? 'bg-green-500/20 text-green-400' 
-            : 'bg-orange-500/20 text-orange-400'
-        }`}>
-          {item.Status === 'Permanent' ? t('suivi.status.permanent') : t('suivi.status.callOff')}
-        </span>
-      </div>
-      
-      <div className="space-y-2">
-        <div className="text-lg font-bold text-white">
-          {getMachineryDisplayName(item.Machinery)}
-        </div>
-        <div className="text-sm text-gray-400">
-          {item['Model / Type']}
-        </div>
-        <div className="flex items-center gap-2 text-gray-300">
-          <Hash size={16} className="text-pink-400" />
-          <span className="font-medium">{item['Plate Number']}</span>
-        </div>
-      </div>
+  // ✅ Mobile view: Keep minimal, only show main machinery (no trailers in cards)
+  const renderMobileCard = (item, index) => {
+    // Skip trailer rows in mobile view
+    if (isTrailerRow(item)) return null;
 
-      <div className="mt-4 text-right">
-        <span className="text-sm text-pink-400 font-medium">
-          {t('suivi.list.viewDetails')} →
-        </span>
+    return (
+      <div
+        key={index}
+        onClick={() => navigate(`/suivi/detail/${item['Plate Number']}`)}
+        className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 hover:border-pink-500 transition-all p-5 cursor-pointer"
+      >
+        <div className="flex justify-between items-start mb-3">
+          <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+            item.Status === 'Permanent' 
+              ? 'bg-green-500/20 text-green-400' 
+              : 'bg-orange-500/20 text-orange-400'
+          }`}>
+            {item.Status === 'Permanent' ? t('suivi.status.permanent') : t('suivi.status.callOff')}
+          </span>
+        </div>
+        
+        <div className="space-y-2">
+          <div className="text-lg font-bold text-white">
+            {getMachineryDisplayName(item.Machinery)}
+          </div>
+          <div className="text-sm text-gray-400">
+            {item['Model / Type']}
+          </div>
+          <div className="flex items-center gap-2 text-gray-300">
+            <Hash size={16} className="text-pink-400" />
+            <span className="font-medium">{item['Plate Number']}</span>
+          </div>
+        </div>
+
+        <div className="mt-4 text-right">
+          <span className="text-sm text-pink-400 font-medium">
+            {t('suivi.list.viewDetails')} →
+          </span>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
+
+  // ✅ Track row numbers (skip trailers)
+  let rowNumber = 0;
 
   // ==================== RENDER ====================
   if (loading) {
@@ -287,7 +303,7 @@ const SuiviList = () => {
               </div>
             </div>
 
-            {/* ✅ Add New Button - Only show if user has add permission */}
+            {/* Add New Button - Only show if user has add permission */}
             {canAdd && (
               <button
                 onClick={() => navigate('/suivi/manage')}
@@ -300,13 +316,12 @@ const SuiviList = () => {
           </div>
         </div>
 
-        {/* ✅ ACTION MODE SELECTOR (Desktop only) - Show only if user has edit or delete permission */}
+        {/* ACTION MODE SELECTOR (Desktop only) - Show only if user has edit or delete permission */}
         {canManage && (
           <div className="hidden lg:flex items-center gap-4 mb-6 bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 p-4">
-            {/* ✅ FIX 2: Using translation key for "Action:" */}
             <span className="text-sm font-medium text-gray-300">{t('common.actions')}:</span>
             
-            {/* ✅ Edit button - Show only if user has edit permission */}
+            {/* Edit button - Show only if user has edit permission */}
             {canEdit && (
               <button
                 onClick={() => setActionMode(actionMode === 'edit' ? null : 'edit')}
@@ -321,7 +336,7 @@ const SuiviList = () => {
               </button>
             )}
             
-            {/* ✅ Delete button - Show only if user has delete permission */}
+            {/* Delete button - Show only if user has delete permission */}
             {canDelete && (
               <button
                 onClick={() => setActionMode(actionMode === 'delete' ? null : 'delete')}
@@ -336,7 +351,6 @@ const SuiviList = () => {
               </button>
             )}
 
-            {/* ✅ FIX 2: Using translation keys for info messages */}
             {actionMode && (
               <div className={`ml-4 text-sm ${
                 actionMode === 'edit' ? 'text-blue-400' : 'text-red-400'
@@ -398,12 +412,12 @@ const SuiviList = () => {
           </div>
         ) : (
           <>
-            {/* MOBILE VIEW - Cards */}
+            {/* MOBILE VIEW - Cards (only main machinery) */}
             <div className="lg:hidden grid gap-4">
               {filteredMachinery.map((item, index) => renderMobileCard(item, index))}
             </div>
 
-            {/* DESKTOP VIEW - Table */}
+            {/* DESKTOP VIEW - Table (show both machinery and trailers) */}
             <div className="hidden lg:block bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -427,89 +441,135 @@ const SuiviList = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-700">
-                    {filteredMachinery.map((item, index) => (
-                      <tr 
-                        key={index}
-                        className="hover:bg-gray-700/30 transition-colors"
-                      >
-                        <td className="px-3 py-3 text-sm text-gray-400">{index + 1}</td>
-                        <td className="px-3 py-3">
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
-                            item.Status === 'Permanent' 
-                              ? 'bg-green-500/20 text-green-400' 
-                              : 'bg-orange-500/20 text-orange-400'
-                          }`}>
-                            {item.Status === 'Permanent' ? t('suivi.status.permanent') : t('suivi.status.callOff')}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3 text-sm text-gray-200">{getMachineryDisplayName(item.Machinery)}</td>
-                        <td className="px-3 py-3 text-sm text-white font-medium">{item['Model / Type']}</td>
-                        <td 
-                          onClick={() => handleDocumentClick(item.Documents)}
-                          className="px-3 py-3 text-sm text-pink-400 font-semibold cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded"
-                        >
-                          {item['Plate Number']}
-                        </td>
-                        <td 
-                          onClick={() => handleDocumentClick(item['Driver 1 Doc'])}
-                          className={`px-3 py-3 text-sm font-medium ${
-                            item['Driver 1'] 
-                              ? 'text-blue-400 cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded' 
-                              : 'text-gray-500'
-                          }`}
-                        >
-                          {item['Driver 1'] || '-'}
-                        </td>
-                        <td 
-                          onClick={() => handleDocumentClick(item['Driver 2 Doc'])}
-                          className={`px-3 py-3 text-sm font-medium ${
-                            item['Driver 2'] 
-                              ? 'text-blue-400 cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded' 
-                              : 'text-gray-500'
-                          }`}
-                        >
-                          {item['Driver 2'] || '-'}
-                        </td>
-                        <td className="px-3 py-3 text-center">{renderExpiryCell(item.Insurance)}</td>
-                        <td className="px-3 py-3 text-center">{renderExpiryCell(item['Technical Inspection'])}</td>
-                        <td className="px-3 py-3 text-center">{renderExpiryCell(item.Certificate)}</td>
-                        <td className="px-3 py-3 text-center">{renderDateCell(item['Inspection Date'])}</td>
-                        <td className="px-3 py-3 text-center">{renderExpiryCell(item['Next Inspection'])}</td>
+                    {filteredMachinery.map((item, index) => {
+                      const isTrailer = isTrailerRow(item);
+                      
+                      // ✅ Increment row number only for main machinery (not trailers)
+                      if (!isTrailer) {
+                        rowNumber++;
+                      }
 
-                        {/* Actions Column */}
-                        {actionMode === 'edit' && (
-                          <td className="px-3 py-3 text-center">
-                            <button
-                              onClick={() => handleEdit(item)}
-                              className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
-                              title="Edit"
-                            >
-                              <Edit size={18} />
-                            </button>
+                      return (
+                        <tr 
+                          key={index}
+                          className={`hover:bg-gray-700/30 transition-colors ${isTrailer ? 'bg-gray-800/30' : ''}`}
+                        >
+                          {/* ✅ COLUMN 1: Skip numbering for trailers */}
+                          <td className="px-3 py-3 text-sm text-gray-400">
+                            {isTrailer ? '' : rowNumber}
                           </td>
-                        )}
-                        {actionMode === 'delete' && (
-                          <td className="px-3 py-3 text-center">
-                            <button
-                              onClick={() => handleDelete(item, index)}
-                              disabled={deletingIndex === index}
-                              className={`p-2 rounded-lg transition-colors ${
-                                deletingIndex === index
-                                  ? 'text-gray-500 cursor-not-allowed'
-                                  : 'text-red-400 hover:bg-red-500/20'
-                              }`}
-                              title="Delete from both sheets"
-                            >
-                              {deletingIndex === index ? (
-                                <Loader2 size={18} className="animate-spin" />
-                              ) : (
-                                <Trash2 size={18} />
-                              )}
-                            </button>
+
+                          {/* ✅ COLUMN 2: Status (Empty for trailers) */}
+                          <td className="px-3 py-3">
+                            {!isTrailer && (
+                              <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
+                                item.Status === 'Permanent' 
+                                  ? 'bg-green-500/20 text-green-400' 
+                                  : 'bg-orange-500/20 text-orange-400'
+                              }`}>
+                                {item.Status === 'Permanent' ? t('suivi.status.permanent') : t('suivi.status.callOff')}
+                              </span>
+                            )}
                           </td>
-                        )}
-                      </tr>
-                    ))}
+
+                          {/* ✅ COLUMN 3: Machinery Type (CLICKABLE for documents) */}
+                          <td 
+                            onClick={() => handleDocumentClick(item.Documents)}
+                            className="px-3 py-3 text-sm cursor-pointer hover:bg-gray-700/50 transition-colors rounded"
+                          >
+                            {isTrailer ? (
+                              <span className="flex items-center gap-2 text-orange-400 hover:underline">
+                                <Truck size={16} />
+                                <span className="font-medium">{t('suivi.detail.trailerInfo') || 'Trailer'}</span>
+                              </span>
+                            ) : (
+                              <span className="text-purple-400 hover:underline font-medium">{getMachineryDisplayName(item.Machinery)}</span>
+                            )}
+                          </td>
+
+                          {/* ✅ COLUMN 4: Model/Type (Show trailer model) */}
+                          <td className="px-3 py-3 text-sm text-white font-medium">{item['Model / Type']}</td>
+
+                          {/* ✅ COLUMN 5: Plate Number (CLICKABLE for documents) */}
+                          <td 
+                            onClick={() => handleDocumentClick(item.Documents)}
+                            className="px-3 py-3 text-sm text-pink-400 font-semibold cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded"
+                          >
+                            {item['Plate Number']}
+                          </td>
+
+                          {/* ✅ COLUMNS 6 & 7: Drivers (Empty for trailers) */}
+                          <td 
+                            onClick={() => !isTrailer && handleDocumentClick(item['Driver 1 Doc'])}
+                            className={`px-3 py-3 text-sm font-medium ${
+                              !isTrailer && item['Driver 1'] 
+                                ? 'text-blue-400 cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded' 
+                                : 'text-gray-500'
+                            }`}
+                          >
+                            {!isTrailer && (item['Driver 1'] || '-')}
+                          </td>
+                          <td 
+                            onClick={() => !isTrailer && handleDocumentClick(item['Driver 2 Doc'])}
+                            className={`px-3 py-3 text-sm font-medium ${
+                              !isTrailer && item['Driver 2'] 
+                                ? 'text-blue-400 cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded' 
+                                : 'text-gray-500'
+                            }`}
+                          >
+                            {!isTrailer && (item['Driver 2'] || '-')}
+                          </td>
+
+                          {/* ✅ COLUMNS 8-12: Document dates (Show trailer dates) */}
+                          <td className="px-3 py-3 text-center">{renderExpiryCell(item.Insurance)}</td>
+                          <td className="px-3 py-3 text-center">{renderExpiryCell(item['Technical Inspection'])}</td>
+                          <td className="px-3 py-3 text-center">{renderExpiryCell(item.Certificate)}</td>
+                          
+                          {/* ✅ Inspection dates: Empty for trailers */}
+                          <td className="px-3 py-3 text-center">
+                            {!isTrailer && renderDateCell(item['Inspection Date'])}
+                          </td>
+                          <td className="px-3 py-3 text-center">
+                            {!isTrailer && renderExpiryCell(item['Next Inspection'])}
+                          </td>
+
+                          {/* ✅ Actions Column: DON'T show for trailers */}
+                          {actionMode === 'edit' && !isTrailer && (
+                            <td className="px-3 py-3 text-center">
+                              <button
+                                onClick={() => handleEdit(item)}
+                                className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+                                title="Edit (including trailer)"
+                              >
+                                <Edit size={18} />
+                              </button>
+                            </td>
+                          )}
+                          {actionMode === 'delete' && !isTrailer && (
+                            <td className="px-3 py-3 text-center">
+                              <button
+                                onClick={() => handleDelete(item, index)}
+                                disabled={deletingIndex === index}
+                                className={`p-2 rounded-lg transition-colors ${
+                                  deletingIndex === index
+                                    ? 'text-gray-500 cursor-not-allowed'
+                                    : 'text-red-400 hover:bg-red-500/20'
+                                }`}
+                                title="Delete (including trailer)"
+                              >
+                                {deletingIndex === index ? (
+                                  <Loader2 size={18} className="animate-spin" />
+                                ) : (
+                                  <Trash2 size={18} />
+                                )}
+                              </button>
+                            </td>
+                          )}
+                          {/* ✅ Empty cell for trailers when action mode is active */}
+                          {actionMode && isTrailer && <td className="px-3 py-3"></td>}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
