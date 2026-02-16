@@ -60,7 +60,7 @@ export default function ChecklistMenu() {
       <div className="max-w-5xl mx-auto p-6">
         {/* Back button */}
         <button
-          onClick={() => navigate(/ (dashboard))}
+          onClick={() => navigate('/')}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-8 transition group"
         >
           <ArrowLeft
