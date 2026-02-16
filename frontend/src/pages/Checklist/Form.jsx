@@ -62,7 +62,7 @@ export default function ChecklistForm() {
       try {
         // Check if essential data exists in cache
         const hasModels = cache.getModels && cache.getModels().length > 0;
-        const hasEquipment = cache.getEquipment && cache.getEquipment().length > 0;
+        const hasEquipment = cache.getEquipment && cache.getEquipmentList().length > 0;
         const hasUsernames = cache.getUsernames && cache.getUsernames().length > 0;
 
         // If data is missing, force a refresh
@@ -79,7 +79,7 @@ export default function ChecklistForm() {
 
         // For Drivers: Auto-fill their assigned equipment
         if (isDriver && cache.getEquipment) {
-          const equipment = cache.getEquipment();
+          const equipment = cache.getEquipmentList();
           const assigned = equipment.find(
             e =>
               e["Driver 1"] === user.full_name ||
@@ -131,7 +131,7 @@ export default function ChecklistForm() {
     // Only update drivers if NO plate is selected (plate has priority over model)
     if (!formData["Plate Number"]) {
       // Get all drivers assigned to equipment of this model type
-      const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
+      const allEquipment = cache.getEquipment ? cache.getEquipmentList() : [];
       const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === model);
       const driversForThisModel = [...new Set(
         equipmentOfThisModel.flatMap(e => [e["Driver 1"], e["Driver 2"]]).filter(Boolean)
@@ -149,7 +149,7 @@ export default function ChecklistForm() {
     if (!plate) {
       // If plate is cleared but model is still selected, restore drivers for that model
       if (formData["Model / Type"]) {
-        const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
+        const allEquipment = cache.getEquipment ? cache.getEquipmentList() : [];
         const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === formData["Model / Type"]);
         const driversForThisModel = [...new Set(
           equipmentOfThisModel.flatMap(e => [e["Driver 1"], e["Driver 2"]]).filter(Boolean)
@@ -185,7 +185,7 @@ export default function ChecklistForm() {
     if (!driver) return;
 
     // Get all equipment that this driver is assigned to
-    const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
+    const allEquipment = cache.getEquipment ? cache.getEquipmentList() : [];
     const matches = allEquipment.filter(
       e => e["Driver 1"] === driver || e["Driver 2"] === driver
     );
@@ -378,7 +378,7 @@ export default function ChecklistForm() {
   // Get all driver names from Equipment_List for dropdown (for non-Driver roles)
   const allDriverNames = cache.getEquipment
     ? [...new Set(
-        cache.getEquipment()
+        cache.getEquipmentList()
           .flatMap(e => [e["Driver 1"], e["Driver 2"]])
           .filter(Boolean)
       )]
@@ -546,7 +546,7 @@ export default function ChecklistForm() {
                   {(plateOptions.length
                     ? plateOptions
                     : cache.getEquipment
-                    ? (cache.getEquipment() || []).map(e => e["Plate Number"])
+                    ? (cache.getEquipmentList() || []).map(e => e["Plate Number"])
                     : []
                   ).map(p => (
                     <option key={p} value={p}>{p}</option>
