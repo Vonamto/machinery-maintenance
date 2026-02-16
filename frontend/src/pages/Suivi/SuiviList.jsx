@@ -54,6 +54,7 @@ const SuiviList = () => {
 
   // ✅ NEW: Helper to filter machinery for drivers
   const filterMachineryForDriver = (machineryData, driverFullName) => {
+    console.log('🔍 filterMachineryForDriver called with:', driverFullName);
     const result = [];
     
     for (let i = 0; i < machineryData.length; i++) {
@@ -66,19 +67,26 @@ const SuiviList = () => {
       const isDriver1 = item['Driver 1'] === driverFullName;
       const isDriver2 = item['Driver 2'] === driverFullName;
       
+      console.log(`  Checking machinery ${item['Plate Number']}:`);
+      console.log(`    Driver 1: "${item['Driver 1']}" === "${driverFullName}" ? ${isDriver1}`);
+      console.log(`    Driver 2: "${item['Driver 2']}" === "${driverFullName}" ? ${isDriver2}`);
+      
       if (isDriver1 || isDriver2) {
         // Add the main machinery
         result.push(item);
+        console.log(`    ✅ MATCH! Added machinery ${item['Plate Number']}`);
         
         // Check if next row is a trailer for this machinery
         const nextRow = machineryData[i + 1];
         if (nextRow && isTrailerRow(nextRow)) {
           // Add the trailer as well
           result.push(nextRow);
+          console.log(`    ✅ Also added trailer ${nextRow['Plate Number']}`);
         }
       }
     }
     
+    console.log(`🎯 Total machinery found for driver: ${result.length}`);
     return result;
   };
 
@@ -95,13 +103,22 @@ const SuiviList = () => {
         fetchMachineryTypes()
       ]);
       
-      console.log('Fetched machinery data:', machineryData);
+      console.log('📦 Fetched machinery data:', machineryData);
+      console.log('👤 Current user object:', user);
+      console.log('👤 User role:', user?.role);
+      console.log('👤 User fullname:', user?.fullname);
+      console.log('👤 User username:', user?.username);
       
       // ✅ DRIVER ROLE FILTERING
       let filteredData = machineryData || [];
       if (user?.role === 'Driver' && user?.fullname) {
+        console.log(`🚗 Driver detected! Filtering for: "${user.fullname}"`);
         filteredData = filterMachineryForDriver(machineryData, user.fullname);
-        console.log(`Filtered for driver ${user.fullname}:`, filteredData);
+        console.log(`✅ Filtered results (${filteredData.length} items):`, filteredData);
+      } else {
+        console.log('❌ Not a driver or no fullname, showing all machinery');
+        console.log('   Condition check - Role is Driver?', user?.role === 'Driver');
+        console.log('   Condition check - Has fullname?', !!user?.fullname);
       }
       
       setMachinery(filteredData);
