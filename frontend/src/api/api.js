@@ -58,16 +58,6 @@ export async function fetchWithAuth(path, opts = {}) {
   return res;
 }
 
-// Fetch Equipment List for dropdowns
-// Return shape: array of objects matching sheet rows
-export async function fetchEquipmentList(token) {
-  const res = await fetch(`${CONFIG.BACKEND_URL}/api/equipment`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('Failed to fetch EquipmentList');
-  return await res.json();
-}
-
 // Fetch all Users (Supervisor only, contains passwords so only supervisor should call)
 export async function fetchUsers(token) {
   const res = await fetch(`${CONFIG.BACKEND_URL}/api/users`, {
