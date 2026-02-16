@@ -26,11 +26,6 @@ import ChecklistMenu from "./pages/Checklist/index";
 import ChecklistForm from "./pages/Checklist/Form";
 import ChecklistHistory from "./pages/Checklist/History";
 
-// --- Equipment ---
-import EquipmentMenu from "./pages/Equipment/index";
-import EquipmentList from "./pages/Equipment/List";
-import EquipmentManage from "./pages/Equipment/Manage";
-
 // --- Suivi (Machinery Tracking) ---
 import SuiviMenu from "./pages/Suivi/index";
 import SuiviList from "./pages/Suivi/SuiviList";
@@ -148,34 +143,6 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.CHECKLIST_HISTORY}>
                 <ChecklistHistory />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* ================= Equipment ================= */}
-          <Route
-            path="/equipment"
-            element={
-              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.EQUIPMENT}>
-                <EquipmentMenu />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/equipment/list"
-            element={
-              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.EQUIPMENT_LIST}>
-                <EquipmentList />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/equipment/manage"
-            element={
-              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.EQUIPMENT_MANAGE}>
-                <EquipmentManage />
               </ProtectedRoute>
             }
           />
