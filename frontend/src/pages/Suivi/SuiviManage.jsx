@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Upload, FileText, CheckCircle, Save, Plus, Loader2, X, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, CheckCircle, Save, Plus, Loader2, X, AlertCircle, Truck } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { useCache } from '../../context/CacheContext';
@@ -44,6 +44,16 @@ const SuiviManage = () => {
     'Next Inspection': '',
   });
 
+  // ✅ NEW: Trailer state
+  const [hasTrailer, setHasTrailer] = useState(false);
+  const [trailerData, setTrailerData] = useState({
+    'Trailer Model/Type': '',
+    'Trailer Plate': '',
+    'Trailer Insurance': '',
+    'Trailer Technical': '',
+    'Trailer Certificate': '',
+  });
+
   // PDF files state
   const [pdfFiles, setPdfFiles] = useState({
     Documents: null,
@@ -51,8 +61,12 @@ const SuiviManage = () => {
     'Driver 2 Doc': null,
   });
 
+  // ✅ NEW: Trailer PDF state
+  const [trailerPdfFile, setTrailerPdfFile] = useState(null);
+
   // Certificate NA checkbox
   const [certificateNA, setCertificateNA] = useState(false);
+  const [trailerCertificateNA, setTrailerCertificateNA] = useState(false);
 
   // ✅ Centralized permission checks from roles.js
   const canAdd = canUserPerformAction(user?.role, 'SUIVI_ADD');
@@ -93,10 +107,13 @@ const SuiviManage = () => {
       // If in edit mode, load existing data
       if (editPlate) {
         const suiviData = await fetchSuivi();
-        const existing = suiviData.find(item => item['Plate Number'] === editPlate);
+        const existingIndex = suiviData.findIndex(item => item['Plate Number'] === editPlate);
         
-        if (existing) {
+        if (existingIndex !== -1) {
+          const existing = suiviData[existingIndex];
           setExistingData(existing);
+          
+          // Load main machinery data
           setFormData({
             Status: existing.Status || '',
             Machinery: existing.Machinery || '',
@@ -114,6 +131,24 @@ const SuiviManage = () => {
           // Check if certificate is NA
           if (existing.Certificate === 'N/A') {
             setCertificateNA(true);
+          }
+
+          // ✅ NEW: Check if next row is a trailer
+          const nextRow = suiviData[existingIndex + 1];
+          if (nextRow && nextRow.Machinery === 'Trailer') {
+            setHasTrailer(true);
+            setTrailerData({
+              'Trailer Model/Type': nextRow['Model / Type'] || '',
+              'Trailer Plate': nextRow['Plate Number'] || '',
+              'Trailer Insurance': nextRow.Insurance || '',
+              'Trailer Technical': nextRow['Technical Inspection'] || '',
+              'Trailer Certificate': nextRow.Certificate || '',
+            });
+
+            // Check trailer certificate NA
+            if (nextRow.Certificate === 'N/A') {
+              setTrailerCertificateNA(true);
+            }
           }
         } else {
           alert(t('suivi.manage.alerts.error') + ': Machinery not found');
@@ -141,6 +176,11 @@ const SuiviManage = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // ✅ NEW: Trailer data handler
+  const handleTrailerInputChange = (field, value) => {
+    setTrailerData(prev => ({ ...prev, [field]: value }));
+  };
+
   const handlePDFUpload = (field, file) => {
     if (!file) {
       setPdfFiles(prev => ({ ...prev, [field]: null }));
@@ -162,8 +202,33 @@ const SuiviManage = () => {
     setPdfFiles(prev => ({ ...prev, [field]: file }));
   };
 
+  // ✅ NEW: Trailer PDF upload handler
+  const handleTrailerPDFUpload = (file) => {
+    if (!file) {
+      setTrailerPdfFile(null);
+      return;
+    }
+
+    if (file.type !== 'application/pdf') {
+      alert(t('suivi.manage.alerts.invalidFile'));
+      return;
+    }
+
+    if (!validatePDFSize(file)) {
+      alert(t('suivi.manage.alerts.pdfTooLarge'));
+      return;
+    }
+
+    setTrailerPdfFile(file);
+  };
+
   const handleRemoveFile = (field) => {
     setPdfFiles(prev => ({ ...prev, [field]: null }));
+  };
+
+  // ✅ NEW: Remove trailer PDF
+  const handleRemoveTrailerFile = () => {
+    setTrailerPdfFile(null);
   };
 
   const handleCertificateNAChange = (checked) => {
@@ -172,6 +237,16 @@ const SuiviManage = () => {
       setFormData(prev => ({ ...prev, Certificate: 'N/A' }));
     } else {
       setFormData(prev => ({ ...prev, Certificate: '' }));
+    }
+  };
+
+  // ✅ NEW: Trailer certificate NA handler
+  const handleTrailerCertificateNAChange = (checked) => {
+    setTrailerCertificateNA(checked);
+    if (checked) {
+      setTrailerData(prev => ({ ...prev, 'Trailer Certificate': 'N/A' }));
+    } else {
+      setTrailerData(prev => ({ ...prev, 'Trailer Certificate': '' }));
     }
   };
 
@@ -196,12 +271,33 @@ const SuiviManage = () => {
       return;
     }
 
+    // ✅ NEW: Trailer validation
+    if (hasTrailer) {
+      if (!trailerData['Trailer Model/Type'] || !trailerData['Trailer Plate']) {
+        alert(t('suivi.manage.alerts.missingTrailerFields') || 'Please fill in Trailer Model/Type and Plate Number');
+        return;
+      }
+    }
+
     setSubmitting(true);
 
     try {
       // Convert PDFs to Base64
       const payload = { ...formData };
 
+      // ✅ NEW: Add trailer data to payload if enabled
+      if (hasTrailer) {
+        payload.HasTrailer = true;
+        payload['Trailer Model/Type'] = trailerData['Trailer Model/Type'];
+        payload['Trailer Plate'] = trailerData['Trailer Plate'];
+        payload['Trailer Insurance'] = trailerData['Trailer Insurance'];
+        payload['Trailer Technical'] = trailerData['Trailer Technical'];
+        payload['Trailer Certificate'] = trailerData['Trailer Certificate'];
+      } else {
+        payload.HasTrailer = false;
+      }
+
+      // Convert main machinery PDFs
       for (const [key, file] of Object.entries(pdfFiles)) {
         if (file) {
           const base64 = await pdfToBase64(file);
@@ -211,6 +307,16 @@ const SuiviManage = () => {
           payload[key] = existingData[key];
         } else {
           payload[key] = '';
+        }
+      }
+
+      // ✅ NEW: Convert trailer PDF
+      if (hasTrailer) {
+        if (trailerPdfFile) {
+          const base64 = await pdfToBase64(trailerPdfFile);
+          payload['Trailer Documents'] = base64;
+        } else {
+          payload['Trailer Documents'] = '';
         }
       }
 
@@ -243,7 +349,7 @@ const SuiviManage = () => {
   };
 
   // Custom File Upload Component
-  const FileUploadField = ({ field, label }) => {
+  const FileUploadField = ({ field, label, existingUrl }) => {
     const fileInputRef = React.useRef(null);
 
     return (
@@ -289,9 +395,71 @@ const SuiviManage = () => {
                 <X size={16} />
               </button>
             </div>
-          ) : editPlate && existingData?.[field] && existingData[field] !== 'N/A' ? (
+          ) : editPlate && existingUrl && existingUrl !== 'N/A' ? (
             <a
-              href={existingData[field]}
+              href={existingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-pink-400 hover:text-pink-300 hover:underline text-sm transition-colors"
+            >
+              <FileText size={16} />
+              {t('suivi.manage.form.viewPDF')}
+            </a>
+          ) : (
+            <span className="text-sm text-gray-500">{t('suivi.manage.form.noFileChosen')}</span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ✅ NEW: Trailer File Upload Component
+  const TrailerFileUploadField = ({ existingUrl }) => {
+    const fileInputRef = React.useRef(null);
+
+    return (
+      <div className="p-4 rounded-xl bg-gray-900/50 border border-gray-700">
+        <label className="block text-sm font-medium text-gray-300 mb-3">
+          {t('suivi.manage.form.trailerDocuments') || 'Trailer Documents'}
+        </label>
+        
+        <div className="space-y-3">
+          {/* Upload Button */}
+          <div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf"
+              onChange={(e) => handleTrailerPDFUpload(e.target.files[0])}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-4 py-2.5 bg-pink-600 hover:bg-pink-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+            >
+              <Upload size={16} />
+              {t('suivi.manage.form.chooseFile')}
+            </button>
+          </div>
+
+          {/* File info */}
+          {trailerPdfFile ? (
+            <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2 max-w-md">
+              <FileText size={16} className="text-green-400 flex-shrink-0" />
+              <span className="text-sm text-green-400 truncate">{trailerPdfFile.name}</span>
+              <button
+                type="button"
+                onClick={handleRemoveTrailerFile}
+                className="text-red-400 hover:text-red-300 transition-colors flex-shrink-0 ml-2"
+                title={t('common.delete')}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ) : editPlate && existingUrl && existingUrl !== 'N/A' ? (
+            <a
+              href={existingUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-pink-400 hover:text-pink-300 hover:underline text-sm transition-colors"
@@ -491,7 +659,7 @@ const SuiviManage = () => {
                   />
                 </div>
 
-                {/* ✅ FIX: Certificate with consistent structure (no checkbox affecting height) */}
+                {/* Certificate */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {t('suivi.manage.form.certificate')}
@@ -503,7 +671,6 @@ const SuiviManage = () => {
                     disabled={certificateNA}
                     className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all disabled:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
                   />
-                  {/* ✅ Checkbox moved below input */}
                   <div className="flex items-center gap-2 mt-2">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -555,17 +722,128 @@ const SuiviManage = () => {
               <div className="space-y-6">
                 <FileUploadField 
                   field="Documents" 
-                  label={t('suivi.manage.form.machineryDocuments')} 
+                  label={t('suivi.manage.form.machineryDocuments')}
+                  existingUrl={existingData?.Documents}
                 />
                 <FileUploadField 
                   field="Driver 1 Doc" 
-                  label={t('suivi.manage.form.driver1Documents')} 
+                  label={t('suivi.manage.form.driver1Documents')}
+                  existingUrl={existingData?.['Driver 1 Doc']}
                 />
                 <FileUploadField 
                   field="Driver 2 Doc" 
-                  label={t('suivi.manage.form.driver2Documents')} 
+                  label={t('suivi.manage.form.driver2Documents')}
+                  existingUrl={existingData?.['Driver 2 Doc']}
                 />
               </div>
+            </div>
+
+            {/* ✅ NEW: TRAILER SECTION */}
+            <div className="border-t border-gray-700 pt-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-pink-400 flex items-center gap-2">
+                  <Truck size={20} />
+                  {t('suivi.manage.form.trailerInfo') || 'Trailer Information'}
+                </h2>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <span className="text-sm text-gray-300">{t('suivi.manage.form.hasTrailer') || 'Has Trailer'}</span>
+                  <input
+                    type="checkbox"
+                    checked={hasTrailer}
+                    onChange={(e) => setHasTrailer(e.target.checked)}
+                    className="w-5 h-5 text-pink-600 border-gray-600 rounded focus:ring-pink-500 bg-gray-900"
+                  />
+                </label>
+              </div>
+
+              {hasTrailer && (
+                <div className="space-y-6 bg-gray-900/30 rounded-xl p-6 border border-gray-700">
+                  {/* Trailer Basic Info */}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        {t('suivi.manage.form.trailerModel') || 'Trailer Model/Type'} *
+                      </label>
+                      <input
+                        type="text"
+                        value={trailerData['Trailer Model/Type']}
+                        onChange={(e) => handleTrailerInputChange('Trailer Model/Type', e.target.value)}
+                        placeholder={t('suivi.manage.placeholders.trailerModel') || 'Enter trailer model'}
+                        className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white placeholder-gray-500 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all"
+                        required={hasTrailer}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        {t('suivi.manage.form.trailerPlate') || 'Trailer Plate Number'} *
+                      </label>
+                      <input
+                        type="text"
+                        value={trailerData['Trailer Plate']}
+                        onChange={(e) => handleTrailerInputChange('Trailer Plate', e.target.value)}
+                        placeholder={t('suivi.manage.placeholders.trailerPlate') || 'Enter trailer plate'}
+                        className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white placeholder-gray-500 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all"
+                        required={hasTrailer}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Trailer Document Dates */}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        {t('suivi.manage.form.trailerInsurance') || 'Trailer Insurance Expiry'}
+                      </label>
+                      <input
+                        type="date"
+                        value={trailerData['Trailer Insurance']}
+                        onChange={(e) => handleTrailerInputChange('Trailer Insurance', e.target.value)}
+                        className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        {t('suivi.manage.form.trailerTechnical') || 'Trailer Technical Inspection'}
+                      </label>
+                      <input
+                        type="date"
+                        value={trailerData['Trailer Technical']}
+                        onChange={(e) => handleTrailerInputChange('Trailer Technical', e.target.value)}
+                        className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        {t('suivi.manage.form.trailerCertificate') || 'Trailer Certificate'}
+                      </label>
+                      <input
+                        type="date"
+                        value={trailerCertificateNA ? '' : trailerData['Trailer Certificate']}
+                        onChange={(e) => handleTrailerInputChange('Trailer Certificate', e.target.value)}
+                        disabled={trailerCertificateNA}
+                        className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all disabled:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                      <div className="flex items-center gap-2 mt-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={trailerCertificateNA}
+                            onChange={(e) => handleTrailerCertificateNAChange(e.target.checked)}
+                            className="w-4 h-4 text-pink-600 border-gray-600 rounded focus:ring-pink-500 bg-gray-900"
+                          />
+                          <span className="text-sm text-gray-400">{t('suivi.manage.form.certificateNA')}</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Trailer Document Upload */}
+                  <TrailerFileUploadField existingUrl={null} />
+                </div>
+              )}
             </div>
 
             {/* SUBMIT BUTTON */}
