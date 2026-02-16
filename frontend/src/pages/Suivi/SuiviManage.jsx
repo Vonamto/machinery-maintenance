@@ -507,7 +507,7 @@ const SuiviManage = () => {
       
       <div className="max-w-5xl mx-auto p-6">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/suivi')}
           className="inline-flex items-center gap-2 text-pink-400 hover:text-pink-300 mb-6 transition-colors group"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
