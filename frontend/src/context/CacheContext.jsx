@@ -17,6 +17,7 @@ import { fetchWithAuth } from "../api/api";
  * - Backend endpoints used: /api/suivi and /api/usernames (protected)
  * - Auth token is read from localStorage at call time
  * - "equipment" variable name kept for backward compatibility, but now contains Suivi data
+ * - Helpers automatically filter out trailers (Machinery !== "Trailer") for other pages
  */
 
 const CacheContext = createContext(null);
@@ -147,37 +148,58 @@ export function CacheProvider({ children }) {
 
   // Exposed API
   const value = {
-    equipment, // Now contains Suivi sheet data
+    equipment, // Raw Suivi data (includes trailers)
     usernames,
     loadingEquipment,
     loadingUsernames,
+    
     // helpers
-    getEquipment: () => equipment, // Returns Suivi data
+    getEquipment: () => equipment, // ✅ Returns ALL Suivi data (for Suivi pages - includes trailers)
+    
+    // ✅ NEW: Returns Suivi data WITHOUT trailers (for other pages like Maintenance, Cleaning, etc.)
+    getEquipmentList: () => {
+      return (equipment || []).filter((r) => r.Machinery !== "Trailer");
+    },
+    
     getModels: () => {
-      // unique models list sorted (from Suivi sheet "Model / Type" column)
-      const models = [...new Set((equipment || []).map((r) => r["Model / Type"]).filter(Boolean))];
+      // ✅ UPDATED: Exclude trailers from models list
+      const models = [...new Set(
+        (equipment || [])
+          .filter((r) => r.Machinery !== "Trailer") // Filter out trailers
+          .map((r) => r["Model / Type"])
+          .filter(Boolean)
+      )];
       return models.sort();
     },
+    
     getPlatesByModel: (model) => {
-      // Filter Suivi sheet by Model / Type
+      // ✅ UPDATED: Exclude trailers when filtering by model
       if (!model) return [];
       return (equipment || [])
-        .filter((r) => r["Model / Type"] === model)
+        .filter((r) => r.Machinery !== "Trailer" && r["Model / Type"] === model)
         .map((r) => r["Plate Number"])
         .filter(Boolean);
     },
+    
     getEquipmentByPlate: (plate) => {
-      // Find row in Suivi sheet by Plate Number
+      // ✅ UPDATED: Only find non-trailer equipment by plate
       if (!plate) return null;
-      return (equipment || []).find((r) => r["Plate Number"] === plate) || null;
+      return (equipment || []).find(
+        (r) => r.Machinery !== "Trailer" && r["Plate Number"] === plate
+      ) || null;
     },
+    
     getDriversByPlate: (plate) => {
-      // Extract Driver 1 and Driver 2 from Suivi sheet row
-      const eq = (equipment || []).find((r) => r["Plate Number"] === plate);
+      // ✅ UPDATED: Exclude trailers (they have no drivers anyway)
+      const eq = (equipment || []).find(
+        (r) => r.Machinery !== "Trailer" && r["Plate Number"] === plate
+      );
       if (!eq) return [];
       return [eq["Driver 1"], eq["Driver 2"]].filter(Boolean);
     },
+    
     getUsernames: () => usernames,
+    
     // force refresh (manual)
     forceRefreshEquipment: () => refreshEquipment(true), // Forces refresh of Suivi data
     forceRefreshUsernames: () => refreshUsernames(true),
