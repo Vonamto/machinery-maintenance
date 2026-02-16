@@ -327,7 +327,7 @@ def append_row(sheet_name, new_row):
             machinery_to_equipment_type = {}
             for row in machinery_types_data:
                 english_name = row.get('English', '')
-                equipment_mapping = row.get('Equipment Type Mapping', '')
+                equipment_mapping = row.get('Equipment_Type_Mapping', '')
                 if english_name and equipment_mapping:
                     machinery_to_equipment_type[english_name] = equipment_mapping
             
@@ -486,7 +486,7 @@ def update_row(sheet_name, row_index, updated_data):
             machinery_to_equipment_type = {}
             for row in machinery_types_data:
                 english_name = row.get('English', '')
-                equipment_mapping = row.get('Equipment Type Mapping', '')
+                equipment_mapping = row.get('Equipment_Type_Mapping', '')
                 if english_name and equipment_mapping:
                     machinery_to_equipment_type[english_name] = equipment_mapping
             
