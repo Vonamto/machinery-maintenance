@@ -1,5 +1,5 @@
 // src/pages/Suivi/SuiviList.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Search, Edit, Trash2, Plus, FileText, Loader2, Hash, Truck } from 'lucide-react';
@@ -8,7 +8,6 @@ import { useAuth } from '../../context/AuthContext';
 import { PAGE_PERMISSIONS, canUserPerformAction } from '../../config/roles';
 import { fetchSuivi, deleteSuiviEntry, fetchMachineryTypes } from '../../api/api';
 import { formatDateForDisplay, getDaysUntilExpiry } from '../../utils/dateUtils';
-import CONFIG from '../../config';
 
 const SuiviList = () => {
   const navigate = useNavigate();
@@ -16,19 +15,18 @@ const SuiviList = () => {
   const { user } = useAuth();
   
   const [loading, setLoading] = useState(true);
-  const [machinery, setMachinery] = useState([]);
+  const [allMachinery, setAllMachinery] = useState([]);
   const [machineryTypes, setMachineryTypes] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [actionMode, setActionMode] = useState(null); // null, 'edit', 'delete'
-  const [deletingIndex, setDeletingIndex] = useState(null); // Track which row is being deleted
+  const [actionMode, setActionMode] = useState(null);
+  const [deletingIndex, setDeletingIndex] = useState(null);
 
-  // ✅ Centralized permission checks from roles.js
   const canAdd = canUserPerformAction(user?.role, 'SUIVI_ADD');
   const canEdit = canUserPerformAction(user?.role, 'SUIVI_EDIT');
   const canDelete = canUserPerformAction(user?.role, 'SUIVI_DELETE');
-  const canManage = canEdit || canDelete; // Show action mode if user has either permission
+  const canManage = canEdit || canDelete;
 
   // ==================== ACCESS CONTROL ====================
   useEffect(() => {
@@ -39,7 +37,6 @@ const SuiviList = () => {
 
   // ==================== HELPER FUNCTIONS ====================
   
-  // Helper function to get display name based on language
   const getMachineryDisplayName = (englishName) => {
     if (i18n.language === 'ar') {
       const type = machineryTypes.find(t => t.english === englishName);
@@ -48,124 +45,72 @@ const SuiviList = () => {
     return englishName;
   };
 
-  // ✅ Helper to check if row is a trailer
   const isTrailerRow = (item) => {
     return item.Machinery === 'Trailer';
   };
 
-  // ✅ STEP 1: Get driver's Full Name from Users sheet by Username
-  const getDriverFullNameFromUsers = async (username) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${CONFIG.BACKEND_URL}/api/usernames`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (!response.ok) {
-        console.error('Failed to fetch users data');
-        return null;
-      }
-      
-      const usersData = await response.json();
-      console.log('📋 Users data:', usersData);
-      
-      // Find the user with matching Name field (which is actually the Full Name)
-      // The fetchUsernames API returns {Name: "Full Name", Role: "Driver"}
-      const usernameLower = username.toLowerCase().trim();
-      
-      // Try to find by matching the Name field (since we don't have Username field in the response)
-      // We need to match username against the Full Name field
-      // Actually, let's check if any Full Name contains this username pattern
-      
-      // Better approach: Try exact match first, then partial
-      let foundUser = usersData.find(u => 
-        u.Name && u.Name.toLowerCase().trim() === usernameLower
-      );
-      
-      // If not found, try to find where username appears in the name
-      if (!foundUser) {
-        foundUser = usersData.find(u => 
-          u.Name && u.Name.toLowerCase().includes(usernameLower)
-        );
-      }
-      
-      if (foundUser && foundUser.Name) {
-        console.log(`✅ Found full name for username "${username}": "${foundUser.Name}"`);
-        return foundUser.Name;
-      } else {
-        console.log(`❌ Could not find full name for username: ${username}`);
-        console.log('Available users:', usersData.map(u => u.Name));
-        return null;
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      return null;
-    }
-  };
-
-  // ✅ STEP 2 & 3: Find all machinery where driver's Full Name appears in Driver 1 or Driver 2
-  const getDriverPlateNumbers = (machineryData, driverFullName) => {
-    console.log('🔍 Looking for plate numbers where driver is:', driverFullName);
+  // ==================== DRIVER FILTERING (like CleaningHistory) ====================
+  
+  // Step 1: Get allowed plate numbers for Driver role
+  const driverAllowedPlates = useMemo(() => {
+    if (user?.role !== 'Driver' || !user?.full_name) return null;
+    
     const plateNumbers = [];
-    const driverNameLower = driverFullName.toLowerCase().trim();
+    const driverFullName = user.full_name;
     
-    for (let i = 0; i < machineryData.length; i++) {
-      const item = machineryData[i];
+    allMachinery.forEach((item) => {
+      // Skip trailers
+      if (isTrailerRow(item)) return;
       
-      // Skip trailers in this step
-      if (isTrailerRow(item)) continue;
+      // Check if driver's full name matches (case-insensitive)
+      const driver1 = item['Driver 1'] || '';
+      const driver2 = item['Driver 2'] || '';
       
-      const driver1 = (item['Driver 1'] || '').toLowerCase().trim();
-      const driver2 = (item['Driver 2'] || '').toLowerCase().trim();
-      
-      // Exact match (case-insensitive)
-      const isDriver1 = driver1 === driverNameLower;
-      const isDriver2 = driver2 === driverNameLower;
-      
-      console.log(`  Checking machinery ${item['Plate Number']}:`);
-      console.log(`    Driver 1: "${item['Driver 1']}" === "${driverFullName}"? ${isDriver1}`);
-      console.log(`    Driver 2: "${item['Driver 2']}" === "${driverFullName}"? ${isDriver2}`);
-      
-      if (isDriver1 || isDriver2) {
+      if (
+        driver1.toLowerCase().trim() === driverFullName.toLowerCase().trim() ||
+        driver2.toLowerCase().trim() === driverFullName.toLowerCase().trim()
+      ) {
         plateNumbers.push(item['Plate Number']);
-        console.log(`    ✅ MATCH! Added plate number: ${item['Plate Number']}`);
       }
+    });
+    
+    return plateNumbers;
+  }, [user, allMachinery]);
+
+  // Step 2: Filter machinery by plate numbers and include trailers
+  const machinery = useMemo(() => {
+    // If not a driver, show all machinery
+    if (user?.role !== 'Driver' || !Array.isArray(driverAllowedPlates)) {
+      return allMachinery;
     }
     
-    console.log(`🎯 Total plate numbers found: ${plateNumbers.length}`, plateNumbers);
-    return plateNumbers;
-  };
-
-  // ✅ STEP 4 & 5: Filter machinery by plate numbers and include trailers
-  const filterMachineryByPlateNumbers = (machineryData, plateNumbers) => {
-    console.log('🔍 Filtering machinery by plate numbers:', plateNumbers);
-    const result = [];
+    // If driver has no assigned machinery
+    if (driverAllowedPlates.length === 0) {
+      return [];
+    }
     
-    for (let i = 0; i < machineryData.length; i++) {
-      const item = machineryData[i];
+    // Filter by allowed plate numbers and include trailers
+    const result = [];
+    for (let i = 0; i < allMachinery.length; i++) {
+      const item = allMachinery[i];
       
-      // Skip if this is a trailer row (will be added via its parent)
+      // Skip trailers in this loop (they'll be added with their parent)
       if (isTrailerRow(item)) continue;
       
-      // Check if this plate number is in our list
-      if (plateNumbers.includes(item['Plate Number'])) {
-        // Add the main machinery
+      // Check if this plate number is allowed
+      if (driverAllowedPlates.includes(item['Plate Number'])) {
         result.push(item);
-        console.log(`✅ Added machinery: ${item['Plate Number']}`);
         
-        // Check if next row is a trailer for this machinery
-        const nextRow = machineryData[i + 1];
+        // Include trailer if it exists (next row)
+        const nextRow = allMachinery[i + 1];
         if (nextRow && isTrailerRow(nextRow)) {
-          // Add the trailer as well
           result.push(nextRow);
-          console.log(`✅ Also added trailer: ${nextRow['Plate Number']}`);
         }
       }
     }
     
-    console.log(`🎯 Total items in result (machinery + trailers): ${result.length}`);
     return result;
-  };
+  }, [allMachinery, driverAllowedPlates, user]);
 
   // ==================== LOAD DATA FROM SUIVI SHEET ====================
   useEffect(() => {
@@ -180,46 +125,7 @@ const SuiviList = () => {
         fetchMachineryTypes()
       ]);
       
-      console.log('📦 Fetched machinery data:', machineryData);
-      console.log('👤 Current user object:', user);
-      console.log('👤 User role:', user?.role);
-      console.log('👤 User username:', user?.username);
-      
-      // ✅ DRIVER ROLE FILTERING - Complete Logic
-      let filteredData = machineryData || [];
-      
-      if (user?.role === 'Driver' && user?.username) {
-        console.log(`🚗 Driver detected! Username: "${user.username}"`);
-        console.log('🔄 Starting driver filtering process...');
-        
-        // STEP 1: Get Full Name from Users sheet
-        const driverFullName = await getDriverFullNameFromUsers(user.username);
-        
-        if (driverFullName) {
-          console.log(`✅ STEP 1 COMPLETE: Retrieved Full Name: "${driverFullName}"`);
-          
-          // STEP 2 & 3: Get all plate numbers where this driver is assigned
-          const driverPlateNumbers = getDriverPlateNumbers(machineryData, driverFullName);
-          
-          if (driverPlateNumbers.length > 0) {
-            console.log(`✅ STEP 2 & 3 COMPLETE: Found ${driverPlateNumbers.length} plate numbers`);
-            
-            // STEP 4 & 5: Filter by those plate numbers (includes trailers)
-            filteredData = filterMachineryByPlateNumbers(machineryData, driverPlateNumbers);
-            console.log(`✅ STEP 4 & 5 COMPLETE: Filtered ${filteredData.length} items (machinery + trailers)`);
-          } else {
-            console.log('⚠️ No machinery assigned to this driver');
-            filteredData = [];
-          }
-        } else {
-          console.log('⚠️ Could not retrieve full name from Users sheet');
-          filteredData = [];
-        }
-      } else {
-        console.log('ℹ️ Not a driver or no username, showing all machinery');
-      }
-      
-      setMachinery(filteredData);
+      setAllMachinery(machineryData || []);
       setMachineryTypes(typesData || []);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -280,7 +186,6 @@ const SuiviList = () => {
     );
   };
 
-  // Render normal date styled like other columns
   const renderDateCell = (dateStr) => {
     if (!dateStr || dateStr === 'N/A') {
       return (
@@ -297,19 +202,16 @@ const SuiviList = () => {
   };
 
   // ==================== FILTERING ====================
-  // ✅ FIXED: Always include trailer with its parent machinery
   const filteredMachinery = (() => {
     const result = [];
     
     for (let i = 0; i < machinery.length; i++) {
       const item = machinery[i];
       
-      // Skip if this is a trailer row (it will be added via its parent machinery)
       if (isTrailerRow(item)) {
         continue;
       }
       
-      // Apply filters to main machinery only
       const plateNumber = String(item['Plate Number'] || '').toLowerCase();
       const modelType = String(item['Model / Type'] || '').toLowerCase();
       const search = searchTerm.toLowerCase();
@@ -321,12 +223,9 @@ const SuiviList = () => {
       const matchesStatus = !statusFilter || item.Status === statusFilter;
       const matchesType = !typeFilter || item.Machinery === typeFilter;
       
-      // If main machinery matches all filters
       if (matchesSearch && matchesStatus && matchesType) {
-        // Add the main machinery
         result.push(item);
         
-        // ✅ ALWAYS include trailer if it exists (next row)
         const nextRow = machinery[i + 1];
         if (nextRow && isTrailerRow(nextRow)) {
           result.push(nextRow);
@@ -338,12 +237,10 @@ const SuiviList = () => {
   })();
 
   const uniqueStatuses = [...new Set(machinery.map(m => m.Status).filter(Boolean))];
-  // ✅ FIX 2: Filter out 'Trailer' from type options
   const uniqueTypes = [...new Set(machinery.map(m => m.Machinery).filter(Boolean))].filter(type => type !== 'Trailer');
 
   // ==================== ACTIONS ====================
   const handleEdit = (item) => {
-    // ✅ Check permission before editing
     if (!canEdit) {
       alert(t("requests.grease.menu.accessDenied.message"));
       return;
@@ -352,7 +249,6 @@ const SuiviList = () => {
   };
 
   const handleDelete = async (item, index) => {
-    // ✅ Check permission before deleting
     if (!canDelete) {
       alert(t("requests.grease.menu.accessDenied.message"));
       return;
@@ -368,7 +264,6 @@ const SuiviList = () => {
     setDeletingIndex(index);
 
     try {
-      // ✅ Backend will automatically delete linked trailer if exists
       const result = await deleteSuiviEntry(item.rowindex || 2);
       if (result.status === 'success') {
         alert(t('suivi.manage.alerts.deleteSuccess'));
@@ -391,9 +286,7 @@ const SuiviList = () => {
   };
 
   // ==================== MOBILE CARD VIEW ====================
-  // ✅ Mobile view: Keep minimal, only show main machinery (no trailers in cards)
   const renderMobileCard = (item, index) => {
-    // Skip trailer rows in mobile view
     if (isTrailerRow(item)) return null;
 
     return (
@@ -434,7 +327,6 @@ const SuiviList = () => {
     );
   };
 
-  // ✅ Track row numbers (skip trailers)
   let rowNumber = 0;
 
   // ==================== RENDER ====================
@@ -482,7 +374,6 @@ const SuiviList = () => {
               </div>
             </div>
 
-            {/* Add New Button - Only show if user has add permission */}
             {canAdd && (
               <button
                 onClick={() => navigate('/suivi/manage')}
@@ -495,12 +386,11 @@ const SuiviList = () => {
           </div>
         </div>
 
-        {/* ACTION MODE SELECTOR (Desktop only) - Show only if user has edit or delete permission */}
+        {/* ACTION MODE SELECTOR */}
         {canManage && (
           <div className="hidden lg:flex items-center gap-4 mb-6 bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 p-4">
             <span className="text-sm font-medium text-gray-300">{t('common.actions')}:</span>
             
-            {/* Edit button - Show only if user has edit permission */}
             {canEdit && (
               <button
                 onClick={() => setActionMode(actionMode === 'edit' ? null : 'edit')}
@@ -515,7 +405,6 @@ const SuiviList = () => {
               </button>
             )}
             
-            {/* Delete button - Show only if user has delete permission */}
             {canDelete && (
               <button
                 onClick={() => setActionMode(actionMode === 'delete' ? null : 'delete')}
@@ -546,7 +435,6 @@ const SuiviList = () => {
         {/* Filters */}
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 p-4 mb-6">
           <div className="grid md:grid-cols-3 gap-4">
-            {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <input
@@ -558,7 +446,6 @@ const SuiviList = () => {
               />
             </div>
 
-            {/* Status Filter - ✅ FIX 1: Use translation keys for status values */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -572,7 +459,6 @@ const SuiviList = () => {
               ))}
             </select>
 
-            {/* Type Filter - ✅ FIX 2: Trailer is already filtered out above */}
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
@@ -593,12 +479,12 @@ const SuiviList = () => {
           </div>
         ) : (
           <>
-            {/* MOBILE VIEW - Cards (only main machinery) */}
+            {/* MOBILE VIEW */}
             <div className="lg:hidden grid gap-4">
               {filteredMachinery.map((item, index) => renderMobileCard(item, index))}
             </div>
 
-            {/* DESKTOP VIEW - Table (show both machinery and trailers) */}
+            {/* DESKTOP VIEW */}
             <div className="hidden lg:block bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -625,7 +511,6 @@ const SuiviList = () => {
                     {filteredMachinery.map((item, index) => {
                       const isTrailer = isTrailerRow(item);
                       
-                      // ✅ Increment row number only for main machinery (not trailers)
                       if (!isTrailer) {
                         rowNumber++;
                       }
@@ -635,12 +520,10 @@ const SuiviList = () => {
                           key={index}
                           className={`hover:bg-gray-700/30 transition-colors ${isTrailer ? 'bg-gray-800/30' : ''}`}
                         >
-                          {/* ✅ COLUMN 1: Skip numbering for trailers */}
                           <td className="px-3 py-3 text-sm text-gray-400">
                             {isTrailer ? '' : rowNumber}
                           </td>
 
-                          {/* ✅ COLUMN 2: Status (Empty for trailers) */}
                           <td className="px-3 py-3">
                             {!isTrailer && (
                               <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
@@ -653,7 +536,6 @@ const SuiviList = () => {
                             )}
                           </td>
 
-                          {/* ✅ COLUMN 3: Machinery Type (CLICKABLE for documents) */}
                           <td 
                             onClick={() => handleDocumentClick(item.Documents)}
                             className="px-3 py-3 text-sm cursor-pointer hover:bg-gray-700/50 transition-colors rounded"
@@ -668,10 +550,8 @@ const SuiviList = () => {
                             )}
                           </td>
 
-                          {/* ✅ COLUMN 4: Model/Type (Show trailer model) */}
                           <td className="px-3 py-3 text-sm text-white font-medium">{item['Model / Type']}</td>
 
-                          {/* ✅ COLUMN 5: Plate Number (CLICKABLE for documents) */}
                           <td 
                             onClick={() => handleDocumentClick(item.Documents)}
                             className="px-3 py-3 text-sm text-pink-400 font-semibold cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded"
@@ -679,7 +559,6 @@ const SuiviList = () => {
                             {item['Plate Number']}
                           </td>
 
-                          {/* ✅ COLUMNS 6 & 7: Drivers (Empty for trailers) */}
                           <td 
                             onClick={() => !isTrailer && handleDocumentClick(item['Driver 1 Doc'])}
                             className={`px-3 py-3 text-sm font-medium ${
@@ -701,12 +580,10 @@ const SuiviList = () => {
                             {!isTrailer && (item['Driver 2'] || '-')}
                           </td>
 
-                          {/* ✅ COLUMNS 8-12: Document dates (Show trailer dates) */}
                           <td className="px-3 py-3 text-center">{renderExpiryCell(item.Insurance)}</td>
                           <td className="px-3 py-3 text-center">{renderExpiryCell(item['Technical Inspection'])}</td>
                           <td className="px-3 py-3 text-center">{renderExpiryCell(item.Certificate)}</td>
                           
-                          {/* ✅ Inspection dates: Empty for trailers */}
                           <td className="px-3 py-3 text-center">
                             {!isTrailer && renderDateCell(item['Inspection Date'])}
                           </td>
@@ -714,7 +591,6 @@ const SuiviList = () => {
                             {!isTrailer && renderExpiryCell(item['Next Inspection'])}
                           </td>
 
-                          {/* ✅ Actions Column: DON'T show for trailers */}
                           {actionMode === 'edit' && !isTrailer && (
                             <td className="px-3 py-3 text-center">
                               <button
@@ -746,7 +622,6 @@ const SuiviList = () => {
                               </button>
                             </td>
                           )}
-                          {/* ✅ Empty cell for trailers when action mode is active */}
                           {actionMode && isTrailer && <td className="px-3 py-3"></td>}
                         </tr>
                       );
