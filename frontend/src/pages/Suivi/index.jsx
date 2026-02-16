@@ -13,7 +13,7 @@ const SuiviMenu = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!PAGE_PERMISSIONS.SUIVILIST.includes(user?.role)) {
+    if (!PAGE_PERMISSIONS.SUIVI.includes(user?.role)) {  // ✅ Changed from SUIVILIST to SUIVI
       navigate('/');
     }
   }, [user, navigate]);
