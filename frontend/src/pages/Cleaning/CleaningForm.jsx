@@ -245,7 +245,7 @@ export default function CleaningForm() {
       <Navbar user={user} />
       <div className="max-w-4xl mx-auto p-6">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/cleaning')}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> {t("cleaning.form.back")}
