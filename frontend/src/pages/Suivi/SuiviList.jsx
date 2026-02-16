@@ -36,6 +36,52 @@ const SuiviList = () => {
     }
   }, [user, navigate]);
 
+  // ==================== HELPER FUNCTIONS ====================
+  
+  // Helper function to get display name based on language
+  const getMachineryDisplayName = (englishName) => {
+    if (i18n.language === 'ar') {
+      const type = machineryTypes.find(t => t.english === englishName);
+      return type?.arabic || englishName;
+    }
+    return englishName;
+  };
+
+  // ✅ Helper to check if row is a trailer
+  const isTrailerRow = (item) => {
+    return item.Machinery === 'Trailer';
+  };
+
+  // ✅ NEW: Helper to filter machinery for drivers
+  const filterMachineryForDriver = (machineryData, driverFullName) => {
+    const result = [];
+    
+    for (let i = 0; i < machineryData.length; i++) {
+      const item = machineryData[i];
+      
+      // Skip if this is a standalone trailer row (will be added via its parent)
+      if (isTrailerRow(item)) continue;
+      
+      // Check if this driver is assigned to this machinery
+      const isDriver1 = item['Driver 1'] === driverFullName;
+      const isDriver2 = item['Driver 2'] === driverFullName;
+      
+      if (isDriver1 || isDriver2) {
+        // Add the main machinery
+        result.push(item);
+        
+        // Check if next row is a trailer for this machinery
+        const nextRow = machineryData[i + 1];
+        if (nextRow && isTrailerRow(nextRow)) {
+          // Add the trailer as well
+          result.push(nextRow);
+        }
+      }
+    }
+    
+    return result;
+  };
+
   // ==================== LOAD DATA FROM SUIVI SHEET ====================
   useEffect(() => {
     loadData();
@@ -51,8 +97,14 @@ const SuiviList = () => {
       
       console.log('Fetched machinery data:', machineryData);
       
-      // ✅ Keep ALL rows including trailers (don't filter)
-      setMachinery(machineryData || []);
+      // ✅ DRIVER ROLE FILTERING
+      let filteredData = machineryData || [];
+      if (user?.role === 'Driver' && user?.fullname) {
+        filteredData = filterMachineryForDriver(machineryData, user.fullname);
+        console.log(`Filtered for driver ${user.fullname}:`, filteredData);
+      }
+      
+      setMachinery(filteredData);
       setMachineryTypes(typesData || []);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -60,20 +112,6 @@ const SuiviList = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Helper function to get display name based on language
-  const getMachineryDisplayName = (englishName) => {
-    if (i18n.language === 'ar') {
-      const type = machineryTypes.find(t => t.english === englishName);
-      return type?.arabic || englishName;
-    }
-    return englishName;
-  };
-
-  // ✅ Helper to check if row is a trailer
-  const isTrailerRow = (item) => {
-    return item.Machinery === 'Trailer';
   };
 
   // ==================== EXPIRY STATUS LOGIC (20 DAYS) ====================
