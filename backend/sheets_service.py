@@ -722,11 +722,12 @@ def update_row(sheet_name, row_index, updated_data):
         return {"status": "error", "message": str(e)}
 
 # =====================================================
-#  ✅  Delete Row - UPDATED FOR SUIVI FILE DELETION (NO EQUIPMENT_LIST)
+#  ✅ STEP 3: Delete Row - TRAILER-AWARE DELETION
 # =====================================================
 def delete_row(sheet_name, row_index):
     """
     Delete a row from the sheet and associated files from Drive
+    For Suivi: handles main machinery + trailer deletion
     
     Args:
         sheet_name: Name of the Google Sheet
@@ -738,15 +739,50 @@ def delete_row(sheet_name, row_index):
     try:
         sheet = client.open_by_key(SPREADSHEET_ID).worksheet(sheet_name)
         
-        # For Suivi sheet, delete associated documents from Drive first
+        # ========================================================================
+        #  ✅ NEW: ENHANCED SUIVI DELETE LOGIC WITH TRAILER SUPPORT
+        # ========================================================================
         if sheet_name == "Suivi":
+            headers = sheet.row_values(1)
+            
+            # Get the row data before deleting
             try:
-                # Get the row data before deleting
                 row_data = sheet.row_values(row_index)
-                headers = sheet.row_values(1)
+                if len(row_data) < len(headers):
+                    row_data += [""] * (len(headers) - len(row_data))
                 row_dict = dict(zip(headers, row_data))
+            except:
+                return {"status": "error", "message": f"Row {row_index} not found"}
+            
+            # Determine if this is a main machinery row or trailer row
+            machinery_type = row_dict.get('Machinery', '')
+            is_trailer_row = (machinery_type == 'Trailer')
+            
+            if is_trailer_row:
+                # ===================================================================
+                # CASE A: Deleting a TRAILER row (orphan or linked)
+                # ===================================================================
+                print(f"🗑️ Deleting trailer row at {row_index}")
                 
-                # Delete documents if they exist
+                # Delete trailer documents from Drive
+                doc_url = row_dict.get('Documents', '')
+                if doc_url:
+                    delete_file_from_drive(doc_url)
+                    print(f"Deleted trailer documents: {doc_url}")
+                
+                # Delete the trailer row
+                sheet.delete_rows(row_index)
+                print(f"✅ Deleted trailer row at {row_index}")
+                
+                return {"status": "success", "message": f"Trailer row {row_index} deleted successfully"}
+            
+            else:
+                # ===================================================================
+                # CASE B: Deleting a MAIN MACHINERY row (may have linked trailer)
+                # ===================================================================
+                print(f"🗑️ Deleting main machinery row at {row_index}")
+                
+                # Step 1: Delete main machinery documents from Drive
                 doc_fields = ['Documents', 'Driver 1 Doc', 'Driver 2 Doc']
                 for field in doc_fields:
                     doc_url = row_dict.get(field, '')
@@ -754,16 +790,52 @@ def delete_row(sheet_name, row_index):
                         delete_file_from_drive(doc_url)
                         print(f"Deleted {field}: {doc_url}")
                 
-            except Exception as e:
-                print(f"Error deleting files from Drive: {str(e)}")
-                # Continue with row deletion even if file deletion fails
+                # Step 2: Check if there's a linked trailer at row_index + 1
+                trailer_exists = False
+                try:
+                    next_row_data = sheet.row_values(row_index + 1)
+                    if len(next_row_data) < len(headers):
+                        next_row_data += [""] * (len(headers) - len(next_row_data))
+                    next_row_dict = dict(zip(headers, next_row_data))
+                    next_machinery_type = next_row_dict.get('Machinery', '')
+                    
+                    if next_machinery_type == 'Trailer':
+                        trailer_exists = True
+                        trailer_doc_url = next_row_dict.get('Documents', '')
+                        
+                        # Delete trailer documents from Drive
+                        if trailer_doc_url:
+                            delete_file_from_drive(trailer_doc_url)
+                            print(f"Deleted trailer documents: {trailer_doc_url}")
+                        
+                        print(f"🚛 Trailer found at {row_index + 1}, will delete both rows")
+                except:
+                    trailer_exists = False
+                
+                # Step 3: Delete rows
+                if trailer_exists:
+                    # Delete both main machinery and trailer (delete higher index first to avoid shifting issues)
+                    sheet.delete_rows(row_index + 1)  # Delete trailer first
+                    print(f"✅ Deleted trailer row at {row_index + 1}")
+                    sheet.delete_rows(row_index)      # Then delete main machinery
+                    print(f"✅ Deleted main machinery row at {row_index}")
+                    
+                    return {"status": "success", "message": f"Main machinery row {row_index} and trailer row {row_index + 1} deleted successfully"}
+                else:
+                    # Delete only main machinery
+                    sheet.delete_rows(row_index)
+                    print(f"✅ Deleted main machinery row at {row_index} (no trailer)")
+                    
+                    return {"status": "success", "message": f"Main machinery row {row_index} deleted successfully"}
         
-        # Delete the row from the sheet
-        sheet.delete_rows(row_index)
-        
-        # ✅ REMOVED: Equipment_List auto-delete logic (sheet no longer exists)
-        
-        return {"status": "success", "message": f"Row {row_index} deleted successfully"}
+        # ========================================================================
+        #  Default logic for other sheets
+        # ========================================================================
+        else:
+            # For non-Suivi sheets, simple deletion
+            sheet.delete_rows(row_index)
+            return {"status": "success", "message": f"Row {row_index} deleted successfully"}
         
     except Exception as e:
+        print(f"❌ Error in delete_row: {str(e)}")
         return {"status": "error", "message": str(e)}
