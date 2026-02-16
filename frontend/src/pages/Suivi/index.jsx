@@ -13,7 +13,7 @@ const SuiviMenu = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!PAGE_PERMISSIONS.SUIVI.includes(user?.role)) {  // ✅ Changed from SUIVILIST to SUIVI
+    if (!PAGE_PERMISSIONS.SUIVI.includes(user?.role)) {
       navigate('/');
     }
   }, [user, navigate]);
@@ -59,7 +59,7 @@ const SuiviMenu = () => {
         </h1>
         <p className="text-gray-400 mb-8">{t('suivi.menu.subtitle')}</p>
 
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-2 max-w-4xl">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-2 max-w-4xl mx-auto">  {/* ✅ Added mx-auto */}
           {visibleCards.map((card) => (
             <Link to={card.link} key={card.link}>
               <Card
