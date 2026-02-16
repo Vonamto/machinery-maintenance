@@ -277,7 +277,7 @@ export default function MaintenanceHistory() {
 
       <div className="max-w-7xl mx-auto p-6">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/maintenance')}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
           <ArrowLeft
