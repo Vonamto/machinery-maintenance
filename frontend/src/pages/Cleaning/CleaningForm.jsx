@@ -80,7 +80,7 @@ export default function CleaningForm() {
     // Only update drivers if NO plate is selected (plate has priority over model)
     if (!form["Plate Number"]) {
       // Get all drivers assigned to equipment of this model type
-      const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
+      const allEquipment = cache.getEquipment ? cache.getEquipmentList() : [];
       const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === model);
       const driversForThisModel = [
         ...new Set(
@@ -102,7 +102,7 @@ export default function CleaningForm() {
     if (!plate) {
       // If plate is cleared but model is still selected, restore drivers for that model
       if (form["Model / Type"]) {
-        const allEquipment = cache.getEquipment ? cache.getEquipment() : [];
+        const allEquipment = cache.getEquipment ? cache.getEquipmentList() : [];
         const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === form["Model / Type"]);
         const driversForThisModel = [
           ...new Set(
@@ -137,7 +137,7 @@ export default function CleaningForm() {
     if (!driver) return;
 
     // Get all equipment that this driver is assigned to
-    const allEquipment = cache.getEquipment ? cache.getEquipment() : cache.equipment || [];
+    const allEquipment = cache.getEquipment ? cache.getEquipmentList() : cache.equipment || [];
     const matches = (allEquipment || []).filter(
       (e) => e["Driver 1"] === driver || e["Driver 2"] === driver || e["Driver"] === driver
     );
@@ -304,7 +304,7 @@ export default function CleaningForm() {
                 {plateOptions.length
                   ? plateOptions.map((p) => (<option key={p} value={p}>{p}</option>))
                   : cache.getEquipment
-                  ? (cache.getEquipment() || []).map((e) => (<option key={e["Plate Number"]} value={e["Plate Number"]}>{e["Plate Number"]}</option>))
+                  ? (cache.getEquipmentList() || []).map((e) => (<option key={e["Plate Number"]} value={e["Plate Number"]}>{e["Plate Number"]}</option>))
                   : null}
               </select>
             </div>
@@ -320,7 +320,7 @@ export default function CleaningForm() {
                 <option value="">{t("cleaning.form.chooseDriver")}</option>
                 {driverOptions.length
                   ? driverOptions.map((d) => (<option key={d} value={d}>{d}</option>))
-                  : Array.from(new Set((cache.getEquipment ? cache.getEquipment() : cache.equipment || []).flatMap((eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]]).filter(Boolean))).map((d) => (<option key={d} value={d}>{d}</option>))}
+                  : Array.from(new Set((cache.getEquipment ? cache.getEquipmentList() : cache.equipment || []).flatMap((eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]]).filter(Boolean))).map((d) => (<option key={d} value={d}>{d}</option>))}
               </select>
             </div>
           </div>
