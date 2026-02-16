@@ -157,7 +157,6 @@ def get_suivi():
 @require_token
 def get_data(sheet_name):
     aliases = {
-        "equipment": "Equipment_List",
         "users": "Users"
     }
     sheet_key = aliases.get(sheet_name.lower(), sheet_name)
