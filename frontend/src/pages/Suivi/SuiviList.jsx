@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { PAGE_PERMISSIONS, canUserPerformAction } from '../../config/roles';
 import { fetchSuivi, deleteSuiviEntry, fetchMachineryTypes } from '../../api/api';
 import { formatDateForDisplay, getDaysUntilExpiry } from '../../utils/dateUtils';
+import CONFIG from '../../config';
 
 const SuiviList = () => {
   const navigate = useNavigate();
@@ -52,12 +53,11 @@ const SuiviList = () => {
     return item.Machinery === 'Trailer';
   };
 
-  // ✅ FIXED: Get driver's full name from Users sheet by username
-  const getDriverFullName = async (username) => {
+  // ✅ STEP 1: Get driver's Full Name from Users sheet by Username
+  const getDriverFullNameFromUsers = async (username) => {
     try {
       const token = localStorage.getItem('token');
-      // Fetch full users data from /api/users endpoint
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://machinerybackend.onrender.com'}/api/users`, {
+      const response = await fetch(`${CONFIG.BACKEND_URL}/api/usernames`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -69,16 +69,32 @@ const SuiviList = () => {
       const usersData = await response.json();
       console.log('📋 Users data:', usersData);
       
-      // Find the user with matching Username (case-insensitive)
-      const foundUser = usersData.find(u => 
-        u.Username && u.Username.toLowerCase() === username.toLowerCase()
+      // Find the user with matching Name field (which is actually the Full Name)
+      // The fetchUsernames API returns {Name: "Full Name", Role: "Driver"}
+      const usernameLower = username.toLowerCase().trim();
+      
+      // Try to find by matching the Name field (since we don't have Username field in the response)
+      // We need to match username against the Full Name field
+      // Actually, let's check if any Full Name contains this username pattern
+      
+      // Better approach: Try exact match first, then partial
+      let foundUser = usersData.find(u => 
+        u.Name && u.Name.toLowerCase().trim() === usernameLower
       );
       
-      if (foundUser && foundUser['Full Name']) {
-        console.log(`✅ Found full name for username "${username}": "${foundUser['Full Name']}"`);
-        return foundUser['Full Name'];
+      // If not found, try to find where username appears in the name
+      if (!foundUser) {
+        foundUser = usersData.find(u => 
+          u.Name && u.Name.toLowerCase().includes(usernameLower)
+        );
+      }
+      
+      if (foundUser && foundUser.Name) {
+        console.log(`✅ Found full name for username "${username}": "${foundUser.Name}"`);
+        return foundUser.Name;
       } else {
         console.log(`❌ Could not find full name for username: ${username}`);
+        console.log('Available users:', usersData.map(u => u.Name));
         return null;
       }
     } catch (error) {
@@ -87,22 +103,22 @@ const SuiviList = () => {
     }
   };
 
-  // ✅ FIXED: Helper to filter machinery for drivers by Full Name (case-insensitive)
-  const filterMachineryForDriver = (machineryData, driverFullName) => {
-    console.log('🔍 filterMachineryForDriver called with Full Name:', driverFullName);
-    const result = [];
+  // ✅ STEP 2 & 3: Find all machinery where driver's Full Name appears in Driver 1 or Driver 2
+  const getDriverPlateNumbers = (machineryData, driverFullName) => {
+    console.log('🔍 Looking for plate numbers where driver is:', driverFullName);
+    const plateNumbers = [];
     const driverNameLower = driverFullName.toLowerCase().trim();
     
     for (let i = 0; i < machineryData.length; i++) {
       const item = machineryData[i];
       
-      // Skip if this is a standalone trailer row (will be added via its parent)
+      // Skip trailers in this step
       if (isTrailerRow(item)) continue;
       
       const driver1 = (item['Driver 1'] || '').toLowerCase().trim();
       const driver2 = (item['Driver 2'] || '').toLowerCase().trim();
       
-      // ✅ Case-insensitive match by Full Name
+      // Exact match (case-insensitive)
       const isDriver1 = driver1 === driverNameLower;
       const isDriver2 = driver2 === driverNameLower;
       
@@ -111,21 +127,43 @@ const SuiviList = () => {
       console.log(`    Driver 2: "${item['Driver 2']}" === "${driverFullName}"? ${isDriver2}`);
       
       if (isDriver1 || isDriver2) {
+        plateNumbers.push(item['Plate Number']);
+        console.log(`    ✅ MATCH! Added plate number: ${item['Plate Number']}`);
+      }
+    }
+    
+    console.log(`🎯 Total plate numbers found: ${plateNumbers.length}`, plateNumbers);
+    return plateNumbers;
+  };
+
+  // ✅ STEP 4 & 5: Filter machinery by plate numbers and include trailers
+  const filterMachineryByPlateNumbers = (machineryData, plateNumbers) => {
+    console.log('🔍 Filtering machinery by plate numbers:', plateNumbers);
+    const result = [];
+    
+    for (let i = 0; i < machineryData.length; i++) {
+      const item = machineryData[i];
+      
+      // Skip if this is a trailer row (will be added via its parent)
+      if (isTrailerRow(item)) continue;
+      
+      // Check if this plate number is in our list
+      if (plateNumbers.includes(item['Plate Number'])) {
         // Add the main machinery
         result.push(item);
-        console.log(`    ✅ MATCH! Added machinery ${item['Plate Number']}`);
+        console.log(`✅ Added machinery: ${item['Plate Number']}`);
         
         // Check if next row is a trailer for this machinery
         const nextRow = machineryData[i + 1];
         if (nextRow && isTrailerRow(nextRow)) {
           // Add the trailer as well
           result.push(nextRow);
-          console.log(`    ✅ Also added trailer ${nextRow['Plate Number']}`);
+          console.log(`✅ Also added trailer: ${nextRow['Plate Number']}`);
         }
       }
     }
     
-    console.log(`🎯 Total machinery found for driver: ${result.length}`);
+    console.log(`🎯 Total items in result (machinery + trailers): ${result.length}`);
     return result;
   };
 
@@ -147,22 +185,34 @@ const SuiviList = () => {
       console.log('👤 User role:', user?.role);
       console.log('👤 User username:', user?.username);
       
-      // ✅ DRIVER ROLE FILTERING - Get Full Name from Users sheet first
+      // ✅ DRIVER ROLE FILTERING - Complete Logic
       let filteredData = machineryData || [];
       
       if (user?.role === 'Driver' && user?.username) {
         console.log(`🚗 Driver detected! Username: "${user.username}"`);
+        console.log('🔄 Starting driver filtering process...');
         
-        // Step 1: Get driver's full name from Users sheet
-        const driverFullName = await getDriverFullName(user.username);
+        // STEP 1: Get Full Name from Users sheet
+        const driverFullName = await getDriverFullNameFromUsers(user.username);
         
         if (driverFullName) {
-          console.log(`✅ Retrieved Full Name: "${driverFullName}"`);
-          // Step 2: Filter machinery by full name (case-insensitive)
-          filteredData = filterMachineryForDriver(machineryData, driverFullName);
-          console.log(`✅ Filtered results (${filteredData.length} items):`, filteredData);
+          console.log(`✅ STEP 1 COMPLETE: Retrieved Full Name: "${driverFullName}"`);
+          
+          // STEP 2 & 3: Get all plate numbers where this driver is assigned
+          const driverPlateNumbers = getDriverPlateNumbers(machineryData, driverFullName);
+          
+          if (driverPlateNumbers.length > 0) {
+            console.log(`✅ STEP 2 & 3 COMPLETE: Found ${driverPlateNumbers.length} plate numbers`);
+            
+            // STEP 4 & 5: Filter by those plate numbers (includes trailers)
+            filteredData = filterMachineryByPlateNumbers(machineryData, driverPlateNumbers);
+            console.log(`✅ STEP 4 & 5 COMPLETE: Filtered ${filteredData.length} items (machinery + trailers)`);
+          } else {
+            console.log('⚠️ No machinery assigned to this driver');
+            filteredData = [];
+          }
         } else {
-          console.log('⚠️ Could not retrieve full name, showing no machinery');
+          console.log('⚠️ Could not retrieve full name from Users sheet');
           filteredData = [];
         }
       } else {
