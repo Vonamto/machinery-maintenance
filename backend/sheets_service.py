@@ -47,7 +47,7 @@ drive_service = build("drive", "v3", credentials=creds)
 #  ✅  Google Sheets access (still uses service account)
 # =====================================================
 service_account_info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
-service_account_info["private_key"] = service_account_info["private_key"].replace("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n", "\\\\\\\\\\\\\\\\n")
+service_account_info["private_key"] = service_account_info["private_key"].replace("\\n", "\n")
 
 sheet_creds = Credentials.from_service_account_info(
     service_account_info,
@@ -269,7 +269,7 @@ def get_sheet_data(sheet_name):
         return jsonify({"error": str(e)})
 
 # =====================================================
-#  ✅  Append Row (Add) - UPDATED FOR CHECKLIST & SUIVI
+#  ✅  Append Row (Add) - UPDATED FOR CHECKLIST & SUIVI WITH TRAILER SUPPORT
 # =====================================================
 def append_row(sheet_name, new_row):
     try:
@@ -315,31 +315,129 @@ def append_row(sheet_name, new_row):
                     filename = f"{sheet_name}_{key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                     new_row[key] = save_image_to_drive(new_row[key], filename, sheet_name)
 
-        # ---------------------------------------------------
-        #  NEW: SPECIAL LOGIC for Suivi Sheet - PDF Documents
-        # ---------------------------------------------------
+        # ========================================================================
+        #  ✅ UPDATED: SPECIAL LOGIC for Suivi Sheet - TRAILER SUPPORT + NO EQUIPMENT_LIST
+        # ========================================================================
         if sheet_name == "Suivi":
+            # Get machinery type mapping from MachineryTypes sheet
+            machinery_types_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("MachineryTypes")
+            machinery_types_data = machinery_types_sheet.get_all_records()
+            
+            # Build mapping dictionary: Machinery name -> Equipment Type
+            machinery_to_equipment_type = {}
+            for row in machinery_types_data:
+                english_name = row.get('English', '')
+                equipment_mapping = row.get('Equipment Type Mapping', '')
+                if english_name and equipment_mapping:
+                    machinery_to_equipment_type[english_name] = equipment_mapping
+            
+            # ===================================================================
+            # STEP 1: Build and append MAIN MACHINERY row
+            # ===================================================================
             plate_number = new_row.get('Plate Number', 'Unknown')
             driver1_name = new_row.get('Driver 1', 'Unknown').replace(' ', '_')
             driver2_name = new_row.get('Driver 2', 'Unknown').replace(' ', '_')
+            machinery_type = new_row.get('Machinery', '')
+            
+            # ✅ NEW: Get Equipment Type from mapping and store in Suivi directly
+            equipment_type = machinery_to_equipment_type.get(machinery_type, '')
+            
+            # Build main machinery row (copy all fields from new_row, add Equipment Type)
+            main_machinery_row = {}
+            for h in headers:
+                if h == 'Equipment Type':
+                    main_machinery_row[h] = equipment_type
+                else:
+                    main_machinery_row[h] = new_row.get(h, '')
             
             # Handle Machinery Documents PDF
-            if 'Documents' in new_row and isinstance(new_row['Documents'], str) and new_row['Documents'].startswith('data:application/pdf'):
+            if 'Documents' in main_machinery_row and isinstance(main_machinery_row['Documents'], str) and main_machinery_row['Documents'].startswith('data:application/pdf'):
                 filename = f"Machinery_{plate_number}_Documents.pdf"
-                new_row['Documents'] = save_pdf_to_drive(new_row['Documents'], filename, FOLDERAID_MACHINERY_DOCS)
+                main_machinery_row['Documents'] = save_pdf_to_drive(main_machinery_row['Documents'], filename, FOLDERAID_MACHINERY_DOCS)
             
             # Handle Driver 1 Documents PDF
-            if 'Driver 1 Doc' in new_row and isinstance(new_row['Driver 1 Doc'], str) and new_row['Driver 1 Doc'].startswith('data:application/pdf'):
+            if 'Driver 1 Doc' in main_machinery_row and isinstance(main_machinery_row['Driver 1 Doc'], str) and main_machinery_row['Driver 1 Doc'].startswith('data:application/pdf'):
                 filename = f"Driver1_{driver1_name}_{plate_number}.pdf"
-                new_row['Driver 1 Doc'] = save_pdf_to_drive(new_row['Driver 1 Doc'], filename, FOLDERAID_OPERATORS)
+                main_machinery_row['Driver 1 Doc'] = save_pdf_to_drive(main_machinery_row['Driver 1 Doc'], filename, FOLDERAID_OPERATORS)
             
             # Handle Driver 2 Documents PDF
-            if 'Driver 2 Doc' in new_row and isinstance(new_row['Driver 2 Doc'], str) and new_row['Driver 2 Doc'].startswith('data:application/pdf'):
+            if 'Driver 2 Doc' in main_machinery_row and isinstance(main_machinery_row['Driver 2 Doc'], str) and main_machinery_row['Driver 2 Doc'].startswith('data:application/pdf'):
                 filename = f"Driver2_{driver2_name}_{plate_number}.pdf"
-                new_row['Driver 2 Doc'] = save_pdf_to_drive(new_row['Driver 2 Doc'], filename, FOLDERAID_OPERATORS)
+                main_machinery_row['Driver 2 Doc'] = save_pdf_to_drive(main_machinery_row['Driver 2 Doc'], filename, FOLDERAID_OPERATORS)
+            
+            # Prepare row for Suivi sheet
+            row_to_add = []
+            for h in headers:
+                value = main_machinery_row.get(h, "")
+                # Auto-fill timestamps if empty
+                if h.strip().lower() in ["date", "request date", "timestamp"] and not value:
+                    value = current_time
+                row_to_add.append(value)
+            
+            # Append main machinery row to Suivi
+            sheet.append_row(row_to_add)
+            print(f"✅ Appended main machinery to Suivi: {plate_number}")
+            
+            # ===================================================================
+            # STEP 2: Check if TRAILER exists and append TRAILER row
+            # ===================================================================
+            has_trailer = (
+                new_row.get('HasTrailer') in [True, 'Yes', 'true', 'yes'] or
+                (new_row.get('Trailer Model/Type') and new_row.get('Trailer Plate'))
+            )
+            
+            if has_trailer:
+                print(f"🚛 Trailer detected for {plate_number}, creating trailer row...")
+                
+                # Build trailer row
+                trailer_row = {}
+                for h in headers:
+                    if h == 'Status':
+                        trailer_row[h] = ''  # Empty
+                    elif h == 'Machinery':
+                        trailer_row[h] = 'Trailer'  # ✅ Identifier
+                    elif h == 'Equipment Type':
+                        trailer_row[h] = 'Trailer'  # ✅ Hard-coded
+                    elif h == 'Model / Type':
+                        trailer_row[h] = new_row.get('Trailer Model/Type', '')
+                    elif h == 'Plate Number':
+                        trailer_row[h] = new_row.get('Trailer Plate', '')
+                    elif h == 'Driver 1' or h == 'Driver 2':
+                        trailer_row[h] = ''  # Trailers don't have drivers
+                    elif h == 'Insurance':
+                        trailer_row[h] = new_row.get('Trailer Insurance', '')
+                    elif h == 'Technical Inspection':
+                        trailer_row[h] = new_row.get('Trailer Technical', '')
+                    elif h == 'Certificate':
+                        trailer_row[h] = new_row.get('Trailer Certificate', '')
+                    elif h == 'Inspection Date' or h == 'Next Inspection':
+                        trailer_row[h] = ''  # Trailers don't have these
+                    elif h == 'Documents':
+                        trailer_row[h] = new_row.get('Trailer Documents', '')
+                    elif h == 'Driver 1 Doc' or h == 'Driver 2 Doc':
+                        trailer_row[h] = ''  # No driver docs for trailer
+                    else:
+                        trailer_row[h] = ''  # All other fields empty
+                
+                # Handle Trailer Documents PDF upload
+                if 'Documents' in trailer_row and isinstance(trailer_row['Documents'], str) and trailer_row['Documents'].startswith('data:application/pdf'):
+                    trailer_plate = new_row.get('Trailer Plate', 'Unknown')
+                    filename = f"Trailer_{trailer_plate}_Documents.pdf"
+                    trailer_row['Documents'] = save_pdf_to_drive(trailer_row['Documents'], filename, FOLDERAID_MACHINERY_DOCS)
+                
+                # Prepare trailer row for Suivi sheet
+                trailer_row_to_add = [trailer_row.get(h, '') for h in headers]
+                
+                # Append trailer row immediately after main machinery
+                sheet.append_row(trailer_row_to_add)
+                print(f"✅ Appended trailer row to Suivi: {new_row.get('Trailer Plate', 'Unknown')}")
+            
+            # ✅ REMOVED: Equipment_List auto-copy logic (sheet no longer exists)
+            
+            return {"status": "success", "added": new_row, "timestamp": current_time}
 
         # ---------------------------------------------------
-        #  Write to Sheet
+        #  Default logic for other sheets
         # ---------------------------------------------------
         row_to_add = []
         for h in headers:
@@ -351,58 +449,13 @@ def append_row(sheet_name, new_row):
 
         sheet.append_row(row_to_add)
 
-        # ---------------------------------------------------
-        #  NEW: Auto-copy Suivi data to Equipment_List sheet (DYNAMIC MAPPING)
-        # ---------------------------------------------------
-        if sheet_name == "Suivi":
-            try:
-                equipment_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Equipment_List")
-                eq_headers = equipment_sheet.row_values(1)
-                
-                # Get machinery type mapping dynamically from Machinery_Types sheet
-                machinery_types_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Machinery_Types")
-                machinery_types_data = machinery_types_sheet.get_all_records()
-                
-                # Build mapping dictionary from sheet data
-                machinery_to_equipment_type = {}
-                for row in machinery_types_data:
-                    english_name = row.get('English', '')
-                    equipment_mapping = row.get('Equipment_Type_Mapping', '')
-                    if english_name and equipment_mapping:
-                        machinery_to_equipment_type[english_name] = equipment_mapping
-                
-                # Map Suivi data to Equipment_List structure
-                machinery_type = new_row.get('Machinery', '')
-                equipment_type = machinery_to_equipment_type.get(machinery_type, '')
-                
-                equipment_row = {
-                    'Status': new_row.get('Status', ''),
-                    'Equipment Type': equipment_type,
-                    'Model / Type': new_row.get('Model / Type', ''),
-                    'Plate Number': new_row.get('Plate Number', ''),
-                    'Driver 1': new_row.get('Driver 1', ''),
-                    'Driver 2': new_row.get('Driver 2', ''),
-                    'Notes': ''
-                }
-                
-                # Prepare row in correct column order
-                eq_row_to_add = [equipment_row.get(h, '') for h in eq_headers]
-                
-                # Append to Equipment_List
-                equipment_sheet.append_row(eq_row_to_add)
-                print(f"Auto-copied to Equipment_List: {plate_number}")
-                
-            except Exception as e:
-                print(f"Auto-copy to Equipment_List failed: {str(e)}")
-                # Continue execution even if auto-copy fails
-
         return {"status": "success", "added": new_row, "timestamp": current_time}
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 # =====================================================
-#  ✅  Update Row (Edit) - UPDATED FOR SUIVI PDF REPLACEMENT AND EQUIPMENT_LIST SYNC
+#  ✅  Update Row (Edit) - UPDATED FOR SUIVI PDF REPLACEMENT (NO EQUIPMENT_LIST)
 # =====================================================
 def update_row(sheet_name, row_index, updated_data):
     try:
@@ -482,54 +535,14 @@ def update_row(sheet_name, row_index, updated_data):
         # Update specific row
         sheet.update(range_name=f"A{row_index}:Z{row_index}", values=[updated_row_values])
 
-        # ===================================================================
-        # NEW: Auto-update Equipment_List sheet if editing Suivi
-        # ===================================================================
-        if sheet_name == "Suivi":
-            try:
-                equipment_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Equipment_List")
-                eq_headers = equipment_sheet.row_values(1)
-                
-                # Get machinery type mapping
-                machinery_types_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Machinery_Types")
-                machinery_types_data = machinery_types_sheet.get_all_records()
-                machinery_to_equipment_type = {}
-                for row in machinery_types_data:
-                    english_name = row.get('English', '')
-                    equipment_mapping = row.get('Equipment_Type_Mapping', '')
-                    if english_name and equipment_mapping:
-                        machinery_to_equipment_type[english_name] = equipment_mapping
-                
-                # Map Suivi data to Equipment_List structure
-                machinery_type = current_row.get('Machinery', '')
-                equipment_type = machinery_to_equipment_type.get(machinery_type, '')
-                
-                equipment_row = {
-                    'Status': current_row.get('Status', ''),
-                    'Equipment Type': equipment_type,
-                    'Model / Type': current_row.get('Model / Type', ''),
-                    'Plate Number': current_row.get('Plate Number', ''),
-                    'Driver 1': current_row.get('Driver 1', ''),
-                    'Driver 2': current_row.get('Driver 2', ''),
-                    'Notes': ''
-                }
-                
-                # Prepare row in correct column order
-                eq_row_to_update = [equipment_row.get(h, '') for h in eq_headers]
-                
-                # Update same row index in Equipment_List
-                equipment_sheet.update(range_name=f"A{row_index}:Z{row_index}", values=[eq_row_to_update])
-                print(f"Auto-updated Equipment_List at row {row_index}")
-            except Exception as e:
-                print(f"Auto-update to Equipment_List failed: {e}")
-                # Continue execution even if auto-update fails
+        # ✅ REMOVED: Equipment_List auto-update logic (sheet no longer exists)
 
         return {"status": "success", "updated": current_row}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 # =====================================================
-#  ✅  Delete Row - UPDATED FOR SUIVI FILE DELETION AND EQUIPMENT_LIST SYNC
+#  ✅  Delete Row - UPDATED FOR SUIVI FILE DELETION (NO EQUIPMENT_LIST)
 # =====================================================
 def delete_row(sheet_name, row_index):
     """
@@ -568,17 +581,7 @@ def delete_row(sheet_name, row_index):
         # Delete the row from the sheet
         sheet.delete_rows(row_index)
         
-        # ===================================================================
-        # NEW: Auto-delete from Equipment_List sheet if deleting from Suivi
-        # ===================================================================
-        if sheet_name == "Suivi":
-            try:
-                equipment_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Equipment_List")
-                equipment_sheet.delete_rows(row_index)
-                print(f"Auto-deleted row {row_index} from Equipment_List")
-            except Exception as e:
-                print(f"Auto-delete from Equipment_List failed: {e}")
-                # Continue execution even if auto-delete fails
+        # ✅ REMOVED: Equipment_List auto-delete logic (sheet no longer exists)
         
         return {"status": "success", "message": f"Row {row_index} deleted successfully"}
         
