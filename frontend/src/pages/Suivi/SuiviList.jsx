@@ -6,7 +6,7 @@ import { ArrowLeft, Search, Edit, Trash2, Plus, FileText, Loader2, Hash, Truck }
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { PAGE_PERMISSIONS, canUserPerformAction } from '../../config/roles';
-import { fetchSuivi, deleteSuiviEntry, fetchMachineryTypes } from '../../api/api';
+import { fetchSuivi, deleteSuiviEntry, fetchMachineryTypes, fetchUsernames } from '../../api/api';
 import { formatDateForDisplay, getDaysUntilExpiry } from '../../utils/dateUtils';
 
 const SuiviList = () => {
@@ -52,9 +52,34 @@ const SuiviList = () => {
     return item.Machinery === 'Trailer';
   };
 
-  // ✅ NEW: Helper to filter machinery for drivers
+  // ✅ NEW: Get driver's full name from Users sheet by username
+  const getDriverFullName = async (username) => {
+    try {
+      const token = localStorage.getItem('token');
+      const usersData = await fetchUsernames(token);
+      console.log('📋 Users data:', usersData);
+      
+      // Find the user with matching username (case-insensitive)
+      const foundUser = usersData.find(u => 
+        u.Name && u.Name.toLowerCase() === username.toLowerCase()
+      );
+      
+      if (foundUser) {
+        console.log(`✅ Found full name for ${username}: ${foundUser.Name}`);
+        return foundUser.Name;
+      } else {
+        console.log(`❌ Could not find full name for username: ${username}`);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return null;
+    }
+  };
+
+  // ✅ FIXED: Helper to filter machinery for drivers by Full Name
   const filterMachineryForDriver = (machineryData, driverFullName) => {
-    console.log('🔍 filterMachineryForDriver called with:', driverFullName);
+    console.log('🔍 filterMachineryForDriver called with Full Name:', driverFullName);
     const result = [];
     
     for (let i = 0; i < machineryData.length; i++) {
@@ -63,13 +88,16 @@ const SuiviList = () => {
       // Skip if this is a standalone trailer row (will be added via its parent)
       if (isTrailerRow(item)) continue;
       
-      // Check if this driver is assigned to this machinery
-      const isDriver1 = item['Driver 1'] === driverFullName;
-      const isDriver2 = item['Driver 2'] === driverFullName;
+      const driver1 = item['Driver 1'] || '';
+      const driver2 = item['Driver 2'] || '';
+      
+      // ✅ EXACT match by Full Name
+      const isDriver1 = driver1.trim() === driverFullName.trim();
+      const isDriver2 = driver2.trim() === driverFullName.trim();
       
       console.log(`  Checking machinery ${item['Plate Number']}:`);
-      console.log(`    Driver 1: "${item['Driver 1']}" === "${driverFullName}" ? ${isDriver1}`);
-      console.log(`    Driver 2: "${item['Driver 2']}" === "${driverFullName}" ? ${isDriver2}`);
+      console.log(`    Driver 1: "${driver1}" === "${driverFullName}"? ${isDriver1}`);
+      console.log(`    Driver 2: "${driver2}" === "${driverFullName}"? ${isDriver2}`);
       
       if (isDriver1 || isDriver2) {
         // Add the main machinery
@@ -106,19 +134,28 @@ const SuiviList = () => {
       console.log('📦 Fetched machinery data:', machineryData);
       console.log('👤 Current user object:', user);
       console.log('👤 User role:', user?.role);
-      console.log('👤 User fullname:', user?.fullname);
       console.log('👤 User username:', user?.username);
       
-      // ✅ DRIVER ROLE FILTERING
+      // ✅ DRIVER ROLE FILTERING - Get Full Name from Users sheet first
       let filteredData = machineryData || [];
-      if (user?.role === 'Driver' && user?.fullname) {
-        console.log(`🚗 Driver detected! Filtering for: "${user.fullname}"`);
-        filteredData = filterMachineryForDriver(machineryData, user.fullname);
-        console.log(`✅ Filtered results (${filteredData.length} items):`, filteredData);
+      
+      if (user?.role === 'Driver' && user?.username) {
+        console.log(`🚗 Driver detected! Username: "${user.username}"`);
+        
+        // Step 1: Get driver's full name from Users sheet
+        const driverFullName = await getDriverFullName(user.username);
+        
+        if (driverFullName) {
+          console.log(`✅ Retrieved Full Name: "${driverFullName}"`);
+          // Step 2: Filter machinery by full name
+          filteredData = filterMachineryForDriver(machineryData, driverFullName);
+          console.log(`✅ Filtered results (${filteredData.length} items):`, filteredData);
+        } else {
+          console.log('⚠️ Could not retrieve full name, showing no machinery');
+          filteredData = [];
+        }
       } else {
-        console.log('❌ Not a driver or no fullname, showing all machinery');
-        console.log('   Condition check - Role is Driver?', user?.role === 'Driver');
-        console.log('   Condition check - Has fullname?', !!user?.fullname);
+        console.log('ℹ️ Not a driver or no username, showing all machinery');
       }
       
       setMachinery(filteredData);
