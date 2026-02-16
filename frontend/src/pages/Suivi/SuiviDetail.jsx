@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Edit, Trash2, FileText, Loader2, Calendar } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, FileText, Loader2, Calendar, Truck } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { PAGE_PERMISSIONS, canUserPerformAction } from '../../config/roles';
@@ -18,6 +18,7 @@ const SuiviDetail = () => {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [machinery, setMachinery] = useState(null);
+  const [trailer, setTrailer] = useState(null); // ✅ NEW: Trailer data
   const [machineryTypes, setMachineryTypes] = useState([]);
 
   // ✅ Centralized permission checks from roles.js
@@ -44,11 +45,18 @@ const SuiviDetail = () => {
         fetchMachineryTypes()
       ]);
       
-      const found = suiviData.find(item => item['Plate Number'] === plate);
+      const foundIndex = suiviData.findIndex(item => item['Plate Number'] === plate);
       
-      if (found) {
-        setMachinery(found);
+      if (foundIndex !== -1) {
+        const mainMachinery = suiviData[foundIndex];
+        setMachinery(mainMachinery);
         setMachineryTypes(typesData || []);
+
+        // ✅ NEW: Check if next row is a trailer
+        const nextRow = suiviData[foundIndex + 1];
+        if (nextRow && nextRow.Machinery === 'Trailer') {
+          setTrailer(nextRow);
+        }
       } else {
         alert(t('suivi.detail.notFound'));
         navigate('/suivi/list');
@@ -173,6 +181,7 @@ const SuiviDetail = () => {
     setDeleting(true);
 
     try {
+      // ✅ Backend will automatically delete trailer if exists
       const result = await deleteSuiviEntry(machinery.rowindex || 2);
       if (result.status === 'success') {
         alert(t('suivi.manage.alerts.deleteSuccess'));
@@ -233,6 +242,13 @@ const SuiviDetail = () => {
           <p className="text-xl font-semibold mt-2 flex items-center gap-2">
             <span className="text-pink-200">#</span> {machinery['Plate Number']}
           </p>
+          {/* ✅ NEW: Show trailer badge if exists */}
+          {trailer && (
+            <div className="mt-3 inline-flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-sm">
+              <Truck size={16} />
+              <span>{t('suivi.detail.hasTrailer') || 'Has Trailer'}</span>
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -248,7 +264,6 @@ const SuiviDetail = () => {
               <div>
                 <span className="text-sm font-medium text-gray-400">{t('suivi.detail.fields.status')}</span>
                 <div className="mt-1">
-                  {/* ✅ FIX: Using translation keys for Status */}
                   <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
                     machinery.Status === 'Permanent' 
                       ? 'bg-green-500/20 text-green-400' 
@@ -311,21 +326,48 @@ const SuiviDetail = () => {
             </div>
           </div>
 
-          {/* Document Expiry */}
+          {/* ✅ UPDATED: Document Expiry - Show TWO subsections if trailer exists */}
           <div>
             <h2 className="text-xl font-semibold text-pink-400 mb-4 pb-2 border-b border-gray-700 flex items-center gap-2">
               <FileText size={20} />
               {t('suivi.detail.sections.documents')}
             </h2>
             
-            <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-700 space-y-4">
-              {renderExpiryBadge(machinery.Insurance, t('suivi.detail.fields.insurance'))}
-              {renderExpiryBadge(machinery['Technical Inspection'], t('suivi.detail.fields.technical'))}
-              {renderExpiryBadge(machinery.Certificate, t('suivi.detail.fields.certificate'))}
+            {/* Truck/Main Machinery Subsection */}
+            <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-700 mb-4">
+              <h3 className="text-lg font-semibold text-purple-400 mb-3 flex items-center gap-2">
+                <FileText size={18} />
+                {t('suivi.detail.truckDocuments') || 'Truck Documents'}
+              </h3>
+              <div className="space-y-4">
+                {renderExpiryBadge(machinery.Insurance, t('suivi.detail.fields.insurance'))}
+                {renderExpiryBadge(machinery['Technical Inspection'], t('suivi.detail.fields.technical'))}
+                {renderExpiryBadge(machinery.Certificate, t('suivi.detail.fields.certificate'))}
+              </div>
             </div>
+
+            {/* ✅ NEW: Trailer Subsection (if exists) */}
+            {trailer && (
+              <div className="bg-gray-900/50 rounded-xl p-4 border border-orange-500/30">
+                <h3 className="text-lg font-semibold text-orange-400 mb-3 flex items-center gap-2">
+                  <Truck size={18} />
+                  {t('suivi.detail.trailerDocuments') || 'Trailer Documents'}
+                </h3>
+                <div className="mb-3 text-sm text-gray-300">
+                  <span className="font-medium">{t('suivi.detail.fields.model')}:</span> {trailer['Model / Type']}
+                  <br />
+                  <span className="font-medium">{t('suivi.detail.fields.plate')}:</span> {trailer['Plate Number']}
+                </div>
+                <div className="space-y-4">
+                  {renderExpiryBadge(trailer.Insurance, t('suivi.detail.fields.insurance'))}
+                  {renderExpiryBadge(trailer['Technical Inspection'], t('suivi.detail.fields.technical'))}
+                  {renderExpiryBadge(trailer.Certificate, t('suivi.detail.fields.certificate'))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Inspection Schedule Section */}
+          {/* Inspection Schedule Section (only for main machinery) */}
           <div>
             <h2 className="text-xl font-semibold text-pink-400 mb-4 pb-2 border-b border-gray-700 flex items-center gap-2">
               <Calendar size={20} />
@@ -340,22 +382,48 @@ const SuiviDetail = () => {
             </div>
           </div>
 
-          {/* Machinery Documents */}
-          {machinery.Documents && machinery.Documents !== 'N/A' && (
-            <div>
-              <h2 className="text-xl font-semibold text-pink-400 mb-4 pb-2 border-b border-gray-700 flex items-center gap-2">
-                <FileText size={20} />
-                {t('suivi.detail.fields.documents')}
-              </h2>
-              <button
-                onClick={() => handleDocumentClick(machinery.Documents)}
-                className="inline-flex items-center gap-2 px-4 py-3 bg-blue-600/20 text-blue-400 border border-blue-500/50 rounded-xl hover:bg-blue-600/30 transition-colors"
-              >
-                <FileText size={20} />
-                <span>{t('suivi.detail.fields.viewDocument')}</span>
-              </button>
+          {/* ✅ UPDATED: Machinery Documents - Show TWO sections if trailer exists */}
+          <div>
+            <h2 className="text-xl font-semibold text-pink-400 mb-4 pb-2 border-b border-gray-700 flex items-center gap-2">
+              <FileText size={20} />
+              {t('suivi.detail.sections.machineryDocuments') || 'Machinery Documents'}
+            </h2>
+            
+            <div className="space-y-4">
+              {/* Truck Documents */}
+              {machinery.Documents && machinery.Documents !== 'N/A' && (
+                <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-700">
+                  <h3 className="text-md font-semibold text-purple-400 mb-3">
+                    {t('suivi.detail.truckDocuments') || 'Truck Documents'}
+                  </h3>
+                  <button
+                    onClick={() => handleDocumentClick(machinery.Documents)}
+                    className="inline-flex items-center gap-2 px-4 py-3 bg-blue-600/20 text-blue-400 border border-blue-500/50 rounded-xl hover:bg-blue-600/30 transition-colors"
+                  >
+                    <FileText size={20} />
+                    <span>{t('suivi.detail.fields.viewDocument')}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* ✅ NEW: Trailer Documents (if exists) */}
+              {trailer && trailer.Documents && trailer.Documents !== 'N/A' && (
+                <div className="bg-gray-900/50 rounded-xl p-4 border border-orange-500/30">
+                  <h3 className="text-md font-semibold text-orange-400 mb-3 flex items-center gap-2">
+                    <Truck size={18} />
+                    {t('suivi.detail.trailerDocuments') || 'Trailer Documents'}
+                  </h3>
+                  <button
+                    onClick={() => handleDocumentClick(trailer.Documents)}
+                    className="inline-flex items-center gap-2 px-4 py-3 bg-orange-600/20 text-orange-400 border border-orange-500/50 rounded-xl hover:bg-orange-600/30 transition-colors"
+                  >
+                    <FileText size={20} />
+                    <span>{t('suivi.detail.fields.viewDocument')}</span>
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Action Buttons - ✅ Show only if user has permissions */}
           {(canEdit || canDelete) && (
