@@ -2,12 +2,27 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Search, Edit, Trash2, Plus, FileText, Loader2, Hash, Truck } from 'lucide-react';
+import { ArrowLeft, Search, Edit, Trash2, Plus, FileText, Loader2, Hash, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { PAGE_PERMISSIONS, canUserPerformAction } from '../../config/roles';
 import { fetchSuivi, deleteSuiviEntry, fetchMachineryTypes } from '../../api/api';
 import { formatDateForDisplay, getDaysUntilExpiry } from '../../utils/dateUtils';
+
+// =====================================================
+// ✅ FIXED: Locale-safe date formatter (DD MMM YYYY always)
+// =====================================================
+const formatDateSafe = (dateStr) => {
+  if (!dateStr || dateStr === 'N/A') return null;
+  const date = new Date(dateStr);
+  if (isNaN(date)) return dateStr;
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = date.toLocaleDateString('en-GB', { month: 'short' }).toUpperCase();
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
+const ITEMS_PER_PAGE = 20;
 
 const SuiviList = () => {
   const navigate = useNavigate();
@@ -22,6 +37,7 @@ const SuiviList = () => {
   const [typeFilter, setTypeFilter] = useState('');
   const [actionMode, setActionMode] = useState(null);
   const [deletingIndex, setDeletingIndex] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const canAdd = canUserPerformAction(user?.role, 'SUIVI_ADD');
   const canEdit = canUserPerformAction(user?.role, 'SUIVI_EDIT');
@@ -49,9 +65,8 @@ const SuiviList = () => {
     return item.Machinery === 'Trailer';
   };
 
-  // ==================== DRIVER FILTERING (like CleaningHistory) ====================
+  // ==================== DRIVER FILTERING ====================
   
-  // Step 1: Get allowed plate numbers for Driver role
   const driverAllowedPlates = useMemo(() => {
     if (user?.role !== 'Driver' || !user?.full_name) return null;
     
@@ -59,10 +74,8 @@ const SuiviList = () => {
     const driverFullName = user.full_name;
     
     allMachinery.forEach((item) => {
-      // Skip trailers
       if (isTrailerRow(item)) return;
       
-      // Check if driver's full name matches (case-insensitive)
       const driver1 = item['Driver 1'] || '';
       const driver2 = item['Driver 2'] || '';
       
@@ -77,31 +90,24 @@ const SuiviList = () => {
     return plateNumbers;
   }, [user, allMachinery]);
 
-  // Step 2: Filter machinery by plate numbers and include trailers
   const machinery = useMemo(() => {
-    // If not a driver, show all machinery
     if (user?.role !== 'Driver' || !Array.isArray(driverAllowedPlates)) {
       return allMachinery;
     }
     
-    // If driver has no assigned machinery
     if (driverAllowedPlates.length === 0) {
       return [];
     }
     
-    // Filter by allowed plate numbers and include trailers
     const result = [];
     for (let i = 0; i < allMachinery.length; i++) {
       const item = allMachinery[i];
       
-      // Skip trailers in this loop (they'll be added with their parent)
       if (isTrailerRow(item)) continue;
       
-      // Check if this plate number is allowed
       if (driverAllowedPlates.includes(item['Plate Number'])) {
         result.push(item);
         
-        // Include trailer if it exists (next row)
         const nextRow = allMachinery[i + 1];
         if (nextRow && isTrailerRow(nextRow)) {
           result.push(nextRow);
@@ -112,7 +118,7 @@ const SuiviList = () => {
     return result;
   }, [allMachinery, driverAllowedPlates, user]);
 
-  // ==================== LOAD DATA FROM SUIVI SHEET ====================
+  // ==================== LOAD DATA ====================
   useEffect(() => {
     loadData();
   }, []);
@@ -135,7 +141,7 @@ const SuiviList = () => {
     }
   };
 
-  // ==================== EXPIRY STATUS LOGIC (20 DAYS) ====================
+  // ==================== EXPIRY STATUS LOGIC ====================
   const getExpiryStatus = (dateStr) => {
     if (!dateStr || dateStr === 'N/A') return 'na';
     const days = getDaysUntilExpiry(dateStr);
@@ -146,19 +152,14 @@ const SuiviList = () => {
 
   const getExpiryBadgeClass = (status) => {
     switch (status) {
-      case 'expired':
-        return 'bg-red-500/20 text-red-400 border border-red-500/50';
-      case 'warning':
-        return 'bg-orange-500/20 text-orange-400 border border-orange-500/50';
-      case 'ok':
-        return 'bg-green-500/20 text-green-400 border border-green-500/50';
-      case 'na':
-        return 'bg-gray-500/20 text-gray-400 border border-gray-500/30';
-      default:
-        return 'bg-gray-500/20 text-gray-400 border border-gray-500/30';
+      case 'expired':  return 'bg-red-500/20 text-red-400 border border-red-500/50';
+      case 'warning':  return 'bg-orange-500/20 text-orange-400 border border-orange-500/50';
+      case 'ok':       return 'bg-green-500/20 text-green-400 border border-green-500/50';
+      default:         return 'bg-gray-500/20 text-gray-400 border border-gray-500/30';
     }
   };
 
+  // ✅ FIXED: uses formatDateSafe instead of formatDateForDisplay
   const renderExpiryCell = (dateStr) => {
     if (!dateStr || dateStr === 'N/A') {
       return (
@@ -173,10 +174,10 @@ const SuiviList = () => {
 
     return (
       <div className={`inline-block px-3 py-1 rounded-lg text-xs font-medium ${getExpiryBadgeClass(status)}`}>
-        <div className="font-semibold">{formatDateForDisplay(dateStr)}</div>
+        <div className="font-semibold">{formatDateSafe(dateStr)}</div>
         {status !== 'na' && (
           <div className="text-[10px] mt-0.5">
-            {days < 0 
+            {days < 0
               ? t('suivi.detail.fields.expired')
               : `(${days} ${days === 1 ? 'day' : 'days'} remaining)`
             }
@@ -186,6 +187,7 @@ const SuiviList = () => {
     );
   };
 
+  // ✅ FIXED: uses formatDateSafe
   const renderDateCell = (dateStr) => {
     if (!dateStr || dateStr === 'N/A') {
       return (
@@ -196,7 +198,7 @@ const SuiviList = () => {
     }
     return (
       <div className="inline-block px-3 py-1 rounded-lg text-xs font-medium bg-gray-600/20 text-gray-300 border border-gray-600/40">
-        {formatDateForDisplay(dateStr)}
+        {formatDateSafe(dateStr)}
       </div>
     );
   };
@@ -208,18 +210,13 @@ const SuiviList = () => {
     for (let i = 0; i < machinery.length; i++) {
       const item = machinery[i];
       
-      if (isTrailerRow(item)) {
-        continue;
-      }
+      if (isTrailerRow(item)) continue;
       
       const plateNumber = String(item['Plate Number'] || '').toLowerCase();
       const modelType = String(item['Model / Type'] || '').toLowerCase();
       const search = searchTerm.toLowerCase();
       
-      const matchesSearch = 
-        plateNumber.includes(search) ||
-        modelType.includes(search);
-        
+      const matchesSearch = plateNumber.includes(search) || modelType.includes(search);
       const matchesStatus = !statusFilter || item.Status === statusFilter;
       const matchesType = !typeFilter || item.Machinery === typeFilter;
       
@@ -235,6 +232,33 @@ const SuiviList = () => {
     
     return result;
   })();
+
+  // ==================== PAGINATION ====================
+  // Count only main (non-trailer) rows for pagination
+  const mainRowsOnly = filteredMachinery.filter(item => !isTrailerRow(item));
+  const totalPages = Math.ceil(mainRowsOnly.length / ITEMS_PER_PAGE);
+
+  // Build paginated list: pick the right main rows + their trailers
+  const paginatedMachinery = (() => {
+    const startMain = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endMain = startMain + ITEMS_PER_PAGE;
+    const pageMainRows = mainRowsOnly.slice(startMain, endMain);
+    const pageMainPlates = new Set(pageMainRows.map(r => r['Plate Number']));
+
+    const result = [];
+    for (let i = 0; i < filteredMachinery.length; i++) {
+      const item = filteredMachinery[i];
+      if (isTrailerRow(item)) continue;
+      if (!pageMainPlates.has(item['Plate Number'])) continue;
+      result.push(item);
+      const nextRow = filteredMachinery[i + 1];
+      if (nextRow && isTrailerRow(nextRow)) result.push(nextRow);
+    }
+    return result;
+  })();
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, typeFilter]);
 
   const uniqueStatuses = [...new Set(machinery.map(m => m.Status).filter(Boolean))];
   const uniqueTypes = [...new Set(machinery.map(m => m.Machinery).filter(Boolean))].filter(type => type !== 'Trailer');
@@ -255,8 +279,7 @@ const SuiviList = () => {
     }
     
     const confirmed = window.confirm(
-      t('suivi.manage.alerts.deleteConfirm')
-        .replace('{plate}', item['Plate Number'])
+      t('suivi.manage.alerts.deleteConfirm').replace('{plate}', item['Plate Number'])
     );
     
     if (!confirmed) return;
@@ -280,9 +303,7 @@ const SuiviList = () => {
   };
 
   const handleDocumentClick = (url) => {
-    if (url && url !== 'N/A') {
-      window.open(url, '_blank');
-    }
+    if (url && url !== 'N/A') window.open(url, '_blank');
   };
 
   // ==================== MOBILE CARD VIEW ====================
@@ -297,8 +318,8 @@ const SuiviList = () => {
       >
         <div className="flex justify-between items-start mb-3">
           <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-            item.Status === 'Permanent' 
-              ? 'bg-green-500/20 text-green-400' 
+            item.Status === 'Permanent'
+              ? 'bg-green-500/20 text-green-400'
               : 'bg-orange-500/20 text-orange-400'
           }`}>
             {item.Status === 'Permanent' ? t('suivi.status.permanent') : t('suivi.status.callOff')}
@@ -309,9 +330,7 @@ const SuiviList = () => {
           <div className="text-lg font-bold text-white">
             {getMachineryDisplayName(item.Machinery)}
           </div>
-          <div className="text-sm text-gray-400">
-            {item['Model / Type']}
-          </div>
+          <div className="text-sm text-gray-400">{item['Model / Type']}</div>
           <div className="flex items-center gap-2 text-gray-300">
             <Hash size={16} className="text-pink-400" />
             <span className="font-medium">{item['Plate Number']}</span>
@@ -327,8 +346,6 @@ const SuiviList = () => {
     );
   };
 
-  let rowNumber = 0;
-
   // ==================== RENDER ====================
   if (loading) {
     return (
@@ -343,6 +360,8 @@ const SuiviList = () => {
       </div>
     );
   }
+
+  let rowNumber = 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
@@ -420,10 +439,8 @@ const SuiviList = () => {
             )}
 
             {actionMode && (
-              <div className={`ml-4 text-sm ${
-                actionMode === 'edit' ? 'text-blue-400' : 'text-red-400'
-              }`}>
-                {actionMode === 'edit' 
+              <div className={`ml-4 text-sm ${actionMode === 'edit' ? 'text-blue-400' : 'text-red-400'}`}>
+                {actionMode === 'edit'
                   ? `ℹ️ ${t('suivi.list.editModeActive')}`
                   : `⚠️ ${t('suivi.list.deleteModeActive')}`
                 }
@@ -486,9 +503,11 @@ const SuiviList = () => {
 
             {/* DESKTOP VIEW */}
             <div className="hidden lg:block bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
+              {/* ✅ FIX: table wrapper has a max-height so only the table body scrolls */}
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-900/70 sticky top-0 z-10">
+                  {/* ✅ FIX: thead is sticky within the scrollable container */}
+                  <thead className="bg-gray-900/90 sticky top-0 z-10">
                     <tr>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">#</th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.status')}</th>
@@ -508,15 +527,12 @@ const SuiviList = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-700">
-                    {filteredMachinery.map((item, index) => {
+                    {paginatedMachinery.map((item, index) => {
                       const isTrailer = isTrailerRow(item);
-                      
-                      if (!isTrailer) {
-                        rowNumber++;
-                      }
+                      if (!isTrailer) rowNumber++;
 
                       return (
-                        <tr 
+                        <tr
                           key={index}
                           className={`hover:bg-gray-700/30 transition-colors ${isTrailer ? 'bg-gray-800/30' : ''}`}
                         >
@@ -527,8 +543,8 @@ const SuiviList = () => {
                           <td className="px-3 py-3">
                             {!isTrailer && (
                               <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
-                                item.Status === 'Permanent' 
-                                  ? 'bg-green-500/20 text-green-400' 
+                                item.Status === 'Permanent'
+                                  ? 'bg-green-500/20 text-green-400'
                                   : 'bg-orange-500/20 text-orange-400'
                               }`}>
                                 {item.Status === 'Permanent' ? t('suivi.status.permanent') : t('suivi.status.callOff')}
@@ -536,7 +552,7 @@ const SuiviList = () => {
                             )}
                           </td>
 
-                          <td 
+                          <td
                             onClick={() => handleDocumentClick(item.Documents)}
                             className="px-3 py-3 text-sm cursor-pointer hover:bg-gray-700/50 transition-colors rounded"
                           >
@@ -552,28 +568,28 @@ const SuiviList = () => {
 
                           <td className="px-3 py-3 text-sm text-white font-medium">{item['Model / Type']}</td>
 
-                          <td 
+                          <td
                             onClick={() => handleDocumentClick(item.Documents)}
                             className="px-3 py-3 text-sm text-pink-400 font-semibold cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded"
                           >
                             {item['Plate Number']}
                           </td>
 
-                          <td 
+                          <td
                             onClick={() => !isTrailer && handleDocumentClick(item['Driver 1 Doc'])}
                             className={`px-3 py-3 text-sm font-medium ${
-                              !isTrailer && item['Driver 1'] 
-                                ? 'text-blue-400 cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded' 
+                              !isTrailer && item['Driver 1']
+                                ? 'text-blue-400 cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded'
                                 : 'text-gray-500'
                             }`}
                           >
                             {!isTrailer && (item['Driver 1'] || '-')}
                           </td>
-                          <td 
+                          <td
                             onClick={() => !isTrailer && handleDocumentClick(item['Driver 2 Doc'])}
                             className={`px-3 py-3 text-sm font-medium ${
-                              !isTrailer && item['Driver 2'] 
-                                ? 'text-blue-400 cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded' 
+                              !isTrailer && item['Driver 2']
+                                ? 'text-blue-400 cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded'
                                 : 'text-gray-500'
                             }`}
                           >
@@ -583,7 +599,6 @@ const SuiviList = () => {
                           <td className="px-3 py-3 text-center">{renderExpiryCell(item.Insurance)}</td>
                           <td className="px-3 py-3 text-center">{renderExpiryCell(item['Technical Inspection'])}</td>
                           <td className="px-3 py-3 text-center">{renderExpiryCell(item.Certificate)}</td>
-                          
                           <td className="px-3 py-3 text-center">
                             {!isTrailer && renderDateCell(item['Inspection Date'])}
                           </td>
@@ -596,7 +611,6 @@ const SuiviList = () => {
                               <button
                                 onClick={() => handleEdit(item)}
                                 className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
-                                title="Edit (including trailer)"
                               >
                                 <Edit size={18} />
                               </button>
@@ -612,7 +626,6 @@ const SuiviList = () => {
                                     ? 'text-gray-500 cursor-not-allowed'
                                     : 'text-red-400 hover:bg-red-500/20'
                                 }`}
-                                title="Delete (including trailer)"
                               >
                                 {deletingIndex === index ? (
                                   <Loader2 size={18} className="animate-spin" />
@@ -629,6 +642,59 @@ const SuiviList = () => {
                   </tbody>
                 </table>
               </div>
+
+              {/* ✅ PAGINATION */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-700 bg-gray-900/50">
+                  <span className="text-sm text-gray-400">
+                    {t('common.page') || 'Page'} {currentPage} / {totalPages}
+                    &nbsp;·&nbsp;
+                    {mainRowsOnly.length} {t('suivi.list.total') || 'total'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                      .reduce((acc, p, idx, arr) => {
+                        if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+                        acc.push(p);
+                        return acc;
+                      }, [])
+                      .map((p, idx) =>
+                        p === '...' ? (
+                          <span key={`ellipsis-${idx}`} className="px-2 text-gray-500">…</span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => setCurrentPage(p)}
+                            className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+                              currentPage === p
+                                ? 'bg-pink-600 text-white font-semibold'
+                                : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        )
+                      )}
+
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
