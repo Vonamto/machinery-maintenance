@@ -46,7 +46,6 @@ const SuiviList = () => {
 
   const itemsPerPage = isMobile ? 10 : 15;
 
-  // Reset to page 1 whenever filters or view mode changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, typeFilter, itemsPerPage]);
@@ -59,16 +58,6 @@ const SuiviList = () => {
       return type?.arabic || englishName;
     }
     return englishName;
-  };
-
-  // ← Fixes Arabic date order: "Dec 31 2026" → "31 Dec 2026"
-  const formatDate = (dateStr) => {
-    const formatted = formatDateForDisplay(dateStr);
-    if (i18n.language === 'ar' && formatted) {
-      const parts = formatted.split(' ');
-      if (parts.length === 3) return `${parts[1]} ${parts[0]} ${parts[2]}`;
-    }
-    return formatted;
   };
 
   const isTrailerRow = (item) => {
@@ -178,7 +167,8 @@ const SuiviList = () => {
   const renderExpiryCell = (dateStr) => {
     if (!dateStr || dateStr === 'N/A') {
       return (
-        <div className={`inline-block px-3 py-1 rounded-lg text-xs font-medium ${getExpiryBadgeClass('na')}`}>
+        // ← dir="ltr" forces correct date order even in Arabic RTL layout
+        <div dir="ltr" className={`inline-block px-3 py-1 rounded-lg text-xs font-medium ${getExpiryBadgeClass('na')}`}>
           {t('suivi.detail.fields.notApplicable')}
         </div>
       );
@@ -188,8 +178,9 @@ const SuiviList = () => {
     const days = getDaysUntilExpiry(dateStr);
 
     return (
-      <div className={`inline-block px-3 py-1 rounded-lg text-xs font-medium ${getExpiryBadgeClass(status)}`}>
-        <div className="font-semibold">{formatDate(dateStr)}</div> {/* ← formatDate */}
+      // ← dir="ltr" forces correct date order even in Arabic RTL layout
+      <div dir="ltr" className={`inline-block px-3 py-1 rounded-lg text-xs font-medium ${getExpiryBadgeClass(status)}`}>
+        <div className="font-semibold">{formatDateForDisplay(dateStr)}</div>
         {status !== 'na' && (
           <div className="text-[10px] mt-0.5">
             {days < 0 
@@ -205,14 +196,15 @@ const SuiviList = () => {
   const renderDateCell = (dateStr) => {
     if (!dateStr || dateStr === 'N/A') {
       return (
-        <div className="inline-block px-3 py-1 rounded-lg text-xs font-medium bg-gray-500/20 text-gray-400 border border-gray-500/30">
+        <div dir="ltr" className="inline-block px-3 py-1 rounded-lg text-xs font-medium bg-gray-500/20 text-gray-400 border border-gray-500/30">
           -
         </div>
       );
     }
     return (
-      <div className="inline-block px-3 py-1 rounded-lg text-xs font-medium bg-gray-600/20 text-gray-300 border border-gray-600/40">
-        {formatDate(dateStr)} {/* ← formatDate */}
+      // ← dir="ltr" forces correct date order even in Arabic RTL layout
+      <div dir="ltr" className="inline-block px-3 py-1 rounded-lg text-xs font-medium bg-gray-600/20 text-gray-300 border border-gray-600/40">
+        {formatDateForDisplay(dateStr)}
       </div>
     );
   };
@@ -256,7 +248,6 @@ const SuiviList = () => {
   const uniqueTypes = [...new Set(machinery.map(m => m.Machinery).filter(Boolean))].filter(type => type !== 'Trailer');
 
   // ==================== PAGINATION LOGIC ====================
-  // Build logical groups: [machinery] or [machinery, trailer] — keeps pairs together
   const logicalGroups = [];
   for (let i = 0; i < filteredMachinery.length; i++) {
     const item = filteredMachinery[i];
@@ -421,7 +412,6 @@ const SuiviList = () => {
     );
   };
 
-  // rowNumber offset: continues counting from previous pages
   let rowNumber = (currentPage - 1) * itemsPerPage;
 
   // ==================== RENDER ====================
@@ -726,7 +716,7 @@ const SuiviList = () => {
               </div>
             </div>
 
-            {/* PAGINATION — shown for both mobile and desktop */}
+            {/* PAGINATION */}
             {renderPagination()}
           </>
         )}
