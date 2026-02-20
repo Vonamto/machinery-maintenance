@@ -61,6 +61,16 @@ const SuiviList = () => {
     return englishName;
   };
 
+  // ← Fixes Arabic date order: "Dec 31 2026" → "31 Dec 2026"
+  const formatDate = (dateStr) => {
+    const formatted = formatDateForDisplay(dateStr);
+    if (i18n.language === 'ar' && formatted) {
+      const parts = formatted.split(' ');
+      if (parts.length === 3) return `${parts[1]} ${parts[0]} ${parts[2]}`;
+    }
+    return formatted;
+  };
+
   const isTrailerRow = (item) => {
     return item.Machinery === 'Trailer';
   };
@@ -179,7 +189,7 @@ const SuiviList = () => {
 
     return (
       <div className={`inline-block px-3 py-1 rounded-lg text-xs font-medium ${getExpiryBadgeClass(status)}`}>
-        <div className="font-semibold">{formatDateForDisplay(dateStr)}</div>
+        <div className="font-semibold">{formatDate(dateStr)}</div> {/* ← formatDate */}
         {status !== 'na' && (
           <div className="text-[10px] mt-0.5">
             {days < 0 
@@ -202,7 +212,7 @@ const SuiviList = () => {
     }
     return (
       <div className="inline-block px-3 py-1 rounded-lg text-xs font-medium bg-gray-600/20 text-gray-300 border border-gray-600/40">
-        {formatDateForDisplay(dateStr)}
+        {formatDate(dateStr)} {/* ← formatDate */}
       </div>
     );
   };
@@ -571,7 +581,6 @@ const SuiviList = () => {
 
             {/* DESKTOP VIEW */}
             <div className="hidden lg:block bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
-              {/* ↓ overflow-y-auto + max-h makes the table scroll inside itself so sticky thead works */}
               <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-240px)]">
                 <table className="w-full">
                   <thead className="bg-gray-900 sticky top-0 z-10">
