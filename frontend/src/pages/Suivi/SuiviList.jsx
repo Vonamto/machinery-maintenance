@@ -44,7 +44,7 @@ const SuiviList = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const itemsPerPage = isMobile ? 10 : 15;
+  const itemsPerPage = isMobile ? 10 : 08;
 
   useEffect(() => {
     setCurrentPage(1);
