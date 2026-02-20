@@ -16,6 +16,7 @@ export default function Navbar({ user }) {
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSHint, setShowIOSHint] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -28,6 +29,10 @@ export default function Navbar({ user }) {
   }, []);
 
   useEffect(() => {
+    // Detect mobile device
+    const mobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+    setIsMobile(mobile);
+
     // Detect iOS (iPhone/iPad) and not already installed
     const ios = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
     const standalone = window.navigator.standalone;
@@ -101,8 +106,8 @@ export default function Navbar({ user }) {
       {/* Right: Actions */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
 
-        {/* Install App — Android */}
-        {installPrompt && (
+        {/* Install App — Android (mobile only) */}
+        {isMobile && installPrompt && (
           <button
             onClick={handleInstall}
             className="flex items-center gap-1 sm:gap-2 bg-green-600 hover:bg-green-700 text-white px-2 sm:px-3 py-2 rounded-lg transition text-sm"
@@ -113,8 +118,8 @@ export default function Navbar({ user }) {
           </button>
         )}
 
-        {/* Install App — iOS */}
-        {isIOS && (
+        {/* Install App — iOS (mobile only) */}
+        {isMobile && isIOS && (
           <div className="relative">
             <button
               onClick={() => setShowIOSHint((v) => !v)}
