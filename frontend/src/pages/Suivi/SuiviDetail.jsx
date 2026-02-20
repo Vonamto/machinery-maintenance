@@ -18,10 +18,9 @@ const SuiviDetail = () => {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [machinery, setMachinery] = useState(null);
-  const [trailer, setTrailer] = useState(null); // ✅ NEW: Trailer data
+  const [trailer, setTrailer] = useState(null);
   const [machineryTypes, setMachineryTypes] = useState([]);
 
-  // ✅ Centralized permission checks from roles.js
   const canEdit = canUserPerformAction(user?.role, 'SUIVI_EDIT');
   const canDelete = canUserPerformAction(user?.role, 'SUIVI_DELETE');
 
@@ -52,7 +51,6 @@ const SuiviDetail = () => {
         setMachinery(mainMachinery);
         setMachineryTypes(typesData || []);
 
-        // ✅ NEW: Check if next row is a trailer
         const nextRow = suiviData[foundIndex + 1];
         if (nextRow && nextRow.Machinery === 'Trailer') {
           setTrailer(nextRow);
@@ -70,7 +68,6 @@ const SuiviDetail = () => {
     }
   };
 
-  // Helper function to get display name based on language
   const getMachineryDisplayName = (englishName) => {
     if (i18n.language === 'ar') {
       const type = machineryTypes.find(t => t.english === englishName);
@@ -106,7 +103,8 @@ const SuiviDetail = () => {
       return (
         <div className="mb-4">
           <div className="text-sm font-medium text-gray-300 mb-2">{label}</div>
-          <span className={`inline-block px-3 py-2 rounded-lg text-sm ${getExpiryBadgeClass('na')}`}>
+          {/* ← dir="ltr" forces correct date order even in Arabic RTL layout */}
+          <span dir="ltr" className={`inline-block px-3 py-2 rounded-lg text-sm ${getExpiryBadgeClass('na')}`}>
             {t('suivi.detail.fields.notApplicable')}
           </span>
         </div>
@@ -119,7 +117,8 @@ const SuiviDetail = () => {
     return (
       <div className="mb-4">
         <div className="text-sm font-medium text-gray-300 mb-2">{label}</div>
-        <div className={`inline-block px-3 py-2 rounded-lg text-sm font-medium ${getExpiryBadgeClass(status)}`}>
+        {/* ← dir="ltr" forces correct date order even in Arabic RTL layout */}
+        <div dir="ltr" className={`inline-block px-3 py-2 rounded-lg text-sm font-medium ${getExpiryBadgeClass(status)}`}>
           <div className="font-semibold">{formatDateForDisplay(dateStr)}</div>
           {status !== 'na' && (
             <div className="text-xs mt-1">
@@ -134,7 +133,6 @@ const SuiviDetail = () => {
     );
   };
 
-  // Render normal date (non-expiry)
   const renderDateBadge = (dateStr, label) => {
     if (!dateStr || dateStr === 'N/A') {
       return (
@@ -148,7 +146,8 @@ const SuiviDetail = () => {
     return (
       <div className="mb-4">
         <div className="text-sm font-medium text-gray-300 mb-2">{label}</div>
-        <div className="inline-block px-3 py-2 rounded-lg text-sm font-medium bg-gray-600/20 text-gray-300 border border-gray-600/50">
+        {/* ← dir="ltr" forces correct date order even in Arabic RTL layout */}
+        <div dir="ltr" className="inline-block px-3 py-2 rounded-lg text-sm font-medium bg-gray-600/20 text-gray-300 border border-gray-600/50">
           <div className="font-semibold">{formatDateForDisplay(dateStr)}</div>
         </div>
       </div>
@@ -157,7 +156,6 @@ const SuiviDetail = () => {
 
   // ==================== ACTIONS ====================
   const handleEdit = () => {
-    // ✅ Check permission before editing
     if (!canEdit) {
       alert(t("requests.grease.menu.accessDenied.message"));
       return;
@@ -166,7 +164,6 @@ const SuiviDetail = () => {
   };
 
   const handleDelete = async () => {
-    // ✅ Check permission before deleting
     if (!canDelete) {
       alert(t("requests.grease.menu.accessDenied.message"));
       return;
@@ -181,7 +178,6 @@ const SuiviDetail = () => {
     setDeleting(true);
 
     try {
-      // ✅ Backend will automatically delete trailer if exists
       const result = await deleteSuiviEntry(machinery.rowindex || 2);
       if (result.status === 'success') {
         alert(t('suivi.manage.alerts.deleteSuccess'));
@@ -242,7 +238,6 @@ const SuiviDetail = () => {
           <p className="text-xl font-semibold mt-2 flex items-center gap-2">
             <span className="text-pink-200">#</span> {machinery['Plate Number']}
           </p>
-          {/* ✅ NEW: Show trailer badge if exists */}
           {trailer && (
             <div className="mt-3 inline-flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-sm">
               <Truck size={16} />
@@ -294,7 +289,6 @@ const SuiviDetail = () => {
             </h2>
             
             <div className="space-y-4">
-              {/* Driver 1 */}
               <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-700">
                 <span className="text-sm font-medium text-gray-400">{t('suivi.detail.fields.driver1')}</span>
                 <p className="mt-1 text-white">{machinery['Driver 1'] || '-'}</p>
@@ -308,7 +302,6 @@ const SuiviDetail = () => {
                 )}
               </div>
 
-              {/* Driver 2 */}
               {machinery['Driver 2'] && (
                 <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-700">
                   <span className="text-sm font-medium text-gray-400">{t('suivi.detail.fields.driver2')}</span>
@@ -326,14 +319,13 @@ const SuiviDetail = () => {
             </div>
           </div>
 
-          {/* ✅ UPDATED: Document Expiry - Show TWO subsections if trailer exists */}
+          {/* Document Expiry */}
           <div>
             <h2 className="text-xl font-semibold text-pink-400 mb-4 pb-2 border-b border-gray-700 flex items-center gap-2">
               <FileText size={20} />
               {t('suivi.detail.sections.documents')}
             </h2>
             
-            {/* Truck/Main Machinery Subsection */}
             <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-700 mb-4">
               <h3 className="text-lg font-semibold text-purple-400 mb-3 flex items-center gap-2">
                 <FileText size={18} />
@@ -346,7 +338,6 @@ const SuiviDetail = () => {
               </div>
             </div>
 
-            {/* ✅ NEW: Trailer Subsection (if exists) */}
             {trailer && (
               <div className="bg-gray-900/50 rounded-xl p-4 border border-orange-500/30">
                 <h3 className="text-lg font-semibold text-orange-400 mb-3 flex items-center gap-2">
@@ -367,7 +358,7 @@ const SuiviDetail = () => {
             )}
           </div>
 
-          {/* Inspection Schedule Section (only for main machinery) */}
+          {/* Inspection Schedule */}
           <div>
             <h2 className="text-xl font-semibold text-pink-400 mb-4 pb-2 border-b border-gray-700 flex items-center gap-2">
               <Calendar size={20} />
@@ -375,14 +366,12 @@ const SuiviDetail = () => {
             </h2>
             
             <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-700 space-y-4">
-              {/* Inspection Date (non-expiry) */}
               {renderDateBadge(machinery['Inspection Date'], t('suivi.detail.fields.inspectionDate'))}
-              {/* Next Inspection (expiry) */}
               {renderExpiryBadge(machinery['Next Inspection'], t('suivi.detail.fields.nextInspection'))}
             </div>
           </div>
 
-          {/* ✅ UPDATED: Machinery Documents - Show TWO sections if trailer exists */}
+          {/* Machinery Documents */}
           <div>
             <h2 className="text-xl font-semibold text-pink-400 mb-4 pb-2 border-b border-gray-700 flex items-center gap-2">
               <FileText size={20} />
@@ -390,7 +379,6 @@ const SuiviDetail = () => {
             </h2>
             
             <div className="space-y-4">
-              {/* Truck Documents */}
               {machinery.Documents && machinery.Documents !== 'N/A' && (
                 <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-700">
                   <h3 className="text-md font-semibold text-purple-400 mb-3">
@@ -406,7 +394,6 @@ const SuiviDetail = () => {
                 </div>
               )}
 
-              {/* ✅ NEW: Trailer Documents (if exists) */}
               {trailer && trailer.Documents && trailer.Documents !== 'N/A' && (
                 <div className="bg-gray-900/50 rounded-xl p-4 border border-orange-500/30">
                   <h3 className="text-md font-semibold text-orange-400 mb-3 flex items-center gap-2">
@@ -425,7 +412,7 @@ const SuiviDetail = () => {
             </div>
           </div>
 
-          {/* Action Buttons - ✅ Show only if user has permissions */}
+          {/* Action Buttons */}
           {(canEdit || canDelete) && (
             <div className="flex gap-4 pt-6 border-t border-gray-700">
               {canEdit && (
