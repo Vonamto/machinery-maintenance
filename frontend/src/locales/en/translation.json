@@ -123,6 +123,7 @@
       "choosePerformer": "--- Select Performer ---",
       "chooseDescription": "Describe the maintenance performed...",
       "descriptionPlaceholder": "Describe the maintenance performed...",
+      "chooseMechanic" : "Choose a Machanic",
       "photoBefore": "Photo Before",
       "photoAfter": "Photo After",
       "photoProblem": "Photo Repair / Problem",
