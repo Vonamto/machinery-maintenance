@@ -22,6 +22,8 @@ const SuiviList = () => {
   const [typeFilter, setTypeFilter] = useState('');
   const [actionMode, setActionMode] = useState(null);
   const [deletingIndex, setDeletingIndex] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   const canAdd = canUserPerformAction(user?.role, 'SUIVI_ADD');
   const canEdit = canUserPerformAction(user?.role, 'SUIVI_EDIT');
@@ -49,9 +51,8 @@ const SuiviList = () => {
     return item.Machinery === 'Trailer';
   };
 
-  // ==================== DRIVER FILTERING (like CleaningHistory) ====================
+  // ==================== DRIVER FILTERING ====================
   
-  // Step 1: Get allowed plate numbers for Driver role
   const driverAllowedPlates = useMemo(() => {
     if (user?.role !== 'Driver' || !user?.full_name) return null;
     
@@ -59,10 +60,8 @@ const SuiviList = () => {
     const driverFullName = user.full_name;
     
     allMachinery.forEach((item) => {
-      // Skip trailers
       if (isTrailerRow(item)) return;
       
-      // Check if driver's full name matches (case-insensitive)
       const driver1 = item['Driver 1'] || '';
       const driver2 = item['Driver 2'] || '';
       
@@ -77,31 +76,24 @@ const SuiviList = () => {
     return plateNumbers;
   }, [user, allMachinery]);
 
-  // Step 2: Filter machinery by plate numbers and include trailers
   const machinery = useMemo(() => {
-    // If not a driver, show all machinery
     if (user?.role !== 'Driver' || !Array.isArray(driverAllowedPlates)) {
       return allMachinery;
     }
     
-    // If driver has no assigned machinery
     if (driverAllowedPlates.length === 0) {
       return [];
     }
     
-    // Filter by allowed plate numbers and include trailers
     const result = [];
     for (let i = 0; i < allMachinery.length; i++) {
       const item = allMachinery[i];
       
-      // Skip trailers in this loop (they'll be added with their parent)
       if (isTrailerRow(item)) continue;
       
-      // Check if this plate number is allowed
       if (driverAllowedPlates.includes(item['Plate Number'])) {
         result.push(item);
         
-        // Include trailer if it exists (next row)
         const nextRow = allMachinery[i + 1];
         if (nextRow && isTrailerRow(nextRow)) {
           result.push(nextRow);
@@ -202,7 +194,7 @@ const SuiviList = () => {
   };
 
   // ==================== FILTERING ====================
-  const filteredMachinery = (() => {
+  const filteredMachinery = useMemo(() => {
     const result = [];
     
     for (let i = 0; i < machinery.length; i++) {
@@ -234,7 +226,29 @@ const SuiviList = () => {
     }
     
     return result;
-  })();
+  }, [machinery, searchTerm, statusFilter, typeFilter]);
+
+  // ==================== RESET PAGE ON FILTER CHANGE ====================
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, typeFilter]);
+
+  // ==================== PAGINATION (machinery + trailer = 1 unit) ====================
+  const paginatedData = useMemo(() => {
+    const groups = [];
+    for (let i = 0; i < filteredMachinery.length; i++) {
+      const item = filteredMachinery[i];
+      if (isTrailerRow(item)) continue;
+      const group = [item];
+      const next = filteredMachinery[i + 1];
+      if (next && isTrailerRow(next)) group.push(next);
+      groups.push(group);
+    }
+    const totalPages = Math.max(1, Math.ceil(groups.length / ITEMS_PER_PAGE));
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const rows = groups.slice(startIndex, startIndex + ITEMS_PER_PAGE).flat();
+    return { rows, totalPages, totalGroups: groups.length };
+  }, [filteredMachinery, currentPage]);
 
   const uniqueStatuses = [...new Set(machinery.map(m => m.Status).filter(Boolean))];
   const uniqueTypes = [...new Set(machinery.map(m => m.Machinery).filter(Boolean))].filter(type => type !== 'Trailer');
@@ -326,8 +340,6 @@ const SuiviList = () => {
       </div>
     );
   };
-
-  let rowNumber = 0;
 
   // ==================== RENDER ====================
   if (loading) {
@@ -486,7 +498,8 @@ const SuiviList = () => {
 
             {/* DESKTOP VIEW */}
             <div className="hidden lg:block bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
-              <div className="overflow-x-auto">
+              {/* overflow-y-auto + max-h is required for sticky thead to work */}
+              <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-300px)]">
                 <table className="w-full">
                   <thead className="bg-gray-900/70 sticky top-0 z-10">
                     <tr>
@@ -508,127 +521,156 @@ const SuiviList = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-700">
-                    {filteredMachinery.map((item, index) => {
-                      const isTrailer = isTrailerRow(item);
-                      
-                      if (!isTrailer) {
-                        rowNumber++;
-                      }
+                    {(() => {
+                      let rowNumber = (currentPage - 1) * ITEMS_PER_PAGE;
+                      return paginatedData.rows.map((item, index) => {
+                        const isTrailer = isTrailerRow(item);
+                        if (!isTrailer) rowNumber++;
 
-                      return (
-                        <tr 
-                          key={index}
-                          className={`hover:bg-gray-700/30 transition-colors ${isTrailer ? 'bg-gray-800/30' : ''}`}
-                        >
-                          <td className="px-3 py-3 text-sm text-gray-400">
-                            {isTrailer ? '' : rowNumber}
-                          </td>
-
-                          <td className="px-3 py-3">
-                            {!isTrailer && (
-                              <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
-                                item.Status === 'Permanent' 
-                                  ? 'bg-green-500/20 text-green-400' 
-                                  : 'bg-orange-500/20 text-orange-400'
-                              }`}>
-                                {item.Status === 'Permanent' ? t('suivi.status.permanent') : t('suivi.status.callOff')}
-                              </span>
-                            )}
-                          </td>
-
-                          <td 
-                            onClick={() => handleDocumentClick(item.Documents)}
-                            className="px-3 py-3 text-sm cursor-pointer hover:bg-gray-700/50 transition-colors rounded"
+                        return (
+                          <tr
+                            key={index}
+                            className={`hover:bg-gray-700/30 transition-colors ${isTrailer ? 'bg-gray-800/30' : ''}`}
                           >
-                            {isTrailer ? (
-                              <span className="flex items-center gap-2 text-orange-400 hover:underline">
-                                <Truck size={16} />
-                                <span className="font-medium">{t('suivi.detail.trailerInfo') || 'Trailer'}</span>
-                              </span>
-                            ) : (
-                              <span className="text-purple-400 hover:underline font-medium">{getMachineryDisplayName(item.Machinery)}</span>
-                            )}
-                          </td>
-
-                          <td className="px-3 py-3 text-sm text-white font-medium">{item['Model / Type']}</td>
-
-                          <td 
-                            onClick={() => handleDocumentClick(item.Documents)}
-                            className="px-3 py-3 text-sm text-pink-400 font-semibold cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded"
-                          >
-                            {item['Plate Number']}
-                          </td>
-
-                          <td 
-                            onClick={() => !isTrailer && handleDocumentClick(item['Driver 1 Doc'])}
-                            className={`px-3 py-3 text-sm font-medium ${
-                              !isTrailer && item['Driver 1'] 
-                                ? 'text-blue-400 cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded' 
-                                : 'text-gray-500'
-                            }`}
-                          >
-                            {!isTrailer && (item['Driver 1'] || '-')}
-                          </td>
-                          <td 
-                            onClick={() => !isTrailer && handleDocumentClick(item['Driver 2 Doc'])}
-                            className={`px-3 py-3 text-sm font-medium ${
-                              !isTrailer && item['Driver 2'] 
-                                ? 'text-blue-400 cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded' 
-                                : 'text-gray-500'
-                            }`}
-                          >
-                            {!isTrailer && (item['Driver 2'] || '-')}
-                          </td>
-
-                          <td className="px-3 py-3 text-center">{renderExpiryCell(item.Insurance)}</td>
-                          <td className="px-3 py-3 text-center">{renderExpiryCell(item['Technical Inspection'])}</td>
-                          <td className="px-3 py-3 text-center">{renderExpiryCell(item.Certificate)}</td>
-                          
-                          <td className="px-3 py-3 text-center">
-                            {!isTrailer && renderDateCell(item['Inspection Date'])}
-                          </td>
-                          <td className="px-3 py-3 text-center">
-                            {!isTrailer && renderExpiryCell(item['Next Inspection'])}
-                          </td>
-
-                          {actionMode === 'edit' && !isTrailer && (
-                            <td className="px-3 py-3 text-center">
-                              <button
-                                onClick={() => handleEdit(item)}
-                                className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
-                                title="Edit (including trailer)"
-                              >
-                                <Edit size={18} />
-                              </button>
+                            <td className="px-3 py-3 text-sm text-gray-400">
+                              {isTrailer ? '' : rowNumber}
                             </td>
-                          )}
-                          {actionMode === 'delete' && !isTrailer && (
-                            <td className="px-3 py-3 text-center">
-                              <button
-                                onClick={() => handleDelete(item, index)}
-                                disabled={deletingIndex === index}
-                                className={`p-2 rounded-lg transition-colors ${
-                                  deletingIndex === index
-                                    ? 'text-gray-500 cursor-not-allowed'
-                                    : 'text-red-400 hover:bg-red-500/20'
-                                }`}
-                                title="Delete (including trailer)"
-                              >
-                                {deletingIndex === index ? (
-                                  <Loader2 size={18} className="animate-spin" />
-                                ) : (
-                                  <Trash2 size={18} />
-                                )}
-                              </button>
+
+                            <td className="px-3 py-3">
+                              {!isTrailer && (
+                                <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
+                                  item.Status === 'Permanent'
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : 'bg-orange-500/20 text-orange-400'
+                                }`}>
+                                  {item.Status === 'Permanent' ? t('suivi.status.permanent') : t('suivi.status.callOff')}
+                                </span>
+                              )}
                             </td>
-                          )}
-                          {actionMode && isTrailer && <td className="px-3 py-3"></td>}
-                        </tr>
-                      );
-                    })}
+
+                            <td
+                              onClick={() => handleDocumentClick(item.Documents)}
+                              className="px-3 py-3 text-sm cursor-pointer hover:bg-gray-700/50 transition-colors rounded"
+                            >
+                              {isTrailer ? (
+                                <span className="flex items-center gap-2 text-orange-400 hover:underline">
+                                  <Truck size={16} />
+                                  <span className="font-medium">{t('suivi.detail.trailerInfo') || 'Trailer'}</span>
+                                </span>
+                              ) : (
+                                <span className="text-purple-400 hover:underline font-medium">{getMachineryDisplayName(item.Machinery)}</span>
+                              )}
+                            </td>
+
+                            <td className="px-3 py-3 text-sm text-white font-medium">{item['Model / Type']}</td>
+
+                            <td
+                              onClick={() => handleDocumentClick(item.Documents)}
+                              className="px-3 py-3 text-sm text-pink-400 font-semibold cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded"
+                            >
+                              {item['Plate Number']}
+                            </td>
+
+                            <td
+                              onClick={() => !isTrailer && handleDocumentClick(item['Driver 1 Doc'])}
+                              className={`px-3 py-3 text-sm font-medium ${
+                                !isTrailer && item['Driver 1']
+                                  ? 'text-blue-400 cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded'
+                                  : 'text-gray-500'
+                              }`}
+                            >
+                              {!isTrailer && (item['Driver 1'] || '-')}
+                            </td>
+
+                            <td
+                              onClick={() => !isTrailer && handleDocumentClick(item['Driver 2 Doc'])}
+                              className={`px-3 py-3 text-sm font-medium ${
+                                !isTrailer && item['Driver 2']
+                                  ? 'text-blue-400 cursor-pointer hover:bg-gray-700/50 hover:underline transition-colors rounded'
+                                  : 'text-gray-500'
+                              }`}
+                            >
+                              {!isTrailer && (item['Driver 2'] || '-')}
+                            </td>
+
+                            <td className="px-3 py-3 text-center">{renderExpiryCell(item.Insurance)}</td>
+                            <td className="px-3 py-3 text-center">{renderExpiryCell(item['Technical Inspection'])}</td>
+                            <td className="px-3 py-3 text-center">{renderExpiryCell(item.Certificate)}</td>
+
+                            <td className="px-3 py-3 text-center">
+                              {!isTrailer && renderDateCell(item['Inspection Date'])}
+                            </td>
+                            <td className="px-3 py-3 text-center">
+                              {!isTrailer && renderExpiryCell(item['Next Inspection'])}
+                            </td>
+
+                            {actionMode === 'edit' && !isTrailer && (
+                              <td className="px-3 py-3 text-center">
+                                <button
+                                  onClick={() => handleEdit(item)}
+                                  className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+                                  title="Edit (including trailer)"
+                                >
+                                  <Edit size={18} />
+                                </button>
+                              </td>
+                            )}
+                            {actionMode === 'delete' && !isTrailer && (
+                              <td className="px-3 py-3 text-center">
+                                <button
+                                  onClick={() => handleDelete(item, index)}
+                                  disabled={deletingIndex === index}
+                                  className={`p-2 rounded-lg transition-colors ${
+                                    deletingIndex === index
+                                      ? 'text-gray-500 cursor-not-allowed'
+                                      : 'text-red-400 hover:bg-red-500/20'
+                                  }`}
+                                  title="Delete (including trailer)"
+                                >
+                                  {deletingIndex === index ? (
+                                    <Loader2 size={18} className="animate-spin" />
+                                  ) : (
+                                    <Trash2 size={18} />
+                                  )}
+                                </button>
+                              </td>
+                            )}
+                            {actionMode && isTrailer && <td className="px-3 py-3"></td>}
+                          </tr>
+                        );
+                      });
+                    })()}
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination Controls */}
+              {paginatedData.totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-700 bg-gray-900/50">
+                  <span className="text-sm text-gray-400">
+                    {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, paginatedData.totalGroups)} / {paginatedData.totalGroups}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 rounded-lg bg-gray-700/50 text-gray-300 disabled:opacity-40 hover:bg-gray-600/60 transition-colors text-sm"
+                    >
+                      {t('common.previous')}
+                    </button>
+                    <span className="text-sm text-gray-300 px-1">
+                      {currentPage} / {paginatedData.totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(paginatedData.totalPages, p + 1))}
+                      disabled={currentPage === paginatedData.totalPages}
+                      className="px-3 py-1.5 rounded-lg bg-gray-700/50 text-gray-300 disabled:opacity-40 hover:bg-gray-600/60 transition-colors text-sm"
+                    >
+                      {t('common.next')}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
