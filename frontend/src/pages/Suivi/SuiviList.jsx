@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Search, Edit, Trash2, Plus, FileText, Loader2, Hash, Truck } from 'lucide-react';
+import { ArrowLeft, Search, Edit, Trash2, Plus, FileText, Loader2, Hash, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { PAGE_PERMISSIONS, canUserPerformAction } from '../../config/roles';
@@ -22,6 +22,8 @@ const SuiviList = () => {
   const [typeFilter, setTypeFilter] = useState('');
   const [actionMode, setActionMode] = useState(null);
   const [deletingIndex, setDeletingIndex] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
 
   const canAdd = canUserPerformAction(user?.role, 'SUIVI_ADD');
   const canEdit = canUserPerformAction(user?.role, 'SUIVI_EDIT');
@@ -34,6 +36,20 @@ const SuiviList = () => {
       navigate('/');
     }
   }, [user, navigate]);
+
+  // ==================== RESPONSIVE DETECTION ====================
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const itemsPerPage = isMobile ? 10 : 15;
+
+  // Reset to page 1 whenever filters or view mode changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, typeFilter, itemsPerPage]);
 
   // ==================== HELPER FUNCTIONS ====================
   
@@ -49,9 +65,8 @@ const SuiviList = () => {
     return item.Machinery === 'Trailer';
   };
 
-  // ==================== DRIVER FILTERING (like CleaningHistory) ====================
+  // ==================== DRIVER FILTERING ====================
   
-  // Step 1: Get allowed plate numbers for Driver role
   const driverAllowedPlates = useMemo(() => {
     if (user?.role !== 'Driver' || !user?.full_name) return null;
     
@@ -59,10 +74,8 @@ const SuiviList = () => {
     const driverFullName = user.full_name;
     
     allMachinery.forEach((item) => {
-      // Skip trailers
       if (isTrailerRow(item)) return;
       
-      // Check if driver's full name matches (case-insensitive)
       const driver1 = item['Driver 1'] || '';
       const driver2 = item['Driver 2'] || '';
       
@@ -77,31 +90,24 @@ const SuiviList = () => {
     return plateNumbers;
   }, [user, allMachinery]);
 
-  // Step 2: Filter machinery by plate numbers and include trailers
   const machinery = useMemo(() => {
-    // If not a driver, show all machinery
     if (user?.role !== 'Driver' || !Array.isArray(driverAllowedPlates)) {
       return allMachinery;
     }
     
-    // If driver has no assigned machinery
     if (driverAllowedPlates.length === 0) {
       return [];
     }
     
-    // Filter by allowed plate numbers and include trailers
     const result = [];
     for (let i = 0; i < allMachinery.length; i++) {
       const item = allMachinery[i];
       
-      // Skip trailers in this loop (they'll be added with their parent)
       if (isTrailerRow(item)) continue;
       
-      // Check if this plate number is allowed
       if (driverAllowedPlates.includes(item['Plate Number'])) {
         result.push(item);
         
-        // Include trailer if it exists (next row)
         const nextRow = allMachinery[i + 1];
         if (nextRow && isTrailerRow(nextRow)) {
           result.push(nextRow);
@@ -112,7 +118,7 @@ const SuiviList = () => {
     return result;
   }, [allMachinery, driverAllowedPlates, user]);
 
-  // ==================== LOAD DATA FROM SUIVI SHEET ====================
+  // ==================== LOAD DATA ====================
   useEffect(() => {
     loadData();
   }, []);
@@ -239,6 +245,86 @@ const SuiviList = () => {
   const uniqueStatuses = [...new Set(machinery.map(m => m.Status).filter(Boolean))];
   const uniqueTypes = [...new Set(machinery.map(m => m.Machinery).filter(Boolean))].filter(type => type !== 'Trailer');
 
+  // ==================== PAGINATION LOGIC ====================
+  // Build logical groups: [machinery] or [machinery, trailer] — keeps pairs together
+  const logicalGroups = [];
+  for (let i = 0; i < filteredMachinery.length; i++) {
+    const item = filteredMachinery[i];
+    if (isTrailerRow(item)) continue;
+    const group = [item];
+    const next = filteredMachinery[i + 1];
+    if (next && isTrailerRow(next)) group.push(next);
+    logicalGroups.push(group);
+  }
+
+  const totalPages = Math.ceil(logicalGroups.length / itemsPerPage);
+  const paginatedMachinery = logicalGroups
+    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+    .flat();
+
+  // ==================== PAGINATION UI ====================
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const getPageNumbers = () => {
+      if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+      const pages = new Set([1, totalPages, currentPage]);
+      if (currentPage > 1) pages.add(currentPage - 1);
+      if (currentPage < totalPages) pages.add(currentPage + 1);
+      return [...pages].sort((a, b) => a - b);
+    };
+
+    const pageNumbers = getPageNumbers();
+
+    return (
+      <div className="flex items-center justify-between mt-4 px-1 flex-wrap gap-3">
+        <span className="text-sm text-gray-400">
+          {logicalGroups.length} {t('suivi.list.total') || 'total'}
+          {' · '}
+          {t('common.page') || 'Page'} {currentPage} / {totalPages}
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="p-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:border-pink-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronLeft size={16} />
+          </button>
+
+          {pageNumbers.map((page, idx) => {
+            const showEllipsis = idx > 0 && page - pageNumbers[idx - 1] > 1;
+            return (
+              <React.Fragment key={page}>
+                {showEllipsis && (
+                  <span className="px-1 text-gray-500 select-none">…</span>
+                )}
+                <button
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-9 h-9 rounded-lg border transition-all text-sm font-medium ${
+                    currentPage === page
+                      ? 'bg-pink-600 border-pink-600 text-white shadow-lg shadow-pink-500/30'
+                      : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-pink-500'
+                  }`}
+                >
+                  {page}
+                </button>
+              </React.Fragment>
+            );
+          })}
+
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="p-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:border-pink-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   // ==================== ACTIONS ====================
   const handleEdit = (item) => {
     if (!canEdit) {
@@ -327,7 +413,8 @@ const SuiviList = () => {
     );
   };
 
-  let rowNumber = 0;
+  // rowNumber offset: continues counting from previous pages
+  let rowNumber = (currentPage - 1) * itemsPerPage;
 
   // ==================== RENDER ====================
   if (loading) {
@@ -481,14 +568,15 @@ const SuiviList = () => {
           <>
             {/* MOBILE VIEW */}
             <div className="lg:hidden grid gap-4">
-              {filteredMachinery.map((item, index) => renderMobileCard(item, index))}
+              {paginatedMachinery.map((item, index) => renderMobileCard(item, index))}
             </div>
 
             {/* DESKTOP VIEW */}
             <div className="hidden lg:block bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-900/70 sticky top-0 z-10">
+                  {/* ← bg-gray-900 fully opaque so rows don't bleed through on scroll */}
+                  <thead className="bg-gray-900 sticky top-0 z-10">
                     <tr>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">#</th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.status')}</th>
@@ -508,7 +596,7 @@ const SuiviList = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-700">
-                    {filteredMachinery.map((item, index) => {
+                    {paginatedMachinery.map((item, index) => {
                       const isTrailer = isTrailerRow(item);
                       
                       if (!isTrailer) {
@@ -630,6 +718,9 @@ const SuiviList = () => {
                 </table>
               </div>
             </div>
+
+            {/* PAGINATION — shown for both mobile and desktop */}
+            {renderPagination()}
           </>
         )}
       </div>
