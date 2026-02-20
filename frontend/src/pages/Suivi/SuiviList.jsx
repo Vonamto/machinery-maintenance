@@ -167,7 +167,6 @@ const SuiviList = () => {
   const renderExpiryCell = (dateStr) => {
     if (!dateStr || dateStr === 'N/A') {
       return (
-        // ← dir="ltr" forces correct date order even in Arabic RTL layout
         <div dir="ltr" className={`inline-block px-3 py-1 rounded-lg text-xs font-medium ${getExpiryBadgeClass('na')}`}>
           {t('suivi.detail.fields.notApplicable')}
         </div>
@@ -178,7 +177,6 @@ const SuiviList = () => {
     const days = getDaysUntilExpiry(dateStr);
 
     return (
-      // ← dir="ltr" forces correct date order even in Arabic RTL layout
       <div dir="ltr" className={`inline-block px-3 py-1 rounded-lg text-xs font-medium ${getExpiryBadgeClass(status)}`}>
         <div className="font-semibold">{formatDateForDisplay(dateStr)}</div>
         {status !== 'na' && (
@@ -202,7 +200,6 @@ const SuiviList = () => {
       );
     }
     return (
-      // ← dir="ltr" forces correct date order even in Arabic RTL layout
       <div dir="ltr" className="inline-block px-3 py-1 rounded-lg text-xs font-medium bg-gray-600/20 text-gray-300 border border-gray-600/40">
         {formatDateForDisplay(dateStr)}
       </div>
@@ -571,9 +568,9 @@ const SuiviList = () => {
 
             {/* DESKTOP VIEW */}
             <div className="hidden lg:block bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
-              <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-240px)]">
+              <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-900 sticky top-0 z-10">
+                  <thead className="bg-gray-900">
                     <tr>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">#</th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.status')}</th>
