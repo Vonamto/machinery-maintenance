@@ -279,8 +279,6 @@ const SuiviList = () => {
     return (
       <div className="flex items-center justify-between mt-4 px-1 flex-wrap gap-3">
         <span className="text-sm text-gray-400">
-          {logicalGroups.length} {t('suivi.list.total') || 'total'}
-          {' · '}
           {t('common.page') || 'Page'} {currentPage} / {totalPages}
         </span>
         <div className="flex items-center gap-1">
