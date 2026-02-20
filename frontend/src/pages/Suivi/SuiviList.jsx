@@ -574,7 +574,7 @@ const SuiviList = () => {
             {/* DESKTOP VIEW */}
             <div className="hidden lg:block bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
               {/* ↓ overflow-y-auto + max-h makes the table scroll inside itself so sticky thead works */}
-              <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-340px)]">
+              <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-240px)]">
                 <table className="w-full">
                   <thead className="bg-gray-900 sticky top-0 z-10">
                     <tr>
