@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import InstallPage from "./pages/Install";
 
 // 🔐 Roles & permissions (single source of truth)
 import { PAGE_PERMISSIONS } from "./config/roles";
@@ -26,10 +27,11 @@ import ChecklistMenu from "./pages/Checklist/index";
 import ChecklistForm from "./pages/Checklist/Form";
 import ChecklistHistory from "./pages/Checklist/History";
 
-// --- Equipment ---
-import EquipmentMenu from "./pages/Equipment/index";
-import EquipmentList from "./pages/Equipment/List";
-import EquipmentManage from "./pages/Equipment/Manage";
+// --- Suivi (Machinery Tracking) ---
+import SuiviMenu from "./pages/Suivi/index";
+import SuiviList from "./pages/Suivi/SuiviList";
+import SuiviManage from "./pages/Suivi/SuiviManage";
+import SuiviDetail from "./pages/Suivi/SuiviDetail";
 
 // --- Users ---
 import UsersManage from "./pages/Users/Manage";
@@ -40,7 +42,6 @@ export default function App() {
   // ✅ AUTO SWITCH LTR / RTL WHEN LANGUAGE CHANGES
   useEffect(() => {
     const isRTL = i18n.language === "ar";
-
     document.documentElement.dir = isRTL ? "rtl" : "ltr";
     document.documentElement.lang = i18n.language;
   }, [i18n.language]);
@@ -49,6 +50,9 @@ export default function App() {
     <BrowserRouter>
       <div className="min-h-screen bg-theme-background-primary text-theme-text-primary">
         <Routes>
+          {/* ================= Install ================= */}
+          <Route path="/install" element={<InstallPage />} />
+
           {/* ================= Login ================= */}
           <Route path="/login" element={<Login />} />
 
@@ -71,7 +75,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/maintenance/form"
             element={
@@ -80,7 +83,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/maintenance/history"
             element={
@@ -99,7 +101,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/cleaning/form"
             element={
@@ -108,7 +109,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/cleaning/history"
             element={
@@ -127,7 +127,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/checklist/form"
             element={
@@ -136,7 +135,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/checklist/history"
             element={
@@ -146,30 +144,36 @@ export default function App() {
             }
           />
 
-          {/* ================= Equipment ================= */}
+          {/* ================= Suivi (Machinery Tracking) ================= */}
           <Route
-            path="/equipment"
+            path="/suivi"
             element={
-              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.EQUIPMENT}>
-                <EquipmentMenu />
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVI}>
+                <SuiviMenu />
               </ProtectedRoute>
             }
           />
-
           <Route
-            path="/equipment/list"
+            path="/suivi/list"
             element={
-              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.EQUIPMENT_LIST}>
-                <EquipmentList />
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVILIST}>
+                <SuiviList />
               </ProtectedRoute>
             }
           />
-
           <Route
-            path="/equipment/manage"
+            path="/suivi/manage"
             element={
-              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.EQUIPMENT_MANAGE}>
-                <EquipmentManage />
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVIMANAGE}>
+                <SuiviManage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/suivi/detail/:plate"
+            element={
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVIDETAIL}>
+                <SuiviDetail />
               </ProtectedRoute>
             }
           />

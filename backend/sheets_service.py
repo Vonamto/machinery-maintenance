@@ -59,10 +59,12 @@ sheet_creds = Credentials.from_service_account_info(
 client = gspread.authorize(sheet_creds)
 
 # =====================================================
-#  ✅  Your Google Sheet ID and Drive Folder
+#  ✅  Your Google Sheet ID and Drive Folders
 # =====================================================
 SPREADSHEET_ID = "1j5PbpbLeQFVxofnO69BlluIw851-LZtOCV5HM4NhNOM"
 FOLDER_A_ID = "1LXuX4GDaIPsnc0F5yizlL5znfMl22RnD"  # Main photo folder
+FOLDERAID_MACHINERY_DOCS = '1NPywJrjTCvobQetVqoGg7V4AbhLcfAXf'  # Machinery Documents folder
+FOLDERAID_OPERATORS = '1PRg64C-cG7s1ok31BCaUybJwY68O2t3u'  # Operators folder
 
 # =====================================================
 #  ✅  Utility: Current Algeria Time
@@ -119,6 +121,95 @@ def save_image_to_drive(base64_string, filename, subfolder_name):
         return f"ERROR_UPLOAD"
 
 # =====================================================
+#  ✅  NEW: Upload PDF to Google Drive
+# =====================================================
+def save_pdf_to_drive(base64_string, filename, parent_folder_id):
+    """
+    Upload Base64 PDF to Google Drive
+    
+    Args:
+        base64_string: Base64 encoded PDF string
+        filename: Name for the uploaded file
+        parent_folder_id: Google Drive folder ID where file will be stored
+    
+    Returns:
+        Google Drive shareable link or empty string on error
+    """
+    try:
+        if not base64_string or 'base64,' not in base64_string:
+            print("Invalid base64 string")
+            return ""
+        
+        # Decode PDF data
+        pdf_data = base64.b64decode(base64_string.split('base64,')[-1])
+        file_stream = io.BytesIO(pdf_data)
+        
+        # Prepare file metadata
+        file_metadata = {
+            'name': filename,
+            'parents': [parent_folder_id]
+        }
+        
+        # Upload to Drive
+        media = MediaIoBaseUpload(file_stream, mimetype='application/pdf', resumable=True)
+        uploaded_file = drive_service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id'
+        ).execute()
+        
+        # Make file publicly readable
+        drive_service.permissions().create(
+            fileId=uploaded_file['id'],
+            body={'type': 'anyone', 'role': 'reader'}
+        ).execute()
+        
+        # Return viewable link
+        file_link = f"https://drive.google.com/file/d/{uploaded_file['id']}/view"
+        print(f"PDF uploaded successfully: {filename} -> {file_link}")
+        return file_link
+        
+    except Exception as e:
+        print(f"PDF Upload Error: {str(e)}")
+        return ""
+
+# =====================================================
+#  ✅  NEW: Delete File from Google Drive
+# =====================================================
+def delete_file_from_drive(file_url):
+    """
+    Delete a file from Google Drive using its shareable URL
+    
+    Args:
+        file_url: Google Drive file URL (e.g., https://drive.google.com/file/d/FILE_ID/view)
+    
+    Returns:
+        True if deleted successfully, False otherwise
+    """
+    try:
+        if not file_url or 'drive.google.com' not in file_url:
+            return False
+        
+        # Extract file ID from URL
+        # URL format: https://drive.google.com/file/d/FILE_ID/view or https://drive.google.com/uc?id=FILE_ID
+        if '/file/d/' in file_url:
+            file_id = file_url.split('/file/d/')[1].split('/')[0]
+        elif 'id=' in file_url:
+            file_id = file_url.split('id=')[1].split('&')[0]
+        else:
+            print(f"Cannot extract file ID from URL: {file_url}")
+            return False
+        
+        # Delete file
+        drive_service.files().delete(fileId=file_id).execute()
+        print(f"File deleted successfully: {file_id}")
+        return True
+        
+    except Exception as e:
+        print(f"Error deleting file: {str(e)}")
+        return False
+
+# =====================================================
 #  ✅  Copy to Maintenance_Log
 # =====================================================
 def copy_to_maintenance_log(source_sheet, data):
@@ -153,18 +244,32 @@ def copy_to_maintenance_log(source_sheet, data):
         return {"status": "error", "message": f"Failed to copy: {e}"}
 
 # =====================================================
-#  ✅  Get Sheet Data
+#  ✅  Get Sheet Data (WITH ROW INDEX)
 # =====================================================
 def get_sheet_data(sheet_name):
+    """
+    Fetch all records from a Google Sheet and add row index
+    
+    Args:
+        sheet_name: Name of the Google Sheet
+    
+    Returns:
+        JSON response with data including rowindex for each row
+    """
     try:
         sheet = client.open_by_key(SPREADSHEET_ID).worksheet(sheet_name)
         rows = sheet.get_all_records()
+        
+        # ✅ ADD ROW INDEX TO EACH ROW (starting from row 2, since row 1 is headers)
+        for index, row in enumerate(rows, start=2):
+            row['rowindex'] = index
+        
         return jsonify(rows)
     except Exception as e:
         return jsonify({"error": str(e)})
 
 # =====================================================
-#  ✅  Append Row (Add) - UPDATED FOR CHECKLIST
+#  ✅  Append Row (Add) - UPDATED FOR CHECKLIST & SUIVI WITH TRAILER SUPPORT
 # =====================================================
 def append_row(sheet_name, new_row):
     try:
@@ -210,8 +315,129 @@ def append_row(sheet_name, new_row):
                     filename = f"{sheet_name}_{key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                     new_row[key] = save_image_to_drive(new_row[key], filename, sheet_name)
 
+        # ========================================================================
+        #  ✅ UPDATED: SPECIAL LOGIC for Suivi Sheet - TRAILER SUPPORT + NO EQUIPMENT_LIST
+        # ========================================================================
+        if sheet_name == "Suivi":
+            # Get machinery type mapping from Machinery_Types sheet
+            machinery_types_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Machinery_Types")
+            machinery_types_data = machinery_types_sheet.get_all_records()
+            
+            # Build mapping dictionary: Machinery name -> Equipment Type
+            machinery_to_equipment_type = {}
+            for row in machinery_types_data:
+                english_name = row.get('English', '')
+                equipment_mapping = row.get('Equipment_Type_Mapping', '')
+                if english_name and equipment_mapping:
+                    machinery_to_equipment_type[english_name] = equipment_mapping
+            
+            # ===================================================================
+            # STEP 1: Build and append MAIN MACHINERY row
+            # ===================================================================
+            plate_number = new_row.get('Plate Number', 'Unknown')
+            driver1_name = new_row.get('Driver 1', 'Unknown').replace(' ', '_')
+            driver2_name = new_row.get('Driver 2', 'Unknown').replace(' ', '_')
+            machinery_type = new_row.get('Machinery', '')
+            
+            # ✅ NEW: Get Equipment Type from mapping and store in Suivi directly
+            equipment_type = machinery_to_equipment_type.get(machinery_type, '')
+            
+            # Build main machinery row (copy all fields from new_row, add Equipment Type)
+            main_machinery_row = {}
+            for h in headers:
+                if h == 'Equipment Type':
+                    main_machinery_row[h] = equipment_type
+                else:
+                    main_machinery_row[h] = new_row.get(h, '')
+            
+            # Handle Machinery Documents PDF
+            if 'Documents' in main_machinery_row and isinstance(main_machinery_row['Documents'], str) and main_machinery_row['Documents'].startswith('data:application/pdf'):
+                filename = f"Machinery_{plate_number}_Documents.pdf"
+                main_machinery_row['Documents'] = save_pdf_to_drive(main_machinery_row['Documents'], filename, FOLDERAID_MACHINERY_DOCS)
+            
+            # Handle Driver 1 Documents PDF
+            if 'Driver 1 Doc' in main_machinery_row and isinstance(main_machinery_row['Driver 1 Doc'], str) and main_machinery_row['Driver 1 Doc'].startswith('data:application/pdf'):
+                filename = f"Driver1_{driver1_name}_{plate_number}.pdf"
+                main_machinery_row['Driver 1 Doc'] = save_pdf_to_drive(main_machinery_row['Driver 1 Doc'], filename, FOLDERAID_OPERATORS)
+            
+            # Handle Driver 2 Documents PDF
+            if 'Driver 2 Doc' in main_machinery_row and isinstance(main_machinery_row['Driver 2 Doc'], str) and main_machinery_row['Driver 2 Doc'].startswith('data:application/pdf'):
+                filename = f"Driver2_{driver2_name}_{plate_number}.pdf"
+                main_machinery_row['Driver 2 Doc'] = save_pdf_to_drive(main_machinery_row['Driver 2 Doc'], filename, FOLDERAID_OPERATORS)
+            
+            # Prepare row for Suivi sheet
+            row_to_add = []
+            for h in headers:
+                value = main_machinery_row.get(h, "")
+                # Auto-fill timestamps if empty
+                if h.strip().lower() in ["date", "request date", "timestamp"] and not value:
+                    value = current_time
+                row_to_add.append(value)
+            
+            # Append main machinery row to Suivi
+            sheet.append_row(row_to_add)
+            print(f"✅ Appended main machinery to Suivi: {plate_number}")
+            
+            # ===================================================================
+            # STEP 2: Check if TRAILER exists and append TRAILER row
+            # ===================================================================
+            has_trailer = (
+                new_row.get('HasTrailer') in [True, 'Yes', 'true', 'yes'] or
+                (new_row.get('Trailer Model/Type') and new_row.get('Trailer Plate'))
+            )
+            
+            if has_trailer:
+                print(f"🚛 Trailer detected for {plate_number}, creating trailer row...")
+                
+                # Build trailer row
+                trailer_row = {}
+                for h in headers:
+                    if h == 'Status':
+                        trailer_row[h] = ''  # Empty
+                    elif h == 'Machinery':
+                        trailer_row[h] = 'Trailer'  # ✅ Identifier
+                    elif h == 'Equipment Type':
+                        trailer_row[h] = 'Trailer'  # ✅ Hard-coded
+                    elif h == 'Model / Type':
+                        trailer_row[h] = new_row.get('Trailer Model/Type', '')
+                    elif h == 'Plate Number':
+                        trailer_row[h] = new_row.get('Trailer Plate', '')
+                    elif h == 'Driver 1' or h == 'Driver 2':
+                        trailer_row[h] = ''  # Trailers don't have drivers
+                    elif h == 'Insurance':
+                        trailer_row[h] = new_row.get('Trailer Insurance', '')
+                    elif h == 'Technical Inspection':
+                        trailer_row[h] = new_row.get('Trailer Technical', '')
+                    elif h == 'Certificate':
+                        trailer_row[h] = new_row.get('Trailer Certificate', '')
+                    elif h == 'Inspection Date' or h == 'Next Inspection':
+                        trailer_row[h] = ''  # Trailers don't have these
+                    elif h == 'Documents':
+                        trailer_row[h] = new_row.get('Trailer Documents', '')
+                    elif h == 'Driver 1 Doc' or h == 'Driver 2 Doc':
+                        trailer_row[h] = ''  # No driver docs for trailer
+                    else:
+                        trailer_row[h] = ''  # All other fields empty
+                
+                # Handle Trailer Documents PDF upload
+                if 'Documents' in trailer_row and isinstance(trailer_row['Documents'], str) and trailer_row['Documents'].startswith('data:application/pdf'):
+                    trailer_plate = new_row.get('Trailer Plate', 'Unknown')
+                    filename = f"Trailer_{trailer_plate}_Documents.pdf"
+                    trailer_row['Documents'] = save_pdf_to_drive(trailer_row['Documents'], filename, FOLDERAID_MACHINERY_DOCS)
+                
+                # Prepare trailer row for Suivi sheet
+                trailer_row_to_add = [trailer_row.get(h, '') for h in headers]
+                
+                # Append trailer row immediately after main machinery
+                sheet.append_row(trailer_row_to_add)
+                print(f"✅ Appended trailer row to Suivi: {new_row.get('Trailer Plate', 'Unknown')}")
+            
+            # ✅ REMOVED: Equipment_List auto-copy logic (sheet no longer exists)
+            
+            return {"status": "success", "added": new_row, "timestamp": current_time}
+
         # ---------------------------------------------------
-        #  Write to Sheet
+        #  Default logic for other sheets
         # ---------------------------------------------------
         row_to_add = []
         for h in headers:
@@ -223,26 +449,13 @@ def append_row(sheet_name, new_row):
 
         sheet.append_row(row_to_add)
 
-        # ============================================================
-        # 🔴 CHANGE MADE: Auto-copy to Maintenance_Log REMOVED
-        # ============================================================
-        # Previously, Cleaning_Log entries were automatically copied to Maintenance_Log.
-        # This has been disabled as per user request.
-        # 
-        # OLD CODE (now removed):
-        # if sheet_name == "Cleaning_Log":
-        #     copy_to_maintenance_log("Cleaning_Log", new_row)
-        #
-        # Cleaning logs are now ONLY stored in Cleaning_Log sheet.
-        # ============================================================
-
         return {"status": "success", "added": new_row, "timestamp": current_time}
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 # =====================================================
-#  ✅  Update Row (Edit)
+#  ✅ STEP 2: Update Row (Edit) - TRAILER SUPPORT WITH INSERT CAPABILITY
 # =====================================================
 def update_row(sheet_name, row_index, updated_data):
     try:
@@ -257,41 +470,372 @@ def update_row(sheet_name, row_index, updated_data):
             
         current_row = dict(zip(headers, existing))
 
-        # Upload Base64 photos if included
+        # Upload Base64 photos if included (for non-Suivi sheets or general photos)
         for key, value in updated_data.items():
             if "Photo" in key and isinstance(value, str) and value.startswith("data:image"):
                 filename = f"{sheet_name}_{key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                 updated_data[key] = save_image_to_drive(value, filename, sheet_name)
 
-        # Merge updated fields
-        for key, value in updated_data.items():
-            current_row[key] = value
-
-        # Handle "Completed" logic for Maintenance
-        if "Status" in headers and updated_data.get("Status", "").lower() == "completed":
-            completion_date = get_current_time()
-            if "Completion Date" in headers:
-                current_row["Completion Date"] = completion_date
+        # ========================================================================
+        #  ✅ NEW: ENHANCED SUIVI EDIT LOGIC WITH TRAILER SUPPORT
+        # ========================================================================
+        if sheet_name == "Suivi":
+            # Get machinery type mapping
+            machinery_types_sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Machinery_Types")
+            machinery_types_data = machinery_types_sheet.get_all_records()
+            machinery_to_equipment_type = {}
+            for row in machinery_types_data:
+                english_name = row.get('English', '')
+                equipment_mapping = row.get('Equipment_Type_Mapping', '')
+                if english_name and equipment_mapping:
+                    machinery_to_equipment_type[english_name] = equipment_mapping
             
-            # Optionally copy to Maintenance Log if it's a request
-            # copy_to_maintenance_log(sheet_name, current_row)
+            # ===================================================================
+            # STEP A: Determine if this is a main machinery row or trailer row
+            # ===================================================================
+            current_machinery_type = current_row.get('Machinery', '')
+            is_trailer_row = (current_machinery_type == 'Trailer')
+            
+            if is_trailer_row:
+                # ===================================================================
+                # CASE: Editing an orphan trailer row (standalone trailer)
+                # ===================================================================
+                print(f"📝 Editing standalone trailer row at {row_index}")
+                
+                # Handle trailer PDF replacement
+                if 'Documents' in updated_data and isinstance(updated_data['Documents'], str):
+                    if updated_data['Documents'].startswith('data:application/pdf'):
+                        old_doc_url = current_row.get('Documents', '')
+                        if old_doc_url:
+                            delete_file_from_drive(old_doc_url)
+                        trailer_plate = updated_data.get('Plate Number') or current_row.get('Plate Number', 'Unknown')
+                        filename = f"Trailer_{trailer_plate}_Documents.pdf"
+                        updated_data['Documents'] = save_pdf_to_drive(updated_data['Documents'], filename, FOLDERAID_MACHINERY_DOCS)
+                
+                # Merge updates
+                for key, value in updated_data.items():
+                    current_row[key] = value
+                
+                # Write back
+                updated_row_values = [current_row.get(h, "") for h in headers]
+                sheet.update(range_name=f"A{row_index}:Z{row_index}", values=[updated_row_values])
+                print(f"✅ Updated standalone trailer row at {row_index}")
+                
+                return {"status": "success", "updated": current_row}
+            
+            else:
+                # ===================================================================
+                # CASE: Editing a MAIN MACHINERY row (may have linked trailer)
+                # ===================================================================
+                print(f"📝 Editing main machinery row at {row_index}")
+                
+                # ---------------------------------------------------
+                # SUBSTEP 1: Update main machinery row
+                # ---------------------------------------------------
+                plate_number = updated_data.get('Plate Number') or current_row.get('Plate Number', 'Unknown')
+                driver1_name = (updated_data.get('Driver 1') or current_row.get('Driver 1', 'Unknown')).replace(' ', '_')
+                driver2_name = (updated_data.get('Driver 2') or current_row.get('Driver 2', 'Unknown')).replace(' ', '_')
+                
+                # ✅ Update Equipment Type if Machinery changed
+                if 'Machinery' in updated_data:
+                    new_machinery_type = updated_data['Machinery']
+                    new_equipment_type = machinery_to_equipment_type.get(new_machinery_type, '')
+                    updated_data['Equipment Type'] = new_equipment_type
+                    print(f"🔄 Machinery changed to {new_machinery_type}, Equipment Type updated to {new_equipment_type}")
+                
+                # Handle Machinery Documents PDF replacement
+                if 'Documents' in updated_data and isinstance(updated_data['Documents'], str):
+                    if updated_data['Documents'].startswith('data:application/pdf'):
+                        old_doc_url = current_row.get('Documents', '')
+                        if old_doc_url:
+                            delete_file_from_drive(old_doc_url)
+                        filename = f"Machinery_{plate_number}_Documents.pdf"
+                        updated_data['Documents'] = save_pdf_to_drive(updated_data['Documents'], filename, FOLDERAID_MACHINERY_DOCS)
+                
+                # Handle Driver 1 Documents PDF replacement
+                if 'Driver 1 Doc' in updated_data and isinstance(updated_data['Driver 1 Doc'], str):
+                    if updated_data['Driver 1 Doc'].startswith('data:application/pdf'):
+                        old_doc_url = current_row.get('Driver 1 Doc', '')
+                        if old_doc_url:
+                            delete_file_from_drive(old_doc_url)
+                        filename = f"Driver1_{driver1_name}_{plate_number}.pdf"
+                        updated_data['Driver 1 Doc'] = save_pdf_to_drive(updated_data['Driver 1 Doc'], filename, FOLDERAID_OPERATORS)
+                
+                # Handle Driver 2 Documents PDF replacement
+                if 'Driver 2 Doc' in updated_data and isinstance(updated_data['Driver 2 Doc'], str):
+                    if updated_data['Driver 2 Doc'].startswith('data:application/pdf'):
+                        old_doc_url = current_row.get('Driver 2 Doc', '')
+                        if old_doc_url:
+                            delete_file_from_drive(old_doc_url)
+                        filename = f"Driver2_{driver2_name}_{plate_number}.pdf"
+                        updated_data['Driver 2 Doc'] = save_pdf_to_drive(updated_data['Driver 2 Doc'], filename, FOLDERAID_OPERATORS)
+                
+                # Merge updated fields into main machinery row
+                for key, value in updated_data.items():
+                    # Skip trailer-specific fields from being saved to main machinery row
+                    if not key.startswith('Trailer ') and key != 'HasTrailer':
+                        current_row[key] = value
+                
+                # Write main machinery row back
+                updated_row_values = [current_row.get(h, "") for h in headers]
+                sheet.update(range_name=f"A{row_index}:Z{row_index}", values=[updated_row_values])
+                print(f"✅ Updated main machinery row at {row_index}")
+                
+                # ---------------------------------------------------
+                # SUBSTEP 2: Check for linked trailer row at row_index + 1
+                # ---------------------------------------------------
+                try:
+                    next_row_data = sheet.row_values(row_index + 1)
+                    if len(next_row_data) < len(headers):
+                        next_row_data += [""] * (len(headers) - len(next_row_data))
+                    next_row_dict = dict(zip(headers, next_row_data))
+                    next_row_is_trailer = (next_row_dict.get('Machinery', '') == 'Trailer')
+                except:
+                    next_row_is_trailer = False
+                    next_row_dict = None
+                
+                # ---------------------------------------------------
+                # SUBSTEP 3: Decide what to do with trailer
+                # ---------------------------------------------------
+                has_trailer_data = (
+                    updated_data.get('HasTrailer') in [True, 'Yes', 'true', 'yes'] or
+                    (updated_data.get('Trailer Model/Type') and updated_data.get('Trailer Plate'))
+                )
+                
+                if next_row_is_trailer and has_trailer_data:
+                    # ===================================================================
+                    # CASE A: Trailer exists AND user sent trailer data → UPDATE trailer
+                    # ===================================================================
+                    print(f"🚛 Trailer row exists at {row_index + 1}, updating it...")
+                    
+                    trailer_row = next_row_dict
+                    
+                    # Update trailer fields
+                    trailer_row['Model / Type'] = updated_data.get('Trailer Model/Type', trailer_row.get('Model / Type', ''))
+                    trailer_row['Plate Number'] = updated_data.get('Trailer Plate', trailer_row.get('Plate Number', ''))
+                    trailer_row['Insurance'] = updated_data.get('Trailer Insurance', trailer_row.get('Insurance', ''))
+                    trailer_row['Technical Inspection'] = updated_data.get('Trailer Technical', trailer_row.get('Technical Inspection', ''))
+                    trailer_row['Certificate'] = updated_data.get('Trailer Certificate', trailer_row.get('Certificate', ''))
+                    
+                    # Handle Trailer Documents PDF replacement
+                    if 'Trailer Documents' in updated_data and isinstance(updated_data['Trailer Documents'], str):
+                        if updated_data['Trailer Documents'].startswith('data:application/pdf'):
+                            old_doc_url = trailer_row.get('Documents', '')
+                            if old_doc_url:
+                                delete_file_from_drive(old_doc_url)
+                            trailer_plate = trailer_row['Plate Number']
+                            filename = f"Trailer_{trailer_plate}_Documents.pdf"
+                            trailer_row['Documents'] = save_pdf_to_drive(updated_data['Trailer Documents'], filename, FOLDERAID_MACHINERY_DOCS)
+                    
+                    # Write trailer row back
+                    trailer_row_values = [trailer_row.get(h, "") for h in headers]
+                    sheet.update(range_name=f"A{row_index + 1}:Z{row_index + 1}", values=[trailer_row_values])
+                    print(f"✅ Updated trailer row at {row_index + 1}")
+                
+                elif not next_row_is_trailer and has_trailer_data:
+                    # ===================================================================
+                    # CASE B: No trailer exists BUT user sent trailer data → INSERT new trailer
+                    # ===================================================================
+                    print(f"🚛 No trailer exists, inserting new trailer row at {row_index + 1}...")
+                    
+                    # Build new trailer row
+                    trailer_row = {}
+                    for h in headers:
+                        if h == 'Status':
+                            trailer_row[h] = ''
+                        elif h == 'Machinery':
+                            trailer_row[h] = 'Trailer'
+                        elif h == 'Equipment Type':
+                            trailer_row[h] = 'Trailer'
+                        elif h == 'Model / Type':
+                            trailer_row[h] = updated_data.get('Trailer Model/Type', '')
+                        elif h == 'Plate Number':
+                            trailer_row[h] = updated_data.get('Trailer Plate', '')
+                        elif h == 'Driver 1' or h == 'Driver 2':
+                            trailer_row[h] = ''
+                        elif h == 'Insurance':
+                            trailer_row[h] = updated_data.get('Trailer Insurance', '')
+                        elif h == 'Technical Inspection':
+                            trailer_row[h] = updated_data.get('Trailer Technical', '')
+                        elif h == 'Certificate':
+                            trailer_row[h] = updated_data.get('Trailer Certificate', '')
+                        elif h == 'Inspection Date' or h == 'Next Inspection':
+                            trailer_row[h] = ''
+                        elif h == 'Documents':
+                            trailer_row[h] = updated_data.get('Trailer Documents', '')
+                        elif h == 'Driver 1 Doc' or h == 'Driver 2 Doc':
+                            trailer_row[h] = ''
+                        else:
+                            trailer_row[h] = ''
+                    
+                    # Handle Trailer Documents PDF upload
+                    if 'Documents' in trailer_row and isinstance(trailer_row['Documents'], str) and trailer_row['Documents'].startswith('data:application/pdf'):
+                        trailer_plate = trailer_row['Plate Number']
+                        filename = f"Trailer_{trailer_plate}_Documents.pdf"
+                        trailer_row['Documents'] = save_pdf_to_drive(trailer_row['Documents'], filename, FOLDERAID_MACHINERY_DOCS)
+                    
+                    # Prepare trailer row
+                    trailer_row_values = [trailer_row.get(h, '') for h in headers]
+                    
+                    # ✅ INSERT trailer row at row_index + 1 (pushes rows below down)
+                    sheet.insert_row(trailer_row_values, index=row_index + 1)
+                    print(f"✅ Inserted new trailer row at {row_index + 1}")
+                
+                elif next_row_is_trailer and not has_trailer_data:
+                    # ===================================================================
+                    # CASE C: Trailer exists BUT user didn't send trailer data
+                    # ===================================================================
+                    # Do nothing (keep existing trailer unchanged)
+                    # Future enhancement: could delete trailer if user explicitly unchecks
+                    print(f"ℹ️ Trailer row exists but no update data sent, leaving unchanged")
+                
+                else:
+                    # ===================================================================
+                    # CASE D: No trailer exists AND no trailer data sent
+                    # ===================================================================
+                    # Do nothing (normal machinery-only edit)
+                    print(f"ℹ️ No trailer involved in this edit")
+                
+                return {"status": "success", "updated": current_row}
 
-        updated_row_values = [current_row.get(h, "") for h in headers]
-        
-        # Update specific row
-        sheet.update(range_name=f"A{row_index}:Z{row_index}", values=[updated_row_values])
+        # ========================================================================
+        #  Default logic for non-Suivi sheets
+        # ========================================================================
+        else:
+            # Merge updated fields
+            for key, value in updated_data.items():
+                current_row[key] = value
 
-        return {"status": "success", "updated": current_row}
+            # Handle "Completed" logic for Maintenance
+            if "Status" in headers and updated_data.get("Status", "").lower() == "completed":
+                completion_date = get_current_time()
+                if "Completion Date" in headers:
+                    current_row["Completion Date"] = completion_date
+
+            updated_row_values = [current_row.get(h, "") for h in headers]
+            sheet.update(range_name=f"A{row_index}:Z{row_index}", values=[updated_row_values])
+
+            return {"status": "success", "updated": current_row}
+
     except Exception as e:
+        print(f"❌ Error in update_row: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 # =====================================================
-#  ✅  Delete Row
+#  ✅ STEP 3: Delete Row - TRAILER-AWARE DELETION
 # =====================================================
 def delete_row(sheet_name, row_index):
+    """
+    Delete a row from the sheet and associated files from Drive
+    For Suivi: handles main machinery + trailer deletion
+    
+    Args:
+        sheet_name: Name of the Google Sheet
+        row_index: Row number to delete (1-indexed)
+    
+    Returns:
+        JSON response with status
+    """
     try:
         sheet = client.open_by_key(SPREADSHEET_ID).worksheet(sheet_name)
-        sheet.delete_rows(row_index)
-        return {"status": "success", "message": f"Row {row_index} deleted successfully"}
+        
+        # ========================================================================
+        #  ✅ NEW: ENHANCED SUIVI DELETE LOGIC WITH TRAILER SUPPORT
+        # ========================================================================
+        if sheet_name == "Suivi":
+            headers = sheet.row_values(1)
+            
+            # Get the row data before deleting
+            try:
+                row_data = sheet.row_values(row_index)
+                if len(row_data) < len(headers):
+                    row_data += [""] * (len(headers) - len(row_data))
+                row_dict = dict(zip(headers, row_data))
+            except:
+                return {"status": "error", "message": f"Row {row_index} not found"}
+            
+            # Determine if this is a main machinery row or trailer row
+            machinery_type = row_dict.get('Machinery', '')
+            is_trailer_row = (machinery_type == 'Trailer')
+            
+            if is_trailer_row:
+                # ===================================================================
+                # CASE A: Deleting a TRAILER row (orphan or linked)
+                # ===================================================================
+                print(f"🗑️ Deleting trailer row at {row_index}")
+                
+                # Delete trailer documents from Drive
+                doc_url = row_dict.get('Documents', '')
+                if doc_url:
+                    delete_file_from_drive(doc_url)
+                    print(f"Deleted trailer documents: {doc_url}")
+                
+                # Delete the trailer row
+                sheet.delete_rows(row_index)
+                print(f"✅ Deleted trailer row at {row_index}")
+                
+                return {"status": "success", "message": f"Trailer row {row_index} deleted successfully"}
+            
+            else:
+                # ===================================================================
+                # CASE B: Deleting a MAIN MACHINERY row (may have linked trailer)
+                # ===================================================================
+                print(f"🗑️ Deleting main machinery row at {row_index}")
+                
+                # Step 1: Delete main machinery documents from Drive
+                doc_fields = ['Documents', 'Driver 1 Doc', 'Driver 2 Doc']
+                for field in doc_fields:
+                    doc_url = row_dict.get(field, '')
+                    if doc_url:
+                        delete_file_from_drive(doc_url)
+                        print(f"Deleted {field}: {doc_url}")
+                
+                # Step 2: Check if there's a linked trailer at row_index + 1
+                trailer_exists = False
+                try:
+                    next_row_data = sheet.row_values(row_index + 1)
+                    if len(next_row_data) < len(headers):
+                        next_row_data += [""] * (len(headers) - len(next_row_data))
+                    next_row_dict = dict(zip(headers, next_row_data))
+                    next_machinery_type = next_row_dict.get('Machinery', '')
+                    
+                    if next_machinery_type == 'Trailer':
+                        trailer_exists = True
+                        trailer_doc_url = next_row_dict.get('Documents', '')
+                        
+                        # Delete trailer documents from Drive
+                        if trailer_doc_url:
+                            delete_file_from_drive(trailer_doc_url)
+                            print(f"Deleted trailer documents: {trailer_doc_url}")
+                        
+                        print(f"🚛 Trailer found at {row_index + 1}, will delete both rows")
+                except:
+                    trailer_exists = False
+                
+                # Step 3: Delete rows
+                if trailer_exists:
+                    # Delete both main machinery and trailer (delete higher index first to avoid shifting issues)
+                    sheet.delete_rows(row_index + 1)  # Delete trailer first
+                    print(f"✅ Deleted trailer row at {row_index + 1}")
+                    sheet.delete_rows(row_index)      # Then delete main machinery
+                    print(f"✅ Deleted main machinery row at {row_index}")
+                    
+                    return {"status": "success", "message": f"Main machinery row {row_index} and trailer row {row_index + 1} deleted successfully"}
+                else:
+                    # Delete only main machinery
+                    sheet.delete_rows(row_index)
+                    print(f"✅ Deleted main machinery row at {row_index} (no trailer)")
+                    
+                    return {"status": "success", "message": f"Main machinery row {row_index} deleted successfully"}
+        
+        # ========================================================================
+        #  Default logic for other sheets
+        # ========================================================================
+        else:
+            # For non-Suivi sheets, simple deletion
+            sheet.delete_rows(row_index)
+            return {"status": "success", "message": f"Row {row_index} deleted successfully"}
+        
     except Exception as e:
+        print(f"❌ Error in delete_row: {str(e)}")
         return {"status": "error", "message": str(e)}

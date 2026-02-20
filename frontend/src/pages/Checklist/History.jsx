@@ -27,7 +27,7 @@ import { useCache } from "@/context/CacheContext";
 import { fetchWithAuth } from "@/api/api";
 import { useTranslation } from "react-i18next";
 import { getChecklistTemplate } from "@/config/checklistTemplates";
-import { PAGE_PERMISSIONS } from "@/config/roles";
+import { PAGE_PERMISSIONS, canUserPerformAction } from "@/config/roles";
 
 export default function ChecklistHistory() {
   const { user } = useAuth();
@@ -53,8 +53,8 @@ export default function ChecklistHistory() {
 
   const itemsPerPage = 10;
 
-  // Check if user can delete
-  const canDelete = user?.role === "Supervisor" || user?.role === "Admin";
+  // ✅ Check if user can delete (Centralized from roles.js)
+  const canDelete = canUserPerformAction(user?.role, 'CHECKLISTHISTORY_DELETE');
 
   /* -------------------- ACCESS CONTROL (Centralized) -------------------- */
   useEffect(() => {
@@ -328,7 +328,7 @@ export default function ChecklistHistory() {
         
         {/* Back Button */}
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/checklist')}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />

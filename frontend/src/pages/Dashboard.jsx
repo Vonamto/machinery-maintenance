@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, Droplets, Truck, Users, CheckCircle } from "lucide-react";
+import { Wrench, Droplets, Users, CheckCircle, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 // 🔐 Centralized roles & permissions
@@ -47,13 +47,13 @@ export default function Dashboard() {
     },
 
     {
-      title: t("dashboard.equipmentList.title"),
-      description: t("dashboard.equipmentList.description"),
-      icon: <Truck className="w-8 h-8 text-white drop-shadow-md" />,
-      link: "/equipment",
-      allowed: PAGE_PERMISSIONS.EQUIPMENT,
-      glow: "shadow-[0_0_15px_2px_rgba(251,146,60,0.6)]",
-      gradient: "from-orange-600 to-yellow-500",
+      title: t("dashboard.suivi.title"),
+      description: t("dashboard.suivi.description"),
+      icon: <FileText className="w-8 h-8 text-white drop-shadow-md" />,
+      link: "/suivi",
+      allowed: PAGE_PERMISSIONS.SUIVILIST,
+      glow: "shadow-[0_0_15px_2px_rgba(236,72,153,0.6)]",
+      gradient: "from-pink-600 to-rose-500",
     },
 
     {

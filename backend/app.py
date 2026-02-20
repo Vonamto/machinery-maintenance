@@ -107,13 +107,56 @@ def get_usernames():
 
 
 # =====================================================
+# ✅ NEW: Fetch Machinery Types for dropdowns
+# =====================================================
+@app.route('/api/machinery-types', methods=['GET'])
+@require_token
+def get_machinery_types():
+    """
+    Fetch machinery types from Machinery_Types sheet for dropdown population
+    Returns list of objects: [{"english": "...", "arabic": "...", "mapping": "..."}, ...]
+    """
+    try:
+        from sheets_service import client, SPREADSHEET_ID
+        sheet = client.open_by_key(SPREADSHEET_ID).worksheet('Machinery_Types')
+        records = sheet.get_all_records()
+        
+        # Return formatted data
+        machinery_types = [
+            {
+                'english': r.get('English', ''),
+                'arabic': r.get('Arabic', ''),
+                'mapping': r.get('Equipment_Type_Mapping', '')
+            }
+            for r in records if r.get('English')
+        ]
+        
+        return jsonify(machinery_types)
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+# =====================================================
+# ✅ NEW: Fetch Suivi data (alias for consistency)
+# =====================================================
+@app.route('/api/suivi', methods=['GET'])
+@require_token
+def get_suivi():
+    """Fetch Suivi sheet data"""
+    check = check_permission('Suivi', 'view')
+    if check:
+        return check
+    return get_sheet_data('Suivi')
+
+
+# =====================================================
 # ✅ VIEW
 # =====================================================
 @app.route("/api/<sheet_name>", methods=["GET"])
 @require_token
 def get_data(sheet_name):
     aliases = {
-        "equipment": "Equipment_List",
         "users": "Users"
     }
     sheet_key = aliases.get(sheet_name.lower(), sheet_name)

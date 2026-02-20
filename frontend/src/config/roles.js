@@ -5,37 +5,77 @@
 
 export const ROLES = {
   SUPERVISOR: "Supervisor",
-  MECHANIC: "Mechanic",
-  DRIVER: "Driver",
-  CLEANER: "Cleaning Guy",
-  ADMIN: "Admin",           // 🆕 NEW: Full access (including Users page)
-  GUEST: "Guest",           // 🆕 NEW: Access to all except Users page
-  MANAGER: "Manager",       // 🆕 NEW: Read-only access to history pages
+  MECHANIC:   "Mechanic",
+  DRIVER:     "Driver",
+  CLEANER:    "Cleaning Guy",
+  ADMIN:      "Admin",        // Full access (including Users page)
+  GUEST:      "Guest",        // Access to all except Users page
+  MANAGER:    "Manager",      // Read-only access to history pages
+  SUP_LOG:    "Sup Log",      // 🆕 Logistics Supervisor
+  HSE_GTG:    "HSE GTG",      // 🆕 HSE GTG (Suivi view only)
 };
 
 /* ================= Page Permissions ================= */
 
 export const PAGE_PERMISSIONS = {
   // Checklist
-  CHECKLIST: [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST],
-  CHECKLIST_FORM: [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST],
-  CHECKLIST_HISTORY: [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER],  // ✅ Manager can view
+  CHECKLIST:         [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG],
+  CHECKLIST_FORM:    [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.SUP_LOG],
+  CHECKLIST_HISTORY: [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG],
 
-  // Maintenance
-  MAINTENANCE: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST],
-  MAINTENANCE_FORM: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.ADMIN, ROLES.GUEST],
-  MAINTENANCE_HISTORY: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER],  // ✅ Manager can view
+  // Maintenance — neither new role can access frontend pages
+  MAINTENANCE:         [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER],
+  MAINTENANCE_FORM:    [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.ADMIN, ROLES.GUEST],
+  MAINTENANCE_HISTORY: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER],
 
   // Cleaning
-  CLEANING: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.CLEANER, ROLES.ADMIN, ROLES.GUEST],
-  CLEANING_FORM: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.CLEANER, ROLES.ADMIN, ROLES.GUEST],
-  CLEANING_HISTORY: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.CLEANER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER],  // ✅ Manager can view
+  CLEANING:         [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.CLEANER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG],
+  CLEANING_FORM:    [ROLES.SUPERVISOR, ROLES.CLEANER, ROLES.ADMIN, ROLES.GUEST, ROLES.SUP_LOG],
+  CLEANING_HISTORY: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.CLEANER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG],
 
-  // Equipment
-  EQUIPMENT: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST],
-  EQUIPMENT_LIST: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER],  // ✅ Manager can view
-  EQUIPMENT_MANAGE: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.GUEST],
+  // Suivi (Machinery Tracking)
+  SUIVI:       [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG, ROLES.HSE_GTG],
+  SUIVILIST:   [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG, ROLES.HSE_GTG],
+  SUIVIMANAGE: [ROLES.SUPERVISOR, ROLES.ADMIN],
+  SUIVIDETAIL: [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG, ROLES.HSE_GTG],
 
   // Users
-  USERS: [ROLES.ADMIN],  // 🔒 Only Admin (Supervisor removed)
+  USERS: [ROLES.ADMIN], // 🔒 Only Admin
 };
+
+/* ================= Action Permissions ================= */
+// Based on backend/permissions.py - Single source of truth for who can perform actions
+
+export const ACTION_PERMISSIONS = {
+  // ========== Cleaning History ==========
+  CLEANINGHISTORY_DELETE: [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // ========== Maintenance History ==========
+  MAINTENANCEHISTORY_DELETE: [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // ========== Checklist History ==========
+  CHECKLISTHISTORY_DELETE: [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // ========== Suivi (Machinery Tracking) ==========
+  SUIVI_ADD:    [ROLES.SUPERVISOR, ROLES.ADMIN],
+  SUIVI_EDIT:   [ROLES.SUPERVISOR, ROLES.ADMIN],
+  SUIVI_DELETE: [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // ========== Users Management ==========
+  USERS_ADD:    [ROLES.ADMIN],
+  USERS_EDIT:   [ROLES.ADMIN],
+  USERS_DELETE: [ROLES.ADMIN],
+};
+
+/* ================= Helper Functions ================= */
+
+/**
+ * Check if user can perform a specific action
+ * @param {string} userRole - The role of the current user
+ * @param {string} actionKey - The action key from ACTION_PERMISSIONS
+ * @returns {boolean} - True if user has permission, false otherwise
+ */
+export function canUserPerformAction(userRole, actionKey) {
+  const allowedRoles = ACTION_PERMISSIONS[actionKey] || [];
+  return allowedRoles.includes(userRole);
+}

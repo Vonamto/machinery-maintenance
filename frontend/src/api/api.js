@@ -58,16 +58,6 @@ export async function fetchWithAuth(path, opts = {}) {
   return res;
 }
 
-// Fetch Equipment List for dropdowns
-// Return shape: array of objects matching sheet rows
-export async function fetchEquipmentList(token) {
-  const res = await fetch(`${CONFIG.BACKEND_URL}/api/equipment`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('Failed to fetch EquipmentList');
-  return await res.json();
-}
-
 // Fetch all Users (Supervisor only, contains passwords so only supervisor should call)
 export async function fetchUsers(token) {
   const res = await fetch(`${CONFIG.BACKEND_URL}/api/users`, {
@@ -83,5 +73,63 @@ export async function fetchUsernames(token) {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Failed to fetch usernames list');
+  return await res.json();
+}
+
+// =====================================================
+// ✅ NEW: Suivi (Machinery Tracking) API Functions
+// =====================================================
+
+// Fetch Machinery Types for dropdowns
+export async function fetchMachineryTypes() {
+  const res = await fetchWithAuth('/api/machinery-types', {
+    method: 'GET',
+  });
+  if (!res) return [];
+  if (!res.ok) throw new Error('Failed to fetch machinery types');
+  return await res.json();
+}
+
+// Fetch Suivi data
+export async function fetchSuivi() {
+  const res = await fetchWithAuth('/api/suivi', {
+    method: 'GET',
+  });
+  if (!res) return [];
+  if (!res.ok) throw new Error('Failed to fetch Suivi data');
+  return await res.json();
+}
+
+// Add Suivi entry
+export async function addSuiviEntry(data) {
+  const res = await fetchWithAuth('/api/add/Suivi', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res) return { status: 'error', message: 'No response from server' };
+  if (!res.ok) throw new Error('Failed to add Suivi entry');
+  return await res.json();
+}
+
+// Update Suivi entry
+export async function updateSuiviEntry(rowIndex, data) {
+  const res = await fetchWithAuth(`/api/edit/Suivi/${rowIndex}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res) return { status: 'error', message: 'No response from server' };
+  if (!res.ok) throw new Error('Failed to update Suivi entry');
+  return await res.json();
+}
+
+// Delete Suivi entry
+export async function deleteSuiviEntry(rowIndex) {
+  const res = await fetchWithAuth(`/api/delete/Suivi/${rowIndex}`, {
+    method: 'DELETE',
+  });
+  if (!res) return { status: 'error', message: 'No response from server' };
+  if (!res.ok) throw new Error('Failed to delete Suivi entry');
   return await res.json();
 }
