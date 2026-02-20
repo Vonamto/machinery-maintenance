@@ -43,23 +43,34 @@ export default function Navbar({ user }) {
   return (
     <header className="bg-gray-900/90 backdrop-blur-lg text-white shadow-md flex items-center justify-between px-4 py-3 sticky top-0 z-50 border-b border-white/10">
 
-      {/* Left: Welcome + Name */}
-      <div className="flex flex-col sm:block max-w-[65%]">
-        <span className="text-sm sm:text-lg font-semibold">
-          👋 {t("navbar.welcome")},
-        </span>
-        <span
-          className="
-            text-cyan-400
-            text-sm sm:text-lg
-            font-semibold
-            break-words
-            sm:truncate sm:max-w-[300px]
-          "
-          title={fullName}
-        >
-          {fullName}
-        </span>
+      {/* Left: Logo + Welcome + Name */}
+      <div className="flex items-center gap-3 max-w-[65%]">
+
+        {/* Company Logo */}
+        <img
+          src="/logo.png"
+          alt="Company Logo"
+          className="h-8 w-auto shrink-0 hidden sm:block"
+        />
+
+        {/* Welcome Text */}
+        <div className="flex flex-col sm:block">
+          <span className="text-sm sm:text-lg font-semibold">
+            👋 {t("navbar.welcome")},
+          </span>
+          <span
+            className="
+              text-cyan-400
+              text-sm sm:text-lg
+              font-semibold
+              break-words
+              sm:truncate sm:max-w-[300px]
+            "
+            title={fullName}
+          >
+            {fullName}
+          </span>
+        </div>
       </div>
 
       {/* Right: Actions */}
