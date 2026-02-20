@@ -48,7 +48,11 @@ export default function Login() {
         
         {/* Logo / Title */}
         <div className="text-center mb-8">
-          <div className="text-4xl mb-3">🛠️</div>
+          <img
+            src="/logo.png"
+            alt="Company Logo"
+            className="h-20 w-auto mx-auto mb-3 drop-shadow-lg"
+          />
           <h1 className="text-2xl font-bold tracking-wide">
             {t("auth.loginTitle")}
           </h1>
