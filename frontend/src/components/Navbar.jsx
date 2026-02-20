@@ -50,7 +50,7 @@ export default function Navbar({ user }) {
         <img
           src="/logo.png"
           alt="Company Logo"
-          className="h-8 w-auto shrink-0 hidden sm:block"
+          className="h-8 w-auto shrink-0 "
         />
 
         {/* Welcome Text */}
