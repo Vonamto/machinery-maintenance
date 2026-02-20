@@ -13,7 +13,7 @@ const SuiviList = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  
+
   const [loading, setLoading] = useState(true);
   const [allMachinery, setAllMachinery] = useState([]);
   const [machineryTypes, setMachineryTypes] = useState([]);
@@ -38,7 +38,7 @@ const SuiviList = () => {
   }, [user, navigate]);
 
   // ==================== HELPER FUNCTIONS ====================
-  
+
   const getMachineryDisplayName = (englishName) => {
     if (i18n.language === 'ar') {
       const type = machineryTypes.find(t => t.english === englishName);
@@ -52,19 +52,19 @@ const SuiviList = () => {
   };
 
   // ==================== DRIVER FILTERING ====================
-  
+
   const driverAllowedPlates = useMemo(() => {
     if (user?.role !== 'Driver' || !user?.full_name) return null;
-    
+
     const plateNumbers = [];
     const driverFullName = user.full_name;
-    
+
     allMachinery.forEach((item) => {
       if (isTrailerRow(item)) return;
-      
+
       const driver1 = item['Driver 1'] || '';
       const driver2 = item['Driver 2'] || '';
-      
+
       if (
         driver1.toLowerCase().trim() === driverFullName.toLowerCase().trim() ||
         driver2.toLowerCase().trim() === driverFullName.toLowerCase().trim()
@@ -72,7 +72,7 @@ const SuiviList = () => {
         plateNumbers.push(item['Plate Number']);
       }
     });
-    
+
     return plateNumbers;
   }, [user, allMachinery]);
 
@@ -80,27 +80,27 @@ const SuiviList = () => {
     if (user?.role !== 'Driver' || !Array.isArray(driverAllowedPlates)) {
       return allMachinery;
     }
-    
+
     if (driverAllowedPlates.length === 0) {
       return [];
     }
-    
+
     const result = [];
     for (let i = 0; i < allMachinery.length; i++) {
       const item = allMachinery[i];
-      
+
       if (isTrailerRow(item)) continue;
-      
+
       if (driverAllowedPlates.includes(item['Plate Number'])) {
         result.push(item);
-        
+
         const nextRow = allMachinery[i + 1];
         if (nextRow && isTrailerRow(nextRow)) {
           result.push(nextRow);
         }
       }
     }
-    
+
     return result;
   }, [allMachinery, driverAllowedPlates, user]);
 
@@ -116,7 +116,7 @@ const SuiviList = () => {
         fetchSuivi(),
         fetchMachineryTypes()
       ]);
-      
+
       setAllMachinery(machineryData || []);
       setMachineryTypes(typesData || []);
     } catch (error) {
@@ -168,7 +168,7 @@ const SuiviList = () => {
         <div className="font-semibold">{formatDateForDisplay(dateStr)}</div>
         {status !== 'na' && (
           <div className="text-[10px] mt-0.5">
-            {days < 0 
+            {days < 0
               ? t('suivi.detail.fields.expired')
               : `(${days} ${days === 1 ? 'day' : 'days'} remaining)`
             }
@@ -196,35 +196,35 @@ const SuiviList = () => {
   // ==================== FILTERING ====================
   const filteredMachinery = useMemo(() => {
     const result = [];
-    
+
     for (let i = 0; i < machinery.length; i++) {
       const item = machinery[i];
-      
+
       if (isTrailerRow(item)) {
         continue;
       }
-      
+
       const plateNumber = String(item['Plate Number'] || '').toLowerCase();
       const modelType = String(item['Model / Type'] || '').toLowerCase();
       const search = searchTerm.toLowerCase();
-      
-      const matchesSearch = 
+
+      const matchesSearch =
         plateNumber.includes(search) ||
         modelType.includes(search);
-        
+
       const matchesStatus = !statusFilter || item.Status === statusFilter;
       const matchesType = !typeFilter || item.Machinery === typeFilter;
-      
+
       if (matchesSearch && matchesStatus && matchesType) {
         result.push(item);
-        
+
         const nextRow = machinery[i + 1];
         if (nextRow && isTrailerRow(nextRow)) {
           result.push(nextRow);
         }
       }
     }
-    
+
     return result;
   }, [machinery, searchTerm, statusFilter, typeFilter]);
 
@@ -267,12 +267,12 @@ const SuiviList = () => {
       alert(t("requests.grease.menu.accessDenied.message"));
       return;
     }
-    
+
     const confirmed = window.confirm(
       t('suivi.manage.alerts.deleteConfirm')
         .replace('{plate}', item['Plate Number'])
     );
-    
+
     if (!confirmed) return;
 
     setDeletingIndex(index);
@@ -311,14 +311,14 @@ const SuiviList = () => {
       >
         <div className="flex justify-between items-start mb-3">
           <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-            item.Status === 'Permanent' 
-              ? 'bg-green-500/20 text-green-400' 
+            item.Status === 'Permanent'
+              ? 'bg-green-500/20 text-green-400'
               : 'bg-orange-500/20 text-orange-400'
           }`}>
             {item.Status === 'Permanent' ? t('suivi.status.permanent') : t('suivi.status.callOff')}
           </span>
         </div>
-        
+
         <div className="space-y-2">
           <div className="text-lg font-bold text-white">
             {getMachineryDisplayName(item.Machinery)}
@@ -359,7 +359,7 @@ const SuiviList = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
-      
+
       <div className="max-w-[1600px] mx-auto p-6">
         {/* Header */}
         <div className="mb-6">
@@ -370,7 +370,7 @@ const SuiviList = () => {
             <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
             <span>{t('common.back')}</span>
           </button>
-          
+
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-gradient-to-br from-pink-600 to-rose-500 shadow-lg shadow-pink-500/40">
@@ -402,7 +402,7 @@ const SuiviList = () => {
         {canManage && (
           <div className="hidden lg:flex items-center gap-4 mb-6 bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 p-4">
             <span className="text-sm font-medium text-gray-300">{t('common.actions')}:</span>
-            
+
             {canEdit && (
               <button
                 onClick={() => setActionMode(actionMode === 'edit' ? null : 'edit')}
@@ -416,7 +416,7 @@ const SuiviList = () => {
                 <span>{t('common.edit')}</span>
               </button>
             )}
-            
+
             {canDelete && (
               <button
                 onClick={() => setActionMode(actionMode === 'delete' ? null : 'delete')}
@@ -435,7 +435,7 @@ const SuiviList = () => {
               <div className={`ml-4 text-sm ${
                 actionMode === 'edit' ? 'text-blue-400' : 'text-red-400'
               }`}>
-                {actionMode === 'edit' 
+                {actionMode === 'edit'
                   ? `ℹ️ ${t('suivi.list.editModeActive')}`
                   : `⚠️ ${t('suivi.list.deleteModeActive')}`
                 }
@@ -496,12 +496,16 @@ const SuiviList = () => {
               {filteredMachinery.map((item, index) => renderMobileCard(item, index))}
             </div>
 
-            {/* DESKTOP VIEW */}
-            <div className="hidden lg:block bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
-              {/* overflow-y-auto + max-h is required for sticky thead to work */}
-              <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-300px)]">
+            {/* DESKTOP VIEW
+                - No overflow-hidden on outer div so sticky thead is not trapped
+                - No max-h / overflow-y on scroll div so table renders at full natural height
+                - Page scroll handles vertical scrolling; sticky top-[60px] accounts for navbar
+                - bg-gray-900 on thead is fully opaque (no transparency)
+            */}
+            <div className="hidden lg:block bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700">
+              <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-900/70 sticky top-0 z-10">
+                  <thead className="bg-gray-900 sticky top-[60px] z-10">
                     <tr>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">#</th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{t('suivi.list.table.status')}</th>
@@ -646,7 +650,7 @@ const SuiviList = () => {
 
               {/* Pagination Controls */}
               {paginatedData.totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-700 bg-gray-900/50">
+                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-700 bg-gray-900/50 rounded-b-xl">
                   <span className="text-sm text-gray-400">
                     {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, paginatedData.totalGroups)} / {paginatedData.totalGroups}
                   </span>
