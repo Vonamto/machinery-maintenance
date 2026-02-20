@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import InstallPage from "./pages/Install";
 
 // 🔐 Roles & permissions (single source of truth)
 import { PAGE_PERMISSIONS } from "./config/roles";
@@ -41,7 +42,6 @@ export default function App() {
   // ✅ AUTO SWITCH LTR / RTL WHEN LANGUAGE CHANGES
   useEffect(() => {
     const isRTL = i18n.language === "ar";
-
     document.documentElement.dir = isRTL ? "rtl" : "ltr";
     document.documentElement.lang = i18n.language;
   }, [i18n.language]);
@@ -50,6 +50,9 @@ export default function App() {
     <BrowserRouter>
       <div className="min-h-screen bg-theme-background-primary text-theme-text-primary">
         <Routes>
+          {/* ================= Install ================= */}
+          <Route path="/install" element={<InstallPage />} />
+
           {/* ================= Login ================= */}
           <Route path="/login" element={<Login />} />
 
@@ -72,7 +75,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/maintenance/form"
             element={
@@ -81,7 +83,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/maintenance/history"
             element={
@@ -100,7 +101,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/cleaning/form"
             element={
@@ -109,7 +109,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/cleaning/history"
             element={
@@ -128,7 +127,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/checklist/form"
             element={
@@ -137,7 +135,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/checklist/history"
             element={
@@ -151,12 +148,11 @@ export default function App() {
           <Route
             path="/suivi"
             element={
-              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVI}>  {/* ✅ Changed from SUIVILIST to SUIVI */}
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVI}>
                 <SuiviMenu />
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/suivi/list"
             element={
@@ -165,7 +161,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/suivi/manage"
             element={
@@ -174,11 +169,10 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/suivi/detail/:plate"
             element={
-              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVIDETAIL}>  {/* ✅ Changed from SUIVILIST to SUIVIDETAIL */}
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.SUIVIDETAIL}>
                 <SuiviDetail />
               </ProtectedRoute>
             }
