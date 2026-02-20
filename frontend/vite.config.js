@@ -11,9 +11,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['pwa-192.png', 'pwa-512.png'],
       manifest: {
-        name: 'Machinery App',
-        short_name: 'Machinery',
-        description: 'Machinery management app',
+        name: 'Maintenance & HSE Management System',
+        short_name: 'TGS Portal',
+        description: 'TGS Management System',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
