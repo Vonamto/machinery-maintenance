@@ -127,7 +127,7 @@ export default function Login() {
 
         {/* Footer hint */}
         <div className="mt-4 text-center text-xs text-gray-500">
-          Machinery Maintenance System
+          Maintenance, HSE, and workforce management platform
         </div>
       </div>
     </div>
