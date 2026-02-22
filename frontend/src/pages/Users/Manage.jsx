@@ -1,13 +1,13 @@
 // frontend/src/pages/Users/Manage.jsx
 
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, Users, Plus, Trash2, Pencil, AlertCircle } from "lucide-react";
+import { ArrowLeft, Users, Plus, Trash2, Pencil, AlertCircle, Eye, EyeOff } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CONFIG from "@/config";
 import { useTranslation } from "react-i18next";
-import { ROLES, PAGE_PERMISSIONS, canUserPerformAction } from "@/config/roles"; // 🆕 Import centralized roles & permission checker
+import { ROLES, PAGE_PERMISSIONS, canUserPerformAction } from "@/config/roles";
 
 export default function UsersManage() {
   const { user } = useAuth();
@@ -26,12 +26,10 @@ export default function UsersManage() {
     "Full Name": "",
   });
 
-  // ✅ Centralized permission checks from roles.js
   const canAdd = canUserPerformAction(user?.role, 'USERS_ADD');
   const canEdit = canUserPerformAction(user?.role, 'USERS_EDIT');
   const canDelete = canUserPerformAction(user?.role, 'USERS_DELETE');
 
-  // 🔒 Centralized access control using roles.js
   if (!PAGE_PERMISSIONS.USERS.includes(user?.role)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white flex items-center justify-center">
@@ -78,18 +76,14 @@ export default function UsersManage() {
 
   const handleAddUser = async (e) => {
     e.preventDefault();
-    
-    // ✅ Check permission before adding
     if (!canAdd) {
       alert(t("requests.grease.menu.accessDenied.message"));
       return;
     }
-    
     if (!newUser.Username || !newUser.Password || !newUser["Full Name"]) {
       alert(t("users.manage.alerts.missingFields"));
       return;
     }
-
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
@@ -102,7 +96,6 @@ export default function UsersManage() {
         body: JSON.stringify(newUser),
       });
       const data = await res.json();
-
       if (data.status === "success") {
         alert(t("users.manage.alerts.addSuccess"));
         setShowAddForm(false);
@@ -125,17 +118,14 @@ export default function UsersManage() {
   };
 
   const handleDeleteUser = async (rowIndex, username) => {
-    // ✅ Check permission before deleting
     if (!canDelete) {
       alert(t("requests.grease.menu.accessDenied.message"));
       return;
     }
-    
     const confirmed = window.confirm(
       t("users.manage.alerts.deleteConfirm", { username: username })
     );
     if (!confirmed) return;
-
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
@@ -144,7 +134,6 @@ export default function UsersManage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-
       if (data.status === "success") {
         alert(t("users.manage.alerts.deleteSuccess"));
         loadUsers();
@@ -160,12 +149,10 @@ export default function UsersManage() {
   };
 
   const handleEditClick = (row) => {
-    // ✅ Check permission before editing
     if (!canEdit) {
       alert(t("requests.grease.menu.accessDenied.message"));
       return;
     }
-    
     setEditingRow({
       ...row,
       data: {
@@ -186,20 +173,15 @@ export default function UsersManage() {
 
   const handleSaveEdit = async (e) => {
     e.preventDefault();
-    
-    // ✅ Check permission before saving edit
     if (!canEdit) {
       alert(t("requests.grease.menu.accessDenied.message"));
       return;
     }
-    
     const { __row_index, data } = editingRow;
-
     if (!data.Username || !data.Password || !data["Full Name"]) {
       alert(t("users.manage.alerts.missingFields"));
       return;
     }
-
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
@@ -212,7 +194,6 @@ export default function UsersManage() {
         body: JSON.stringify(data),
       });
       const result = await res.json();
-
       if (result.status === "success") {
         alert(t("users.manage.alerts.editSuccess"));
         setEditingRow(null);
@@ -266,7 +247,6 @@ export default function UsersManage() {
             </div>
           </div>
 
-          {/* ✅ Only show Add button if user has permission */}
           {canAdd && (
             <button
               onClick={() => setShowAddForm(!showAddForm)}
@@ -352,7 +332,6 @@ export default function UsersManage() {
                   <td className="p-4 text-sm">{t(`roles.${r.Role}`)}</td>
                   <td className="p-4">
                     <div className="flex flex-wrap gap-2">
-                      {/* ✅ Only show Edit button if user has permission */}
                       {canEdit && (
                         <button
                           onClick={() => handleEditClick(r)}
@@ -363,8 +342,6 @@ export default function UsersManage() {
                           {t("users.manage.actions.edit")}
                         </button>
                       )}
-                      
-                      {/* ✅ Only show Delete button if user has permission */}
                       {canDelete && (
                         <button
                           onClick={() => handleDeleteUser(r.__row_index, r.Username)}
@@ -375,8 +352,6 @@ export default function UsersManage() {
                           {t("users.manage.actions.delete")}
                         </button>
                       )}
-                      
-                      {/* ✅ Show message if no permissions */}
                       {!canEdit && !canDelete && (
                         <span className="text-gray-500 text-sm italic">
                           {t("requests.grease.menu.accessDenied.message")}
@@ -394,17 +369,18 @@ export default function UsersManage() {
   );
 }
 
-// 🧩 Reusable subcomponents for cleaner JSX
+// 🧩 Reusable subcomponents
 function UserInputs({ user, setUser }) {
   const { t } = useTranslation();
-  
-  // Mapping of field names to their correct translation keys
+  // ✅ NEW: track password visibility per form instance
+  const [showPassword, setShowPassword] = useState(false);
+
   const fieldTranslationMap = {
     "Username": "username",
     "Password": "password",
     "Full Name": "fullName"
   };
-  
+
   return (
     <>
       {["Username", "Password", "Full Name"].map((field) => (
@@ -412,15 +388,38 @@ function UserInputs({ user, setUser }) {
           <label className="block text-sm font-medium text-gray-300 mb-2">
             {t(`users.manage.addForm.${fieldTranslationMap[field]}`)}
           </label>
-          <input
-            type={field === "Password" ? "password" : "text"}
-            value={user[field]}
-            onChange={(e) => setUser({ ...user, [field]: e.target.value })}
-            className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
-            required
-          />
+
+          {/* ✅ Password field gets a show/hide toggle, others stay plain */}
+          {field === "Password" ? (
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={user[field]}
+                onChange={(e) => setUser({ ...user, [field]: e.target.value })}
+                className="w-full p-3 pr-11 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          ) : (
+            <input
+              type="text"
+              value={user[field]}
+              onChange={(e) => setUser({ ...user, [field]: e.target.value })}
+              className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
+              required
+            />
+          )}
         </div>
       ))}
+
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">{t("users.manage.addForm.role")}</label>
         <select
@@ -428,7 +427,6 @@ function UserInputs({ user, setUser }) {
           onChange={(e) => setUser({ ...user, Role: e.target.value })}
           className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all"
         >
-          {/* 🆕 Dynamically generate role options from centralized ROLES */}
           {Object.values(ROLES).map((role) => (
             <option key={role} value={role}>
               {t(`roles.${role}`)}
