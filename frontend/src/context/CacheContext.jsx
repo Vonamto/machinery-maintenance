@@ -28,7 +28,7 @@ const CacheContext = createContext(null);
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const LS_KEYS = {
-  equipment: "cache_equipment_v2", // Changed from v1 to v2 to invalidate old Equipment_List cache
+  equipment: "cache_equipment_v2",
   equipment_ts: "cache_equipment_ts_v2",
   usernames: "cache_usernames_v1",
   usernames_ts: "cache_usernames_ts_v1",
@@ -79,7 +79,6 @@ export function CacheProvider({ children }) {
       localStorage.setItem(LS_KEYS.equipment, JSON.stringify(arr || []));
       localStorage.setItem(LS_KEYS.equipment_ts, String(Date.now()));
     } catch (e) {
-      // ignore storage errors
       console.warn("Cache: failed to persist equipment", e);
     }
     setEquipment(arr || []);
@@ -106,11 +105,8 @@ export function CacheProvider({ children }) {
     }
     try {
       setLoadingEquipment(true);
-      // ✅ Fetching from /api/suivi instead of /api/equipment
       const response = await fetchWithAuth("/api/suivi");
       const data = await response.json();
-      // Expecting array of rows from Suivi sheet:
-      // [{ "Status": "...", "Machinery": "...", "Model / Type": "...", "Plate Number": "...", "Driver 1": "...", "Driver 2": "...", ... }, ...]
       persistEquipment(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Cache: refreshEquipment failed (Suivi endpoint)", err);
@@ -123,7 +119,7 @@ export function CacheProvider({ children }) {
   const refreshUsernames = useCallback(async (force = false) => {
     const token = localStorage.getItem("token");
     if (!token) return;
-    // Read from ref (not state) — avoids making `usernames` a dependency
+    // Read from ref (not state)
     if (!force && !isStale(LS_KEYS.usernames_ts) && usernamesRef.current?.length) {
       return;
     }
@@ -131,7 +127,6 @@ export function CacheProvider({ children }) {
       setLoadingUsernames(true);
       const response = await fetchWithAuth("/api/usernames");
       const data = await response.json();
-      // Expecting [{ Name: 'Full Name', Role: 'Mechanic' }, ...]
       persistUsernames(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Cache: refreshUsernames failed", err);
@@ -142,7 +137,7 @@ export function CacheProvider({ children }) {
 
   // ✅ FIX: Empty dependency array [] means this effect runs ONCE on mount only.
   //         Before the fix, it was re-running every few milliseconds because
-  //         refreshEquipment/refreshUsernames kept getting recreated on every render.
+  //         refreshEquipment/refreshUsernames kept getting recreated.
   useEffect(() => {
     try {
       if (isStale(LS_KEYS.equipment_ts)) {
@@ -172,15 +167,14 @@ export function CacheProvider({ children }) {
     loadingUsernames,
 
     // helpers
-    getEquipment: () => equipment, // ✅ Returns ALL Suivi data (for Suivi pages - includes trailers)
+    getEquipment: () => equipment, // Returns ALL Suivi data (for Suivi pages - includes trailers)
 
-    // ✅ Returns Suivi data WITHOUT trailers (for other pages like Maintenance, Cleaning, etc.)
+    // Returns Suivi data WITHOUT trailers (for Maintenance, Cleaning, etc.)
     getEquipmentList: () => {
       return (equipment || []).filter((r) => r.Machinery !== "Trailer");
     },
 
     getModels: () => {
-      // ✅ Exclude trailers from models list
       const models = [...new Set(
         (equipment || [])
           .filter((r) => r.Machinery !== "Trailer")
@@ -191,7 +185,6 @@ export function CacheProvider({ children }) {
     },
 
     getPlatesByModel: (model) => {
-      // ✅ Exclude trailers when filtering by model
       if (!model) return [];
       return (equipment || [])
         .filter((r) => r.Machinery !== "Trailer" && r["Model / Type"] === model)
@@ -200,7 +193,6 @@ export function CacheProvider({ children }) {
     },
 
     getEquipmentByPlate: (plate) => {
-      // ✅ Only find non-trailer equipment by plate
       if (!plate) return null;
       return (equipment || []).find(
         (r) => r.Machinery !== "Trailer" && r["Plate Number"] === plate
@@ -208,7 +200,6 @@ export function CacheProvider({ children }) {
     },
 
     getDriversByPlate: (plate) => {
-      // ✅ Exclude trailers (they have no drivers anyway)
       const eq = (equipment || []).find(
         (r) => r.Machinery !== "Trailer" && r["Plate Number"] === plate
       );
@@ -219,7 +210,7 @@ export function CacheProvider({ children }) {
     getUsernames: () => usernames,
 
     // force refresh (manual)
-    forceRefreshEquipment: () => refreshEquipment(true), // Forces refresh of Suivi data
+    forceRefreshEquipment: () => refreshEquipment(true),
     forceRefreshUsernames: () => refreshUsernames(true),
   }), [equipment, usernames, loadingEquipment, loadingUsernames, refreshEquipment, refreshUsernames]);
 
