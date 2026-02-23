@@ -15,11 +15,6 @@ export default function CleaningForm() {
   const { t } = useTranslation();
   const todayDate = new Date().toISOString().split("T")[0];
 
-  // ✅ Destructure raw data arrays from cache.
-  // These only get a new reference when actual server data arrives,
-  // so they are safe to use as useEffect dependencies.
-  const { equipment, usernames } = cache;
-
   const [form, setForm] = useState({
     Date: todayDate,
     "Model / Type": "",
@@ -36,30 +31,40 @@ export default function CleaningForm() {
   const [plateOptions, setPlateOptions] = useState([]);
   const [driverOptions, setDriverOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [ready, setReady] = useState(false); // ✅ replaces the old `loading` state
+  const [loading, setLoading] = useState(true);
 
-  // ✅ FIX 1: Runs ONCE on mount.
-  // Triggers a refresh only if cache is empty, then marks the form as ready.
-  // NEVER reads from `cache` after the await — that would be a stale closure.
-  // The actual data is picked up reactively by the effect below.
+  // Load initial data from cache on component mount
   useEffect(() => {
-    const init = async () => {
-      if (!equipment.length) await cache.forceRefreshEquipment?.();
-      if (!usernames.length) await cache.forceRefreshUsernames?.();
-      setReady(true);
+    const loadInitialData = async () => {
+      try {
+        // Check if essential data exists in cache
+        const hasModels = cache.getModels && cache.getModels().length > 0;
+        const hasUsernames = cache.getUsernames && cache.getUsernames().length > 0;
+
+        // If data is missing, force a refresh
+        if (!hasModels || !hasUsernames) {
+          await Promise.allSettled([
+            cache.forceRefreshEquipment?.(),
+            cache.forceRefreshUsernames?.()
+          ]);
+        }
+
+        // After attempting to load, set initial options from cache
+        const models = cache.getModels ? cache.getModels() : [];
+        setModelOptions(models);
+
+      } catch (err) {
+        console.error("Error during initial data load:", err);
+      } finally {
+        setLoading(false);
+      }
     };
-    init();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ✅ FIX 2: Reactively syncs modelOptions whenever equipment data arrives or changes.
-  // This fires AFTER forceRefreshEquipment resolves and React commits the new equipment state,
-  // so cache.getModels() here always returns fresh data.
-  useEffect(() => {
-    setModelOptions(cache.getModels?.() || []);
-  }, [equipment]); // depends on the raw data array, not the cache object
+    loadInitialData();
+  }, [cache]);
 
-  // ✅ FIX 3: Model/Plate dynamic linking.
-  // Changed dep from `cache` → `equipment` so this only re-runs when real data changes.
+  // Dynamic linking: When Model/Type is selected, update available Plate Numbers AND Drivers
+  // BUT: If a Plate Number is already selected, don't change drivers (plate takes precedence)
   useEffect(() => {
     const model = form["Model / Type"];
     if (!model) {
@@ -67,35 +72,46 @@ export default function CleaningForm() {
       setDriverOptions([]);
       return;
     }
-    const plates = cache.getPlatesByModel?.(model) || [];
+    
+    // Get all plates that match the selected model
+    const plates = cache.getPlatesByModel ? cache.getPlatesByModel(model) : [];
     setPlateOptions(plates);
+
+    // Only update drivers if NO plate is selected (plate has priority over model)
     if (!form["Plate Number"]) {
-      const allEquipment = cache.getEquipmentList?.() || [];
+      // Get all drivers assigned to equipment of this model type
+      const allEquipment = cache.getEquipment ? cache.getEquipmentList() : [];
+      const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === model);
       const driversForThisModel = [
         ...new Set(
-          allEquipment
-            .filter(e => e["Model / Type"] === model)
-            .flatMap(e => [e["Driver 1"], e["Driver 2"], e["Driver"]])
-            .filter(Boolean)
-        ),
+          equipmentOfThisModel.flatMap((e) => [
+            e["Driver 1"],
+            e["Driver 2"],
+            e["Driver"]
+          ]).filter(Boolean)
+        )
       ];
       setDriverOptions(driversForThisModel);
     }
-  }, [form["Model / Type"], form["Plate Number"], equipment]); // ✅ equipment, not cache
+    // If plate is selected, drivers are already set by the plate useEffect, so don't override
+  }, [form["Model / Type"], form["Plate Number"], cache]);
 
-  // ✅ FIX 4: Plate dynamic linking.
+  // Dynamic linking: When Plate Number is selected, auto-fill Model and update Drivers
   useEffect(() => {
     const plate = form["Plate Number"];
     if (!plate) {
+      // If plate is cleared but model is still selected, restore drivers for that model
       if (form["Model / Type"]) {
-        const allEquipment = cache.getEquipmentList?.() || [];
+        const allEquipment = cache.getEquipment ? cache.getEquipmentList() : [];
+        const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === form["Model / Type"]);
         const driversForThisModel = [
           ...new Set(
-            allEquipment
-              .filter(e => e["Model / Type"] === form["Model / Type"])
-              .flatMap(e => [e["Driver 1"], e["Driver 2"], e["Driver"]])
-              .filter(Boolean)
-          ),
+            equipmentOfThisModel.flatMap((e) => [
+              e["Driver 1"],
+              e["Driver 2"],
+              e["Driver"]
+            ]).filter(Boolean)
+          )
         ];
         setDriverOptions(driversForThisModel);
       } else {
@@ -103,45 +119,64 @@ export default function CleaningForm() {
       }
       return;
     }
-    const eq = cache.getEquipmentByPlate?.(plate);
-    if (eq) {
-      setForm(p => ({ ...p, "Model / Type": eq["Model / Type"] || p["Model / Type"] }));
-      setDriverOptions(cache.getDriversByPlate?.(plate) || []);
-    }
-  }, [form["Plate Number"], equipment]); // ✅ equipment, not cache
 
-  // ✅ FIX 5: Driver dynamic linking.
+    // Get the equipment that matches this plate
+    const eq = cache.getEquipmentByPlate ? cache.getEquipmentByPlate(plate) : null;
+    if (eq) {
+      // Auto-fill the Model/Type field
+      setForm((p) => ({ ...p, "Model / Type": eq["Model / Type"] || p["Model / Type"] }));
+      // Update driver options to only show the 2 drivers for this specific equipment
+      const drivers = cache.getDriversByPlate ? cache.getDriversByPlate(plate) : [];
+      setDriverOptions(drivers);
+    }
+  }, [form["Plate Number"], cache]);
+
+  // Dynamic linking: When Driver is selected, auto-fill Model and Plate if there's only one match
   useEffect(() => {
     const driver = form.Driver;
     if (!driver) return;
-    const allEquipment = cache.getEquipmentList?.() || [];
-    const matches = allEquipment.filter(
-      e => e["Driver 1"] === driver || e["Driver 2"] === driver || e["Driver"] === driver
+
+    // Get all equipment that this driver is assigned to
+    const allEquipment = cache.getEquipment ? cache.getEquipmentList() : cache.equipment || [];
+    const matches = (allEquipment || []).filter(
+      (e) => e["Driver 1"] === driver || e["Driver 2"] === driver || e["Driver"] === driver
     );
+
+    // If driver is assigned to only ONE equipment, auto-fill everything
     if (matches.length === 1) {
       const eq = matches[0];
-      setForm(p => ({
+      setForm((p) => ({
         ...p,
         "Plate Number": eq["Plate Number"] || p["Plate Number"],
         "Model / Type": eq["Model / Type"] || p["Model / Type"],
       }));
       setPlateOptions([eq["Plate Number"]]);
-      setDriverOptions([eq["Driver 1"], eq["Driver 2"]].filter(Boolean));
-    } else if (matches.length > 1) {
+      setDriverOptions([matches[0]["Driver 1"], matches[0]["Driver 2"]].filter(Boolean));
+    } 
+    // If driver is assigned to multiple equipment, show all matching plates and models
+    else if (matches.length > 1) {
       const models = [...new Set(matches.map(m => m["Model / Type"]))];
+      
+      // If driver has only one model type, auto-fill model
       if (models.length === 1) {
-        setForm(p => ({ ...p, "Model / Type": models[0] || p["Model / Type"] }));
+        setForm((p) => ({
+          ...p,
+          "Model / Type": models[0] || p["Model / Type"],
+        }));
       }
-      setPlateOptions(matches.map(m => m["Plate Number"]));
-      setDriverOptions([
-        ...new Set(matches.flatMap(m => [m["Driver 1"], m["Driver 2"]]).filter(Boolean)),
-      ]);
-    } else {
+      
+      setPlateOptions(matches.map((m) => m["Plate Number"]));
+      setDriverOptions([...new Set(matches.flatMap((m) => [m["Driver 1"], m["Driver 2"]]).filter(Boolean))]);
+    } 
+    // If no matches found, reset plate options
+    else {
       setPlateOptions([]);
     }
-  }, [form.Driver, equipment]); // ✅ equipment, not cache
+  }, [form.Driver, cache]);
 
-  const handleChange = (name, value) => setForm(p => ({ ...p, [name]: value }));
+  const handleChange = (name, value) => {
+    setForm((p) => ({ ...p, [name]: value }));
+  };
 
   const handleFile = (file, field) => {
     if (!file) return;
@@ -150,7 +185,7 @@ export default function CleaningForm() {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form["Model / Type"] && !form["Plate Number"] && !form.Driver) {
       alert(t("cleaning.form.alerts.missingAsset"));
@@ -164,6 +199,7 @@ export default function CleaningForm() {
       alert(t("cleaning.form.alerts.missingCleaningType"));
       return;
     }
+
     setSubmitting(true);
     try {
       const res = await fetchWithAuth("/api/add/Cleaning_Log", {
@@ -186,13 +222,13 @@ export default function CleaningForm() {
     }
   };
 
-  // ✅ Derived directly from raw usernames array — always in sync
-  const allUserNames = (usernames || [])
-    .map(u => u.Name || u["Full Name"])
+  const cachedUsers = cache.getUsernames ? cache.getUsernames() : cache.usernames || [];
+  const allUserNames = (cachedUsers || [])
+    .map((u) => u.Name || u["Full Name"])
     .filter(Boolean);
 
-  // ✅ Show spinner until init() completes (i.e., until fetch is done or cache was already warm)
-  if (!ready) {
+  // Loading Screen
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
         <Navbar user={user} />
@@ -209,11 +245,10 @@ export default function CleaningForm() {
       <Navbar user={user} />
       <div className="max-w-4xl mx-auto p-6">
         <button
-          onClick={() => navigate("/cleaning")}
+          onClick={() => navigate('/cleaning')}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-          {t("cleaning.form.back")}
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> {t("cleaning.form.back")}
         </button>
 
         <div className="mb-8 flex items-center gap-4">
@@ -224,167 +259,128 @@ export default function CleaningForm() {
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-500">
               {t("cleaning.form.title")}
             </h1>
-            <p className="text-gray-400 text-sm mt-1">{t("cleaning.form.subtitle")}</p>
+            <p className="text-gray-400 text-sm mt-1">
+              {t("cleaning.form.subtitle")}
+            </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                {t("cleaning.form.date")}
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.date")}</label>
               <input
                 type="date"
                 value={form.Date}
-                onChange={e => handleChange("Date", e.target.value)}
+                onChange={(e) => handleChange("Date", e.target.value)}
                 className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white backdrop-blur-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
               />
             </div>
 
+            {/* Model/Type dropdown - filters Plate Number AND Driver options (unless plate is selected) */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                {t("cleaning.form.model")}
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.model")}</label>
               <select
                 value={form["Model / Type"]}
-                onChange={e => handleChange("Model / Type", e.target.value)}
+                onChange={(e) => handleChange("Model / Type", e.target.value)}
                 className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
               >
                 <option value="">{t("cleaning.form.chooseModel")}</option>
-                {modelOptions.map(m => (
+                {modelOptions.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
             </div>
 
+            {/* Plate Number dropdown - auto-fills Model and shows only the 2 drivers for this equipment */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                {t("cleaning.form.plate")}
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.plate")}</label>
               <select
                 value={form["Plate Number"]}
-                onChange={e => handleChange("Plate Number", e.target.value)}
+                onChange={(e) => handleChange("Plate Number", e.target.value)}
                 className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
               >
                 <option value="">{t("cleaning.form.choosePlate")}</option>
-                {(plateOptions.length
-                  ? plateOptions
-                  : cache.getEquipmentList?.() || []
-                ).map(p => {
-                  const plate = typeof p === "string" ? p : p["Plate Number"];
-                  return <option key={plate} value={plate}>{plate}</option>;
-                })}
+                {plateOptions.length
+                  ? plateOptions.map((p) => (<option key={p} value={p}>{p}</option>))
+                  : cache.getEquipment
+                  ? (cache.getEquipmentList() || []).map((e) => (<option key={e["Plate Number"]} value={e["Plate Number"]}>{e["Plate Number"]}</option>))
+                  : null}
               </select>
             </div>
 
+            {/* Driver dropdown - shows filtered drivers based on Model/Plate selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                {t("cleaning.form.driver")}
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.driver")}</label>
               <select
                 value={form.Driver}
-                onChange={e => handleChange("Driver", e.target.value)}
+                onChange={(e) => handleChange("Driver", e.target.value)}
                 className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
               >
                 <option value="">{t("cleaning.form.chooseDriver")}</option>
-                {(driverOptions.length
-                  ? driverOptions
-                  : [
-                      ...new Set(
-                        (cache.getEquipmentList?.() || [])
-                          .flatMap(eq => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]])
-                          .filter(Boolean)
-                      ),
-                    ]
-                ).map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
+                {driverOptions.length
+                  ? driverOptions.map((d) => (<option key={d} value={d}>{d}</option>))
+                  : Array.from(new Set((cache.getEquipment ? cache.getEquipmentList() : cache.equipment || []).flatMap((eq) => [eq["Driver 1"], eq["Driver 2"], eq["Driver"]]).filter(Boolean))).map((d) => (<option key={d} value={d}>{d}</option>))}
               </select>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              {t("cleaning.form.cleanedBy")}
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.cleanedBy")}</label>
             <select
               value={form["Cleaned By"]}
-              onChange={e => handleChange("Cleaned By", e.target.value)}
+              onChange={(e) => handleChange("Cleaned By", e.target.value)}
               className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
             >
               <option value="">{t("cleaning.form.selectCleaner")}</option>
-              {allUserNames.map(name => (
+              {allUserNames.map((name) => (
                 <option key={name} value={name}>{name}</option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              {t("cleaning.form.cleaningType")}
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.cleaningType")}</label>
             <select
               value={form["Cleaning Type"]}
-              onChange={e => handleChange("Cleaning Type", e.target.value)}
+              onChange={(e) => handleChange("Cleaning Type", e.target.value)}
               className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
             >
               <option value="">{t("cleaning.form.selectCleaningType")}</option>
               <option value="Blow Cleaning">{t("cleaningTypes.Blow Cleaning")}</option>
               <option value="Water Wash">{t("cleaningTypes.Water Wash")}</option>
-              <option value="Full Cleaning (Air & Water)">
-                {t("cleaningTypes.Full Cleaning (Air & Water)")}
-              </option>
+              <option value="Full Cleaning (Air & Water)">{t("cleaningTypes.Full Cleaning (Air & Water)")}</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              {t("cleaning.form.comments")}
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">{t("cleaning.form.comments")}</label>
             <textarea
               rows={3}
               value={form.Comments}
-              onChange={e => handleChange("Comments", e.target.value)}
+              onChange={(e) => handleChange("Comments", e.target.value)}
               className="w-full p-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all resize-none"
             />
           </div>
 
-          {["Photo Before", "Photo After"].map(field => (
+          {["Photo Before", "Photo After"].map((field) => (
             <div key={field}>
-              <label className="block text-sm font-medium text-gray-300 mb-3">
-                {t(`cleaning.form.${field.toLowerCase().replace(" ", "")}`)}
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-3">{t(`cleaning.form.${field.toLowerCase().replace(' ', '')}`)}</label>
               <div className="flex gap-3">
                 <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-700 hover:to-sky-800 text-white px-4 py-3 rounded-xl transition-all shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50">
                   <Upload size={18} />
                   <span className="font-medium">{t("common.upload")}</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={e => handleFile(e.target.files?.[0], field)}
-                  />
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], field)} />
                 </label>
                 <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white px-4 py-3 rounded-xl transition-all shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50">
                   <Camera size={18} />
                   <span className="font-medium">{t("common.camera")}</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={e => handleFile(e.target.files?.[0], field)}
-                  />
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0], field)} />
                 </label>
               </div>
               {form[field] && (
                 <div className="mt-4 p-2 bg-gray-800/30 rounded-xl border border-gray-700">
-                  <img
-                    src={form[field]}
-                    alt={t(`cleaning.form.${field.toLowerCase().replace(" ", "")}`)}
-                    className="max-h-64 mx-auto rounded-lg object-contain"
-                  />
+                  <img src={form[field]} alt={t(`cleaning.form.${field.toLowerCase().replace(' ', '')}`)} className="max-h-64 mx-auto rounded-lg object-contain" />
                 </div>
               )}
             </div>
