@@ -39,14 +39,14 @@ SHEET_PERMISSIONS = {
     },
 
     "Suivi": {
-        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["ADMIN"], ROLES["GUEST"], ROLES["MANAGER"], ROLES["SUP_LOG"], ROLES["HSE_GTG"]],
+        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["ADMIN"], ROLES["GUEST"], ROLES["MANAGER"], ROLES["SUP_LOG"], ROLES["HSE_GTG"], ROLES["CLEANER"]],
         "add":    [ROLES["SUPERVISOR"], ROLES["ADMIN"], ROLES["GUEST"], ROLES["SUP_LOG"]],
         "edit":   [ROLES["SUPERVISOR"], ROLES["ADMIN"], ROLES["GUEST"], ROLES["SUP_LOG"]],
         "delete": [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
     },
 
     "Machinery_Types": {
-        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["ADMIN"], ROLES["GUEST"], ROLES["MANAGER"], ROLES["SUP_LOG"], ROLES["HSE_GTG"]],
+        "view":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["DRIVER"], ROLES["ADMIN"], ROLES["GUEST"], ROLES["MANAGER"], ROLES["SUP_LOG"], ROLES["HSE_GTG"], ROLES["CLEANER"]],
         "add":    [ROLES["ADMIN"]],
         "edit":   [ROLES["ADMIN"]],
         "delete": [ROLES["ADMIN"]],
