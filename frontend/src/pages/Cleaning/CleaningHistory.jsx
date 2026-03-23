@@ -99,6 +99,20 @@ export default function CleaningHistory() {
     load();
   }, []);
 
+  /* ---------------- ✅ FIX ADDED: Ensure Equipment Cache is Loaded ---------------- */
+  // Without this, Driver role sees empty results on first load because
+  // driverAllowedPlates returns [] when cache hasn't loaded yet,
+  // causing the filter to reject every single row.
+  useEffect(() => {
+    const ensureEquipmentLoaded = async () => {
+      const hasEquipment = cache.getEquipment && cache.getEquipment().length > 0;
+      if (!hasEquipment) {
+        await cache.forceRefreshEquipment?.();
+      }
+    };
+    ensureEquipmentLoaded();
+  }, [cache]);
+
   /* ---------------- Driver → Allowed Plates ---------------- */
 
   const driverAllowedPlates = useMemo(() => {
