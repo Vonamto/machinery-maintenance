@@ -221,6 +221,7 @@ def hse_restock():
     data = request.get_json() or {}
     ppe_type = data.get('PPE_Type', '').strip()
     size = str(data.get('Size', '')).strip()
+    added_by = data.get('Added_by', '').strip()
     try:
         quantity = int(data.get('Quantity', 0))
     except (ValueError, TypeError):
@@ -247,6 +248,7 @@ def hse_restock():
                 row_dict = dict(zip(headers, existing))
                 row_dict['Quantity'] = new_qty
                 row_dict['Last_Updated'] = current_time
+                row_dict['Added_by'] = added_by  # ✅ update who last restocked
                 sheet.update(
                     range_name=f'A{idx}:{col_letter}{idx}',
                     values=[[row_dict.get(h, '') for h in headers]]
@@ -259,6 +261,7 @@ def hse_restock():
         new_row['Size'] = size
         new_row['Quantity'] = quantity
         new_row['Last_Updated'] = current_time
+        new_row['Added_by'] = added_by  # ✅ record who added this stock entry
         sheet.append_row([new_row.get(h, '') for h in headers])
         return jsonify({'status': 'success', 'new_quantity': quantity, 'action': 'created'})
 
