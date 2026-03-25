@@ -63,6 +63,10 @@
     "suivi": {
       "title": "Machinery Tracking",
       "description": "Track machinery documents and inspections"
+    },
+    "hse": {
+      "title": "HSE Module",
+      "description": "Manage PPE stock, distribution and worker safety"
     }
   },
   "maintenance": {
