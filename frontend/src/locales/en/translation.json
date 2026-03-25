@@ -834,6 +834,30 @@
       "callOff": "Call-Off"
     }
   },
+    "hse": {
+    "menu": {
+      "title": "HSE — Health, Safety & Environment",
+      "subtitle": "Manage PPE stock, distribution and worker safety records",
+      "cards": {
+        "stock": {
+          "title": "PPE Stock",
+          "description": "View and manage personal protective equipment inventory"
+        },
+        "distribute": {
+          "title": "PPE Distribution",
+          "description": "Issue PPE items to workers and log distributions"
+        },
+        "history": {
+          "title": "Distribution History",
+          "description": "View all past PPE distribution records"
+        },
+        "workers": {
+          "title": "Workers List",
+          "description": "Manage worker List"
+        }
+      }
+    }
+  },
   "users": {
     "manage": {
       "title": "Manage Users",
