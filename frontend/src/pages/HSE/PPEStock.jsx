@@ -12,6 +12,56 @@ const API_BASE = import.meta.env.VITE_API_URL;
 const emptyStockForm = { PPE_Type: "", Size: "", Quantity: "", Notes: "" };
 const emptyTypeForm  = { Name: "", Has_Size: "NO", Category: "" };
 
+// ── Status helpers ────────────────────────────────────────────
+const getStatus = (available) => {
+  if (available <= 0) return "out";
+  if (available <= 5) return "low";
+  return "good";
+};
+
+const STATUS_COLORS = {
+  out:  {
+    num:    "text-red-400",
+    badge:  "bg-red-900/50 text-red-300",
+    border: "border-red-700/60",
+    bg:     "bg-red-950/40",
+    rowBg:  "bg-red-900/10",
+  },
+  low:  {
+    num:    "text-yellow-400",
+    badge:  "bg-yellow-900/50 text-yellow-300",
+    border: "border-yellow-700/60",
+    bg:     "bg-yellow-950/30",
+    rowBg:  "bg-yellow-900/10",
+  },
+  good: {
+    num:    "text-green-400",
+    badge:  "bg-green-900/50 text-green-300",
+    border: "border-gray-700",
+    bg:     "bg-gray-800/80",
+    rowBg:  "",
+  },
+};
+
+const STATUS_LABEL = (status, t) => {
+  if (status === "out") return `🔴 ${t("hse.stock.summary.outOfStock")}`;
+  if (status === "low") return `🟡 ${t("hse.stock.summary.lowStock")}`;
+  return `🟢 ${t("hse.stock.summary.inStock")}`;
+};
+
+const SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "3XL", "4XL"];
+const sortSizes = (a, b) => {
+  const ai = SIZE_ORDER.indexOf(a.size.toUpperCase());
+  const bi = SIZE_ORDER.indexOf(b.size.toUpperCase());
+  if (ai !== -1 && bi !== -1) return ai - bi;
+  if (ai !== -1) return -1;
+  if (bi !== -1) return 1;
+  const an = parseFloat(a.size);
+  const bn = parseFloat(b.size);
+  if (!isNaN(an) && !isNaN(bn)) return an - bn;
+  return a.size.localeCompare(b.size);
+};
+
 export default function PPEStock() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -40,7 +90,7 @@ export default function PPEStock() {
   const [editStockLoading, setEditStockLoading] = useState(false);
   const [stockSearch,      setStockSearch]      = useState("");
 
-  // ── Distribution log (for summary calc) ──────────────────────
+  // ── Distribution log ──────────────────────────────────────────
   const [distEntries, setDistEntries] = useState([]);
 
   // ── PPE Types state ───────────────────────────────────────────
@@ -70,7 +120,7 @@ export default function PPEStock() {
   const typeHasSize = (typeName) =>
     ppeTypes.find((p) => p.Name === typeName)?.Has_Size === "YES";
 
-  // ── Fetch all in parallel ─────────────────────────────────────
+  // ── Fetch all ─────────────────────────────────────────────────
   const fetchAll = async () => {
     setStockLoading(true);
     setTypesLoading(true);
@@ -126,42 +176,81 @@ export default function PPEStock() {
 
   useEffect(() => { fetchAll(); }, []);
 
-  // ── Summary calculation ───────────────────────────────────────
-  const summaryRows = useMemo(() => {
+  // ── Grouped summary calculation ───────────────────────────────
+  const groupedSummary = useMemo(() => {
     const now       = new Date();
     const thisMonth = now.getMonth();
     const thisYear  = now.getFullYear();
+
+    // map: PPE_Type -> size -> { restocked, distributed, distributedThisMonth }
     const map = {};
 
     stockEntries.forEach((e) => {
-      const key = `${e.PPE_Type}||${e.Size || ""}`;
-      if (!map[key]) map[key] = { PPE_Type: e.PPE_Type, Size: e.Size || "", restocked: 0, distributed: 0, distributedThisMonth: 0 };
-      map[key].restocked += Number(e.Quantity || 0);
+      const type = e.PPE_Type;
+      const size = e.Size || "";
+      if (!map[type]) map[type] = {};
+      if (!map[type][size]) map[type][size] = { restocked: 0, distributed: 0, distributedThisMonth: 0 };
+      map[type][size].restocked += Number(e.Quantity || 0);
     });
 
     distEntries.forEach((e) => {
-      const key = `${e.PPE_Type}||${e.Size || ""}`;
-      if (!map[key]) map[key] = { PPE_Type: e.PPE_Type, Size: e.Size || "", restocked: 0, distributed: 0, distributedThisMonth: 0 };
-      map[key].distributed += Number(e.Quantity || 0);
+      const type = e.PPE_Type;
+      const size = e.Size || "";
+      if (!map[type]) map[type] = {};
+      if (!map[type][size]) map[type][size] = { restocked: 0, distributed: 0, distributedThisMonth: 0 };
+      map[type][size].distributed += Number(e.Quantity || 0);
       const d = new Date(e.Date || e.date || "");
       if (!isNaN(d) && d.getMonth() === thisMonth && d.getFullYear() === thisYear) {
-        map[key].distributedThisMonth += Number(e.Quantity || 0);
+        map[type][size].distributedThisMonth += Number(e.Quantity || 0);
       }
     });
 
-    return Object.values(map).map((row) => ({
-      ...row,
-      available: row.restocked - row.distributed,
-    }));
+    return Object.entries(map)
+      .map(([ppeType, sizeMap]) => {
+        const entries = Object.entries(sizeMap).map(([size, data]) => ({
+          size,
+          available: data.restocked - data.distributed,
+          distributedThisMonth: data.distributedThisMonth,
+        }));
+
+        const hasSize = entries.some((s) => s.size !== "");
+        const totalDistributedThisMonth = entries.reduce((a, s) => a + s.distributedThisMonth, 0);
+
+        if (!hasSize) {
+          const row = entries[0] || { available: 0, distributedThisMonth: 0 };
+          return {
+            PPE_Type: ppeType,
+            hasSize: false,
+            available: row.available,
+            distributedThisMonth: row.distributedThisMonth,
+          };
+        }
+
+        const sortedSizes = entries
+          .filter((s) => s.size !== "")
+          .sort(sortSizes);
+
+        // Overall card status = worst among all sizes
+        const overallStatus = sortedSizes.some((s) => s.available <= 0)
+          ? "out"
+          : sortedSizes.some((s) => s.available <= 5)
+          ? "low"
+          : "good";
+
+        return {
+          PPE_Type: ppeType,
+          hasSize: true,
+          sizes: sortedSizes,
+          overallStatus,
+          totalDistributedThisMonth,
+        };
+      })
+      .sort((a, b) => a.PPE_Type.localeCompare(b.PPE_Type));
   }, [stockEntries, distEntries]);
 
-  const filteredSummary = summaryRows.filter((r) => {
-    const q = summarySearch.toLowerCase();
-    return (
-      (r.PPE_Type || "").toLowerCase().includes(q) ||
-      (r.Size     || "").toLowerCase().includes(q)
-    );
-  });
+  const filteredGrouped = groupedSummary.filter((r) =>
+    (r.PPE_Type || "").toLowerCase().includes(summarySearch.toLowerCase())
+  );
 
   // ── Restock ───────────────────────────────────────────────────
   const handleRestock = async () => {
@@ -417,50 +506,79 @@ export default function PPEStock() {
 
             {stockLoading ? (
               <p className="text-gray-400 text-sm">{t("common.loading")}</p>
-            ) : filteredSummary.length === 0 ? (
+            ) : filteredGrouped.length === 0 ? (
               <p className="text-gray-400 text-sm">{t("hse.stock.noResults")}</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredSummary.map((row, idx) => {
-                  const isOut = row.available <= 0;
-                  const isLow = row.available > 0 && row.available <= 5;
-                  const colors = isOut
-                    ? { card: "bg-red-950/40 border-red-700/60",       num: "text-red-400",    badge: "bg-red-900/50 text-red-300" }
-                    : isLow
-                    ? { card: "bg-yellow-950/30 border-yellow-700/60", num: "text-yellow-400", badge: "bg-yellow-900/50 text-yellow-300" }
-                    : { card: "bg-gray-800/80 border-gray-700",        num: "text-green-400",  badge: "bg-green-900/50 text-green-300" };
-
-                  return (
-                    <div key={idx} className={`border rounded-2xl p-5 flex flex-col gap-3 transition ${colors.card}`}>
-                      {/* Name + status badge */}
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-white text-sm leading-tight">{row.PPE_Type}</p>
-                          {row.Size && (
-                            <p className="text-xs text-gray-400 mt-0.5">
-                              {t("hse.stock.fields.size")}: <span className="text-gray-300">{row.Size}</span>
-                            </p>
-                          )}
+                {filteredGrouped.map((group, idx) => {
+                  // ── No-size card ──
+                  if (!group.hasSize) {
+                    const st = getStatus(group.available);
+                    const c  = STATUS_COLORS[st];
+                    return (
+                      <div key={idx} className={`border rounded-2xl p-5 flex flex-col gap-3 ${c.bg} ${c.border}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-semibold text-white text-sm leading-tight">{group.PPE_Type}</p>
+                          <span className={`shrink-0 px-2 py-1 rounded-full text-xs font-bold ${c.badge}`}>
+                            {STATUS_LABEL(st, t)}
+                          </span>
                         </div>
-                        <span className={`shrink-0 px-2 py-1 rounded-full text-xs font-bold ${colors.badge}`}>
-                          {isOut
-                            ? `🔴 ${t("hse.stock.summary.outOfStock")}`
-                            : isLow
-                            ? `🟡 ${t("hse.stock.summary.lowStock")}`
-                            : `🟢 ${t("hse.stock.summary.inStock")}`}
+                        <div>
+                          <p className="text-xs text-gray-400 mb-0.5">{t("hse.stock.summary.table.available")}</p>
+                          <p className={`text-4xl font-bold leading-none ${c.num}`}>{group.available}</p>
+                        </div>
+                        <div className="border-t border-gray-700/60 pt-3">
+                          <p className="text-xs text-gray-400">{t("hse.stock.summary.table.distributed")}</p>
+                          <p className="text-xl font-semibold text-orange-400">{group.distributedThisMonth}</p>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // ── Sized card ──
+                  const oc = STATUS_COLORS[group.overallStatus];
+                  return (
+                    <div key={idx} className={`border rounded-2xl p-5 flex flex-col gap-3 ${oc.bg} ${oc.border}`}>
+                      {/* Header */}
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-semibold text-white text-sm leading-tight">{group.PPE_Type}</p>
+                        <span className={`shrink-0 px-2 py-1 rounded-full text-xs font-bold ${oc.badge}`}>
+                          {STATUS_LABEL(group.overallStatus, t)}
                         </span>
                       </div>
 
-                      {/* Available — big number */}
-                      <div>
-                        <p className="text-xs text-gray-400 mb-0.5">{t("hse.stock.summary.table.available")}</p>
-                        <p className={`text-4xl font-bold leading-none ${colors.num}`}>{row.available}</p>
+                      {/* Size rows */}
+                      <div className="flex flex-col divide-y divide-gray-700/50">
+                        {group.sizes.map((sizeRow) => {
+                          const st = getStatus(sizeRow.available);
+                          const sc = STATUS_COLORS[st];
+                          return (
+                            <div
+                              key={sizeRow.size}
+                              className={`flex items-center justify-between py-2 px-1 rounded ${sc.rowBg}`}
+                            >
+                              {/* Size label */}
+                              <span className="text-sm font-bold text-gray-200 w-10 shrink-0">
+                                {sizeRow.size}
+                              </span>
+                              {/* Available */}
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-gray-400">{t("hse.stock.summary.table.available")}:</span>
+                                <span className={`text-lg font-bold ${sc.num}`}>{sizeRow.available}</span>
+                              </div>
+                              {/* Status pill */}
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${sc.badge}`}>
+                                {st === "out" ? "🔴" : st === "low" ? "🟡" : "🟢"}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
 
-                      {/* Distributed this month */}
+                      {/* Footer: distributed this month */}
                       <div className="border-t border-gray-700/60 pt-3">
                         <p className="text-xs text-gray-400">{t("hse.stock.summary.table.distributed")}</p>
-                        <p className="text-xl font-semibold text-orange-400">{row.distributedThisMonth}</p>
+                        <p className="text-xl font-semibold text-orange-400">{group.totalDistributedThisMonth}</p>
                       </div>
                     </div>
                   );
