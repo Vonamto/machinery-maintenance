@@ -959,6 +959,42 @@
     "error": "An error occurred.",
     "networkError": "Network error. Please try again."
   }
+},
+"distribute": {
+  "title": "PPE Distribution",
+  "subtitle": "Issue personal protective equipment to workers",
+  "formTitle": "New Distribution Entry",
+  "submitButton": "Record Distribution",
+  "accessDenied": "You do not have permission to distribute PPE.",
+  "outOfStock": "Out of stock",
+  "available": "Available",
+  "noWorkerFound": "No worker found. Please add them to the Workers list first.",
+  "fields": {
+    "date": "Date",
+    "workerName": "Worker Name",
+    "workerPosition": "Position",
+    "ppeType": "PPE Type",
+    "size": "Size",
+    "quantity": "Quantity",
+    "givenBy": "Given By",
+    "notes": "Notes"
+  },
+  "placeholders": {
+    "workerName": "Type to search worker...",
+    "ppeType": "--- Select PPE Type ---",
+    "size": "--- Select Size ---",
+    "notes": "Optional notes..."
+  },
+  "alerts": {
+    "missingWorker": "Please select a worker from the list.",
+    "missingType": "Please select a PPE type.",
+    "missingSize": "Please select a size.",
+    "missingQty": "Please enter a valid quantity.",
+    "exceedsStock": "Quantity exceeds available stock (max: {{max}}).",
+    "success": "✅ Distribution recorded successfully!",
+    "error": "An error occurred.",
+    "networkError": "Network error. Please try again."
+  }
 }
   },
   "users": {
