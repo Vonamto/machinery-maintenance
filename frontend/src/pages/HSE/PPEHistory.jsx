@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import Navbar from "../../components/Navbar";
 import { canUserPerformAction } from "@/config/roles";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -39,9 +40,12 @@ export default function PPEHistory() {
   const [workerFocused, setWorkerFocused] = useState(false);
   const [workerLocked,  setWorkerLocked]  = useState(false);
 
-  // ── Delete confirm modal ───────────────────────────────────────
+  // ── Delete confirm modal ──────────────────────────────────────
   const [deleteTarget,  setDeleteTarget]  = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // ── Mobile expand ─────────────────────────────────────────────
+  const [expandedIndex, setExpandedIndex] = useState(null);
 
   // ── Alert ─────────────────────────────────────────────────────
   const [alert, setAlert] = useState(null);
@@ -122,7 +126,6 @@ export default function PPEHistory() {
   const editTypeHasSize =
     ppeTypes.find((p) => p.Name === editForm.PPE_Type)?.Has_Size === "YES";
 
-  // Sizes available for the edit form (adds back original qty for same type+size)
   const editAvailableSizes = useMemo(() => {
     if (!editEntry || !editForm.PPE_Type) return [];
     const keys = Object.keys(availableQty).filter(
@@ -136,7 +139,6 @@ export default function PPEHistory() {
     });
   }, [editForm.PPE_Type, editEntry, availableQty]);
 
-  // Max available for current edit selection
   const editCurrentAvailable = () => {
     if (!editEntry) return 0;
     const oldKey = `${editEntry.PPE_Type}||${editEntry.Size || ""}`;
@@ -163,14 +165,13 @@ export default function PPEHistory() {
   };
 
   const handleSaveEdit = async () => {
-    if (!editForm.Worker_Name)                              { showAlert("error", t("hse.history.alerts.missingWorker")); return; }
-    if (!editForm.PPE_Type)                                 { showAlert("error", t("hse.history.alerts.missingType"));   return; }
-    if (editTypeHasSize && !editForm.Size)                  { showAlert("error", t("hse.history.alerts.missingSize"));   return; }
-    if (!editForm.Quantity || Number(editForm.Quantity) <=0){ showAlert("error", t("hse.history.alerts.missingQty"));   return; }
+    if (!editForm.Worker_Name)                               { showAlert("error", t("hse.history.alerts.missingWorker")); return; }
+    if (!editForm.PPE_Type)                                  { showAlert("error", t("hse.history.alerts.missingType"));   return; }
+    if (editTypeHasSize && !editForm.Size)                   { showAlert("error", t("hse.history.alerts.missingSize"));   return; }
+    if (!editForm.Quantity || Number(editForm.Quantity) <= 0){ showAlert("error", t("hse.history.alerts.missingQty"));   return; }
     if (Number(editForm.Quantity) > editCurrentAvailable()) {
       showAlert("error", t("hse.history.alerts.exceedsStock", { max: editCurrentAvailable() })); return;
     }
-
     setEditLoading(true);
     try {
       const payload = {
@@ -431,70 +432,158 @@ export default function PPEHistory() {
           </button>
         )}
 
-        {/* ── Table ── */}
+        {/* ── Content ── */}
         {loading ? (
           <p className="text-gray-400 text-sm">{t("common.loading")}</p>
         ) : filtered.length === 0 ? (
           <p className="text-gray-400 text-sm">{t("hse.history.noResults")}</p>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-gray-700">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
-                <tr>
-                  <th className="px-4 py-3">#</th>
-                  <th className="px-4 py-3">{t("hse.history.table.date")}</th>
-                  <th className="px-4 py-3">{t("hse.history.table.workerName")}</th>
-                  <th className="px-4 py-3">{t("hse.history.table.workerPosition")}</th>
-                  <th className="px-4 py-3">{t("hse.history.table.ppeType")}</th>
-                  <th className="px-4 py-3">{t("hse.history.table.size")}</th>
-                  <th className="px-4 py-3">{t("hse.history.table.quantity")}</th>
-                  <th className="px-4 py-3">{t("hse.history.table.givenBy")}</th>
-                  <th className="px-4 py-3">{t("hse.history.table.notes")}</th>
-                  {(canEdit || canDelete) && (
-                    <th className="px-4 py-3">{t("common.actions")}</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((entry, idx) => (
-                  <tr key={entry.rowindex}
-                    className="border-t border-gray-700 hover:bg-gray-800/50 transition">
-                    <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
-                    <td className="px-4 py-3 text-gray-300 text-xs">{entry.Date}</td>
-                    <td className="px-4 py-3 font-medium">{entry.Worker_Name}</td>
-                    <td className="px-4 py-3 text-gray-300">{entry.Worker_Position}</td>
-                    <td className="px-4 py-3 text-gray-300">{entry.PPE_Type}</td>
-                    <td className="px-4 py-3 text-gray-300">{entry.Size || "—"}</td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-1 rounded-full bg-green-900/50 text-green-300 text-xs font-bold">
-                        {entry.Quantity}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{entry.Given_By}</td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{entry.Notes || "—"}</td>
-                    {(canEdit || canDelete) && (
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2">
-                          {canEdit && (
-                            <button onClick={() => startEdit(entry)}
-                              className="px-3 py-1 rounded bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold transition">
-                              {t("common.edit")}
-                            </button>
-                          )}
-                          {canDelete && (
-                            <button onClick={() => setDeleteTarget(entry)}
-                              className="px-3 py-1 rounded bg-red-700 hover:bg-red-600 text-white text-xs font-semibold transition">
-                              {t("common.delete")}
-                            </button>
-                          )}
+          <>
+            {/* ════ MOBILE CARDS (hidden on md+) ════ */}
+            <div className="md:hidden space-y-3">
+              {filtered.map((entry, idx) => {
+                const isExpanded = expandedIndex === idx;
+                return (
+                  <div
+                    key={entry.rowindex}
+                    className="bg-gray-800/60 border border-gray-700 rounded-2xl p-4 shadow-lg"
+                  >
+                    {/* Card header — always visible, tap to expand */}
+                    <button
+                      onClick={() => setExpandedIndex(isExpanded ? null : idx)}
+                      className="w-full text-left"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div>
+                          <p className="text-base font-semibold text-lime-400 leading-tight">
+                            {entry.Worker_Name}
+                          </p>
+                          <p className="text-xs text-gray-400">{entry.Worker_Position}</p>
                         </div>
-                      </td>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs text-gray-300 bg-gray-700 px-2 py-1 rounded-full">
+                            {entry.Date}
+                          </span>
+                          {isExpanded
+                            ? <ChevronUp size={16} className="text-gray-400" />
+                            : <ChevronDown size={16} className="text-gray-400" />}
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Always visible: PPE info */}
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <span className="text-sm font-medium text-white">{entry.PPE_Type}</span>
+                      {entry.Size && (
+                        <span className="px-2 py-0.5 rounded-full bg-blue-900/50 text-blue-300 text-xs font-bold">
+                          {entry.Size}
+                        </span>
+                      )}
+                      <span className="px-2 py-0.5 rounded-full bg-green-900/50 text-green-300 text-xs font-bold">
+                        × {entry.Quantity}
+                      </span>
+                    </div>
+
+                    {/* Expanded details */}
+                    {isExpanded && (
+                      <div className="mt-3 pt-3 border-t border-gray-700 space-y-1 text-sm">
+                        <p>
+                          <span className="text-gray-400">{t("hse.history.table.givenBy")}: </span>
+                          <span className="text-gray-200">{entry.Given_By || "—"}</span>
+                        </p>
+                        <p>
+                          <span className="text-gray-400">{t("hse.history.fields.notes")}: </span>
+                          <span className="text-gray-200">{entry.Notes || "—"}</span>
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Action buttons */}
+                    {(canEdit || canDelete) && (
+                      <div className="flex gap-2 mt-3 pt-3 border-t border-gray-700/60">
+                        {canEdit && (
+                          <button
+                            onClick={() => startEdit(entry)}
+                            className="flex-1 px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold transition"
+                          >
+                            {t("common.edit")}
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => setDeleteTarget(entry)}
+                            className="flex-1 px-3 py-1.5 rounded-lg bg-red-700 hover:bg-red-600 text-white text-xs font-semibold transition"
+                          >
+                            {t("common.delete")}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ════ DESKTOP TABLE (hidden on mobile) ════ */}
+            <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-700">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
+                  <tr>
+                    <th className="px-4 py-3">#</th>
+                    <th className="px-4 py-3">{t("hse.history.table.date")}</th>
+                    <th className="px-4 py-3">{t("hse.history.table.workerName")}</th>
+                    <th className="px-4 py-3">{t("hse.history.table.workerPosition")}</th>
+                    <th className="px-4 py-3">{t("hse.history.table.ppeType")}</th>
+                    <th className="px-4 py-3">{t("hse.history.table.size")}</th>
+                    <th className="px-4 py-3">{t("hse.history.table.quantity")}</th>
+                    <th className="px-4 py-3">{t("hse.history.table.givenBy")}</th>
+                    <th className="px-4 py-3">{t("hse.history.table.notes")}</th>
+                    {(canEdit || canDelete) && (
+                      <th className="px-4 py-3">{t("common.actions")}</th>
                     )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filtered.map((entry, idx) => (
+                    <tr key={entry.rowindex}
+                      className="border-t border-gray-700 hover:bg-gray-800/50 transition">
+                      <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
+                      <td className="px-4 py-3 text-gray-300 text-xs">{entry.Date}</td>
+                      <td className="px-4 py-3 font-medium">{entry.Worker_Name}</td>
+                      <td className="px-4 py-3 text-gray-300">{entry.Worker_Position}</td>
+                      <td className="px-4 py-3 text-gray-300">{entry.PPE_Type}</td>
+                      <td className="px-4 py-3 text-gray-300">{entry.Size || "—"}</td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-1 rounded-full bg-green-900/50 text-green-300 text-xs font-bold">
+                          {entry.Quantity}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 text-xs">{entry.Given_By}</td>
+                      <td className="px-4 py-3 text-gray-400 text-xs">{entry.Notes || "—"}</td>
+                      {(canEdit || canDelete) && (
+                        <td className="px-4 py-3">
+                          <div className="flex gap-2">
+                            {canEdit && (
+                              <button onClick={() => startEdit(entry)}
+                                className="px-3 py-1 rounded bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold transition">
+                                {t("common.edit")}
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button onClick={() => setDeleteTarget(entry)}
+                                className="px-3 py-1 rounded bg-red-700 hover:bg-red-600 text-white text-xs font-semibold transition">
+                                {t("common.delete")}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {/* ── Delete Confirmation Modal ── */}
