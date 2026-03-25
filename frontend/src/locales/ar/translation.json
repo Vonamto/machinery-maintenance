@@ -858,6 +858,44 @@
           "description": "إدارة قائمة العمال"
         }
       }
+    },
+    "workers": {
+      "title": "قائمة العمال",
+      "subtitle": "إدارة ملفات سلامة العمال",
+      "addButton": "إضافة عامل",
+      "searchPlaceholder": "البحث بالاسم أو المنصب أو رقم الشارة...",
+      "noResults": "لا يوجد عمال.",
+      "fields": {
+        "fullName": "الاسم الكامل",
+        "position": "المنصب",
+        "badgeNumber": "رقم الشارة",
+        "phone": "الهاتف"
+      },
+      "placeholders": {
+        "fullName": "أدخل الاسم الكامل",
+        "position": "أدخل المنصب / المهنة",
+        "badgeNumber": "مثال: B-001",
+        "phone": "مثال: 0770 000 000"
+      },
+      "addForm": {
+        "title": "إضافة عامل جديد",
+        "submit": "إضافة عامل"
+      },
+      "table": {
+        "fullName": "الاسم الكامل",
+        "position": "المنصب",
+        "badgeNumber": "رقم الشارة",
+        "phone": "الهاتف"
+      },
+      "alerts": {
+        "missingFields": "يرجى ملء الاسم الكامل والمنصب.",
+        "addSuccess": "✅ تمت إضافة العامل بنجاح!",
+        "editSuccess": "✅ تم تحديث بيانات العامل بنجاح!",
+        "deleteSuccess": "✅ تم حذف العامل بنجاح!",
+        "deleteConfirm": "هل أنت متأكد من حذف العامل \"{{name}}\"؟ لا يمكن التراجع.",
+        "error": "حدث خطأ.",
+        "networkError": "خطأ في الشبكة. يرجى المحاولة مرة أخرى."
+      }
     }
   },
 
