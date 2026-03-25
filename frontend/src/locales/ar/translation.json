@@ -902,12 +902,14 @@
   "subtitle": "إدارة مخزون معدات الوقاية الشخصية وأنواعها",
   "tabs": {
     "stock": "إدخالات المخزون",
+    "summary": "ملخص",
     "types": "أنواع المعدات"
   },
   "restockButton": "إضافة إدخال مخزون",
   "addTypeButton": "إضافة نوع معدة",
   "searchPlaceholder": "البحث بالنوع أو الحجم أو المضيف...",
   "typeSearchPlaceholder": "البحث بالاسم أو الفئة...",
+  "summarySearchPlaceholder": "البحث بنوع المعدة أو الحجم...",
   "noResults": "لا توجد إدخالات مخزون.",
   "noTypeResults": "لا توجد أنواع معدات.",
   "fields": {
@@ -960,6 +962,23 @@
     "typeDeleteConfirm": "هل أنت متأكد من حذف نوع المعدة \"{{name}}\"؟ لا يمكن التراجع.",
     "error": "حدث خطأ.",
     "networkError": "خطأ في الشبكة. يرجى المحاولة مرة أخرى."
+  },
+    "summary": {
+    "totalTypes": "إجمالي الإدخالات",
+    "totalRestocked": "إجمالي الوارد",
+    "totalDistributed": "إجمالي الموزّع",
+    "totalAvailable": "المتاح حالياً",
+    "outOfStock": "نفد المخزون",
+    "lowStock": "مخزون منخفض",
+    "inStock": "متوفر",
+    "table": {
+      "ppeType": "نوع المعدة",
+      "size": "الحجم",
+      "restocked": "الوارد",
+      "distributed": "الموزّع",
+      "available": "المتاح",
+      "status": "الحالة"
+    }
   }
 },
 "distribute": {
