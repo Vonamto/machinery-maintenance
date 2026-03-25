@@ -13,7 +13,6 @@ const API_BASE = import.meta.env.VITE_API_URL;
 const emptyStockForm = { PPE_Type: "", Size: "", Quantity: "", Notes: "" };
 const emptyTypeForm  = { Name: "", Has_Size: "NO", Category: "" };
 
-// ── Status helpers ────────────────────────────────────────────
 const getStatus = (available) => {
   if (available <= 0) return "out";
   if (available <= 5) return "low";
@@ -21,27 +20,9 @@ const getStatus = (available) => {
 };
 
 const STATUS_COLORS = {
-  out:  {
-    num:    "text-red-400",
-    badge:  "bg-red-900/50 text-red-300",
-    border: "border-red-700/60",
-    bg:     "bg-red-950/40",
-    rowBg:  "bg-red-900/10",
-  },
-  low:  {
-    num:    "text-yellow-400",
-    badge:  "bg-yellow-900/50 text-yellow-300",
-    border: "border-yellow-700/60",
-    bg:     "bg-yellow-950/30",
-    rowBg:  "bg-yellow-900/10",
-  },
-  good: {
-    num:    "text-green-400",
-    badge:  "bg-green-900/50 text-green-300",
-    border: "border-gray-700",
-    bg:     "bg-gray-800/80",
-    rowBg:  "",
-  },
+  out:  { num: "text-red-400",    badge: "bg-red-900/50 text-red-300",       border: "border-red-700/60",    bg: "bg-red-950/40",    rowBg: "bg-red-900/10"  },
+  low:  { num: "text-yellow-400", badge: "bg-yellow-900/50 text-yellow-300", border: "border-yellow-700/60", bg: "bg-yellow-950/30", rowBg: "bg-yellow-900/10" },
+  good: { num: "text-green-400",  badge: "bg-green-900/50 text-green-300",   border: "border-gray-700",      bg: "bg-gray-800/80",   rowBg: "" },
 };
 
 const STATUS_LABEL = (status, t) => {
@@ -69,7 +50,6 @@ export default function PPEStock() {
   const role  = user?.role || "Guest";
   const token = localStorage.getItem("token");
 
-  // ── Permissions ──────────────────────────────────────────────
   const canRestock     = canUserPerformAction(role, "HSE_STOCK_RESTOCK");
   const canEditStock   = canUserPerformAction(role, "HSE_STOCK_EDIT");
   const canDeleteStock = canUserPerformAction(role, "HSE_STOCK_DELETE");
@@ -77,10 +57,8 @@ export default function PPEStock() {
   const canEditType    = canUserPerformAction(role, "HSE_TYPES_EDIT");
   const canDeleteType  = canUserPerformAction(role, "HSE_TYPES_DELETE");
 
-  // ── Tabs ──────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("summary");
 
-  // ── Stock state ───────────────────────────────────────────────
   const [stockEntries,     setStockEntries]     = useState([]);
   const [stockLoading,     setStockLoading]     = useState(true);
   const [showRestockForm,  setShowRestockForm]  = useState(false);
@@ -91,10 +69,8 @@ export default function PPEStock() {
   const [editStockLoading, setEditStockLoading] = useState(false);
   const [stockSearch,      setStockSearch]      = useState("");
 
-  // ── Distribution log ──────────────────────────────────────────
   const [distEntries, setDistEntries] = useState([]);
 
-  // ── PPE Types state ───────────────────────────────────────────
   const [ppeTypes,        setPpeTypes]        = useState([]);
   const [typesLoading,    setTypesLoading]    = useState(true);
   const [showAddTypeForm, setShowAddTypeForm] = useState(false);
@@ -105,27 +81,22 @@ export default function PPEStock() {
   const [editTypeLoading, setEditTypeLoading] = useState(false);
   const [typeSearch,      setTypeSearch]      = useState("");
 
-  // ── Summary filter ────────────────────────────────────────────
   const [summarySearch, setSummarySearch] = useState("");
 
-  // ── Mobile expand ─────────────────────────────────────────────
   const [expandedStockIdx, setExpandedStockIdx] = useState(null);
   const [expandedTypeIdx,  setExpandedTypeIdx]  = useState(null);
 
-  // ── Alert ─────────────────────────────────────────────────────
   const [alert, setAlert] = useState(null);
   const showAlert = (type, message) => {
     setAlert({ type, message });
     setTimeout(() => setAlert(null), 4000);
   };
 
-  // ── Helpers ───────────────────────────────────────────────────
   const today   = () => new Date().toISOString().split("T")[0];
   const addedBy = user?.full_name || user?.username || "";
   const typeHasSize = (typeName) =>
     ppeTypes.find((p) => p.Name === typeName)?.Has_Size === "YES";
 
-  // ── Fetch all ─────────────────────────────────────────────────
   const fetchAll = async () => {
     setStockLoading(true);
     setTypesLoading(true);
@@ -181,7 +152,6 @@ export default function PPEStock() {
 
   useEffect(() => { fetchAll(); }, []);
 
-  // ── Grouped summary calculation ───────────────────────────────
   const groupedSummary = useMemo(() => {
     const now       = new Date();
     const thisMonth = now.getMonth();
@@ -189,23 +159,20 @@ export default function PPEStock() {
     const map = {};
 
     stockEntries.forEach((e) => {
-      const type = e.PPE_Type;
-      const size = e.Size || "";
+      const type = e.PPE_Type; const size = e.Size || "";
       if (!map[type]) map[type] = {};
       if (!map[type][size]) map[type][size] = { restocked: 0, distributed: 0, distributedThisMonth: 0 };
       map[type][size].restocked += Number(e.Quantity || 0);
     });
 
     distEntries.forEach((e) => {
-      const type = e.PPE_Type;
-      const size = e.Size || "";
+      const type = e.PPE_Type; const size = e.Size || "";
       if (!map[type]) map[type] = {};
       if (!map[type][size]) map[type][size] = { restocked: 0, distributed: 0, distributedThisMonth: 0 };
       map[type][size].distributed += Number(e.Quantity || 0);
       const d = new Date(e.Date || e.date || "");
-      if (!isNaN(d) && d.getMonth() === thisMonth && d.getFullYear() === thisYear) {
+      if (!isNaN(d) && d.getMonth() === thisMonth && d.getFullYear() === thisYear)
         map[type][size].distributedThisMonth += Number(e.Quantity || 0);
-      }
     });
 
     return Object.entries(map)
@@ -215,34 +182,16 @@ export default function PPEStock() {
           available: data.restocked - data.distributed,
           distributedThisMonth: data.distributedThisMonth,
         }));
-
         const hasSize = entries.some((s) => s.size !== "");
         const totalDistributedThisMonth = entries.reduce((a, s) => a + s.distributedThisMonth, 0);
-
         if (!hasSize) {
           const row = entries[0] || { available: 0, distributedThisMonth: 0 };
-          return {
-            PPE_Type: ppeType,
-            hasSize: false,
-            available: row.available,
-            distributedThisMonth: row.distributedThisMonth,
-          };
+          return { PPE_Type: ppeType, hasSize: false, available: row.available, distributedThisMonth: row.distributedThisMonth };
         }
-
         const sortedSizes = entries.filter((s) => s.size !== "").sort(sortSizes);
-        const overallStatus = sortedSizes.some((s) => s.available <= 0)
-          ? "out"
-          : sortedSizes.some((s) => s.available <= 5)
-          ? "low"
-          : "good";
-
-        return {
-          PPE_Type: ppeType,
-          hasSize: true,
-          sizes: sortedSizes,
-          overallStatus,
-          totalDistributedThisMonth,
-        };
+        const overallStatus = sortedSizes.some((s) => s.available <= 0) ? "out"
+          : sortedSizes.some((s) => s.available <= 5) ? "low" : "good";
+        return { PPE_Type: ppeType, hasSize: true, sizes: sortedSizes, overallStatus, totalDistributedThisMonth };
       })
       .sort((a, b) => a.PPE_Type.localeCompare(b.PPE_Type));
   }, [stockEntries, distEntries]);
@@ -251,7 +200,6 @@ export default function PPEStock() {
     (r.PPE_Type || "").toLowerCase().includes(summarySearch.toLowerCase())
   );
 
-  // ── Restock ───────────────────────────────────────────────────
   const handleRestock = async () => {
     if (!restockForm.PPE_Type || !restockForm.Quantity) {
       showAlert("error", t("hse.stock.alerts.missingFields")); return;
@@ -259,12 +207,9 @@ export default function PPEStock() {
     setRestockLoading(true);
     try {
       const payload = {
-        PPE_Type:     restockForm.PPE_Type,
-        Size:         typeHasSize(restockForm.PPE_Type) ? restockForm.Size : "",
-        Quantity:     restockForm.Quantity,
-        Last_Updated: today(),
-        Added_by:     addedBy,
-        Notes:        restockForm.Notes,
+        PPE_Type: restockForm.PPE_Type,
+        Size:     typeHasSize(restockForm.PPE_Type) ? restockForm.Size : "",
+        Quantity: restockForm.Quantity, Last_Updated: today(), Added_by: addedBy, Notes: restockForm.Notes,
       };
       const res  = await fetch(`${API_BASE}/api/add/PPE_Stock`, {
         method: "POST",
@@ -274,28 +219,15 @@ export default function PPEStock() {
       const data = await res.json();
       if (data.status === "success") {
         showAlert("success", t("hse.stock.alerts.restockSuccess"));
-        setRestockForm(emptyStockForm);
-        setShowRestockForm(false);
-        fetchStock();
-      } else {
-        showAlert("error", data.message || t("hse.stock.alerts.error"));
-      }
-    } catch {
-      showAlert("error", t("hse.stock.alerts.networkError"));
-    } finally {
-      setRestockLoading(false);
-    }
+        setRestockForm(emptyStockForm); setShowRestockForm(false); fetchStock();
+      } else { showAlert("error", data.message || t("hse.stock.alerts.error")); }
+    } catch { showAlert("error", t("hse.stock.alerts.networkError")); }
+    finally { setRestockLoading(false); }
   };
 
-  // ── Edit stock ────────────────────────────────────────────────
   const startEditStock = (entry) => {
     setEditStockIndex(entry.rowindex);
-    setEditStockForm({
-      PPE_Type: entry.PPE_Type || "",
-      Size:     entry.Size     || "",
-      Quantity: entry.Quantity || "",
-      Notes:    entry.Notes    || "",
-    });
+    setEditStockForm({ PPE_Type: entry.PPE_Type || "", Size: entry.Size || "", Quantity: entry.Quantity || "", Notes: entry.Notes || "" });
   };
 
   const handleSaveEditStock = async () => {
@@ -312,43 +244,26 @@ export default function PPEStock() {
       });
       const data = await res.json();
       if (data.status === "success") {
-        showAlert("success", t("hse.stock.alerts.editSuccess"));
-        setEditStockIndex(null);
-        fetchStock();
-      } else {
-        showAlert("error", data.message || t("hse.stock.alerts.error"));
-      }
-    } catch {
-      showAlert("error", t("hse.stock.alerts.networkError"));
-    } finally {
-      setEditStockLoading(false);
-    }
+        showAlert("success", t("hse.stock.alerts.editSuccess")); setEditStockIndex(null); fetchStock();
+      } else { showAlert("error", data.message || t("hse.stock.alerts.error")); }
+    } catch { showAlert("error", t("hse.stock.alerts.networkError")); }
+    finally { setEditStockLoading(false); }
   };
 
   const handleDeleteStock = async (entry) => {
     if (!window.confirm(t("hse.stock.alerts.deleteConfirm", { type: entry.PPE_Type }))) return;
     try {
       const res  = await fetch(`${API_BASE}/api/delete/PPE_Stock/${entry.rowindex}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        method: "DELETE", headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.status === "success") {
-        showAlert("success", t("hse.stock.alerts.deleteSuccess"));
-        fetchStock();
-      } else {
-        showAlert("error", data.message || t("hse.stock.alerts.error"));
-      }
-    } catch {
-      showAlert("error", t("hse.stock.alerts.networkError"));
-    }
+      if (data.status === "success") { showAlert("success", t("hse.stock.alerts.deleteSuccess")); fetchStock(); }
+      else { showAlert("error", data.message || t("hse.stock.alerts.error")); }
+    } catch { showAlert("error", t("hse.stock.alerts.networkError")); }
   };
 
-  // ── PPE Types CRUD ────────────────────────────────────────────
   const handleAddType = async () => {
-    if (!addTypeForm.Name.trim()) {
-      showAlert("error", t("hse.stock.alerts.missingTypeName")); return;
-    }
+    if (!addTypeForm.Name.trim()) { showAlert("error", t("hse.stock.alerts.missingTypeName")); return; }
     setAddTypeLoading(true);
     try {
       const res  = await fetch(`${API_BASE}/api/add/PPE_Types`, {
@@ -359,32 +274,19 @@ export default function PPEStock() {
       const data = await res.json();
       if (data.status === "success") {
         showAlert("success", t("hse.stock.alerts.typeAddSuccess"));
-        setAddTypeForm(emptyTypeForm);
-        setShowAddTypeForm(false);
-        fetchTypes();
-      } else {
-        showAlert("error", data.message || t("hse.stock.alerts.error"));
-      }
-    } catch {
-      showAlert("error", t("hse.stock.alerts.networkError"));
-    } finally {
-      setAddTypeLoading(false);
-    }
+        setAddTypeForm(emptyTypeForm); setShowAddTypeForm(false); fetchTypes();
+      } else { showAlert("error", data.message || t("hse.stock.alerts.error")); }
+    } catch { showAlert("error", t("hse.stock.alerts.networkError")); }
+    finally { setAddTypeLoading(false); }
   };
 
   const startEditType = (type) => {
     setEditTypeIndex(type.rowindex);
-    setEditTypeForm({
-      Name:     type.Name     || "",
-      Has_Size: type.Has_Size || "NO",
-      Category: type.Category || "",
-    });
+    setEditTypeForm({ Name: type.Name || "", Has_Size: type.Has_Size || "NO", Category: type.Category || "" });
   };
 
   const handleSaveEditType = async () => {
-    if (!editTypeForm.Name.trim()) {
-      showAlert("error", t("hse.stock.alerts.missingTypeName")); return;
-    }
+    if (!editTypeForm.Name.trim()) { showAlert("error", t("hse.stock.alerts.missingTypeName")); return; }
     setEditTypeLoading(true);
     try {
       const res  = await fetch(`${API_BASE}/api/edit/PPE_Types/${editTypeIndex}`, {
@@ -394,39 +296,24 @@ export default function PPEStock() {
       });
       const data = await res.json();
       if (data.status === "success") {
-        showAlert("success", t("hse.stock.alerts.typeEditSuccess"));
-        setEditTypeIndex(null);
-        fetchTypes();
-      } else {
-        showAlert("error", data.message || t("hse.stock.alerts.error"));
-      }
-    } catch {
-      showAlert("error", t("hse.stock.alerts.networkError"));
-    } finally {
-      setEditTypeLoading(false);
-    }
+        showAlert("success", t("hse.stock.alerts.typeEditSuccess")); setEditTypeIndex(null); fetchTypes();
+      } else { showAlert("error", data.message || t("hse.stock.alerts.error")); }
+    } catch { showAlert("error", t("hse.stock.alerts.networkError")); }
+    finally { setEditTypeLoading(false); }
   };
 
   const handleDeleteType = async (type) => {
     if (!window.confirm(t("hse.stock.alerts.typeDeleteConfirm", { name: type.Name }))) return;
     try {
       const res  = await fetch(`${API_BASE}/api/delete/PPE_Types/${type.rowindex}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        method: "DELETE", headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.status === "success") {
-        showAlert("success", t("hse.stock.alerts.typeDeleteSuccess"));
-        fetchTypes();
-      } else {
-        showAlert("error", data.message || t("hse.stock.alerts.error"));
-      }
-    } catch {
-      showAlert("error", t("hse.stock.alerts.networkError"));
-    }
+      if (data.status === "success") { showAlert("success", t("hse.stock.alerts.typeDeleteSuccess")); fetchTypes(); }
+      else { showAlert("error", data.message || t("hse.stock.alerts.error")); }
+    } catch { showAlert("error", t("hse.stock.alerts.networkError")); }
   };
 
-  // ── Filtered lists ────────────────────────────────────────────
   const filteredStock = stockEntries.filter((s) => {
     const q = stockSearch.toLowerCase();
     return (
@@ -444,7 +331,6 @@ export default function PPEStock() {
     );
   });
 
-  // ── Shared input style ────────────────────────────────────────
   const inp = "w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-500";
 
   return (
@@ -477,15 +363,10 @@ export default function PPEStock() {
         {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b border-gray-700">
           {["summary", "stock", "types"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
+            <button key={tab} onClick={() => setActiveTab(tab)}
               className={`px-5 py-2 text-sm font-semibold rounded-t-lg transition ${
-                activeTab === tab
-                  ? "bg-yellow-600 text-white"
-                  : "text-gray-400 hover:text-white"
-              }`}
-            >
+                activeTab === tab ? "bg-yellow-600 text-white" : "text-gray-400 hover:text-white"
+              }`}>
               {t(`hse.stock.tabs.${tab}`)}
             </button>
           ))}
@@ -502,7 +383,6 @@ export default function PPEStock() {
                 onChange={(e) => setSummarySearch(e.target.value)}
               />
             </div>
-
             {stockLoading ? (
               <p className="text-gray-400 text-sm">{t("common.loading")}</p>
             ) : filteredGrouped.length === 0 ? (
@@ -517,9 +397,7 @@ export default function PPEStock() {
                       <div key={idx} className={`border rounded-2xl p-5 flex flex-col gap-3 ${c.bg} ${c.border}`}>
                         <div className="flex items-start justify-between gap-2">
                           <p className="font-semibold text-white text-sm leading-tight">{group.PPE_Type}</p>
-                          <span className={`shrink-0 px-2 py-1 rounded-full text-xs font-bold ${c.badge}`}>
-                            {STATUS_LABEL(st, t)}
-                          </span>
+                          <span className={`shrink-0 px-2 py-1 rounded-full text-xs font-bold ${c.badge}`}>{STATUS_LABEL(st, t)}</span>
                         </div>
                         <div>
                           <p className="text-xs text-gray-400 mb-0.5">{t("hse.stock.summary.table.available")}</p>
@@ -532,15 +410,12 @@ export default function PPEStock() {
                       </div>
                     );
                   }
-
                   const oc = STATUS_COLORS[group.overallStatus];
                   return (
                     <div key={idx} className={`border rounded-2xl p-5 flex flex-col gap-3 ${oc.bg} ${oc.border}`}>
                       <div className="flex items-center justify-between gap-2">
                         <p className="font-semibold text-white text-sm leading-tight">{group.PPE_Type}</p>
-                        <span className={`shrink-0 px-2 py-1 rounded-full text-xs font-bold ${oc.badge}`}>
-                          {STATUS_LABEL(group.overallStatus, t)}
-                        </span>
+                        <span className={`shrink-0 px-2 py-1 rounded-full text-xs font-bold ${oc.badge}`}>{STATUS_LABEL(group.overallStatus, t)}</span>
                       </div>
                       <div className="flex flex-col divide-y divide-gray-700/50">
                         {group.sizes.map((sizeRow) => {
@@ -585,8 +460,7 @@ export default function PPEStock() {
               {canRestock && (
                 <button
                   onClick={() => { setShowRestockForm(!showRestockForm); setRestockForm(emptyStockForm); }}
-                  className="px-5 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white font-semibold text-sm transition"
-                >
+                  className="px-5 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white font-semibold text-sm transition">
                   {showRestockForm ? t("common.cancel") : `+ ${t("hse.stock.restockButton")}`}
                 </button>
               )}
@@ -595,17 +469,12 @@ export default function PPEStock() {
             {/* Restock Form */}
             {canRestock && showRestockForm && (
               <div className="mb-6 bg-gray-800 border border-gray-700 rounded-2xl p-6">
-                <h2 className="text-lg font-semibold text-yellow-400 mb-4">
-                  {t("hse.stock.restockForm.title")}
-                </h2>
+                <h2 className="text-lg font-semibold text-yellow-400 mb-4">{t("hse.stock.restockForm.title")}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.ppeType")} *</label>
-                    <select
-                      className={inp}
-                      value={restockForm.PPE_Type}
-                      onChange={(e) => setRestockForm({ ...restockForm, PPE_Type: e.target.value, Size: "" })}
-                    >
+                    <select className={inp} value={restockForm.PPE_Type}
+                      onChange={(e) => setRestockForm({ ...restockForm, PPE_Type: e.target.value, Size: "" })}>
                       <option value="">{t("hse.stock.placeholders.selectType")}</option>
                       {ppeTypes.map((type) => (
                         <option key={type.rowindex} value={type.Name}>{type.Name}</option>
@@ -615,31 +484,21 @@ export default function PPEStock() {
                   {typeHasSize(restockForm.PPE_Type) && (
                     <div>
                       <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.size")}</label>
-                      <input
-                        className={inp}
-                        value={restockForm.Size}
+                      <input className={inp} value={restockForm.Size}
                         onChange={(e) => setRestockForm({ ...restockForm, Size: e.target.value })}
-                        placeholder={t("hse.stock.placeholders.size")}
-                      />
+                        placeholder={t("hse.stock.placeholders.size")} />
                     </div>
                   )}
                   <div>
                     <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.quantity")} *</label>
-                    <input
-                      type="number" min="1" className={inp}
-                      value={restockForm.Quantity}
-                      onChange={(e) => setRestockForm({ ...restockForm, Quantity: e.target.value })}
-                      placeholder="0"
-                    />
+                    <input type="number" min="1" className={inp} value={restockForm.Quantity}
+                      onChange={(e) => setRestockForm({ ...restockForm, Quantity: e.target.value })} placeholder="0" />
                   </div>
                   <div>
                     <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.notes")}</label>
-                    <input
-                      className={inp}
-                      value={restockForm.Notes}
+                    <input className={inp} value={restockForm.Notes}
                       onChange={(e) => setRestockForm({ ...restockForm, Notes: e.target.value })}
-                      placeholder={t("hse.stock.placeholders.notes")}
-                    />
+                      placeholder={t("hse.stock.placeholders.notes")} />
                   </div>
                 </div>
                 <div className="mt-3 flex gap-6 text-xs text-gray-500">
@@ -725,27 +584,37 @@ export default function PPEStock() {
                           onClick={() => setExpandedStockIdx(isExpanded ? null : idx)}
                           className="w-full text-left"
                         >
-                          <div className="flex items-start justify-between gap-2 mb-2">
+                          {/* Row 1: PPE type name + date + chevron */}
+                          <div className="flex items-start justify-between gap-2 mb-3">
                             <p className="text-base font-semibold text-yellow-400 leading-tight">{entry.PPE_Type}</p>
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="px-2 py-0.5 rounded-full bg-yellow-900/50 text-yellow-300 text-xs font-bold">
-                                × {entry.Quantity}
-                              </span>
+                              <span className="text-xs text-gray-500">{entry.Last_Updated}</span>
                               {isExpanded
                                 ? <ChevronUp size={16} className="text-gray-400" />
                                 : <ChevronDown size={16} className="text-gray-400" />}
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-2">
+
+                          {/* Row 2: Size (if any) + Quantity — both labelled */}
+                          <div className="flex items-end gap-5">
                             {entry.Size && (
-                              <span className="px-2 py-0.5 rounded-full bg-blue-900/50 text-blue-300 text-xs font-bold">
-                                {entry.Size}
-                              </span>
+                              <div>
+                                <p className="text-xs text-gray-400 mb-1">{t("hse.stock.fields.size")}</p>
+                                <span className="px-3 py-1 rounded-full bg-blue-900/50 text-blue-300 text-sm font-bold">
+                                  {entry.Size}
+                                </span>
+                              </div>
                             )}
-                            <span className="text-xs text-gray-400">{entry.Last_Updated}</span>
+                            <div>
+                              <p className="text-xs text-gray-400 mb-0.5">{t("hse.stock.fields.quantity")}</p>
+                              <span className="text-3xl font-bold text-yellow-400 leading-none">
+                                {entry.Quantity}
+                              </span>
+                            </div>
                           </div>
                         </button>
 
+                        {/* Expanded section */}
                         {isExpanded && (
                           <>
                             <div className="mt-3 pt-3 border-t border-gray-700 space-y-1 text-sm">
@@ -815,9 +684,7 @@ export default function PPEStock() {
                               {typeHasSize(editStockForm.PPE_Type) ? (
                                 <input className={inp} value={editStockForm.Size}
                                   onChange={(e) => setEditStockForm({ ...editStockForm, Size: e.target.value })} />
-                              ) : (
-                                <span className="text-gray-500">—</span>
-                              )}
+                              ) : <span className="text-gray-500">—</span>}
                             </td>
                             <td className="px-4 py-3">
                               <input type="number" min="1" className={inp} value={editStockForm.Quantity}
@@ -897,8 +764,7 @@ export default function PPEStock() {
               {canAddType && (
                 <button
                   onClick={() => { setShowAddTypeForm(!showAddTypeForm); setAddTypeForm(emptyTypeForm); }}
-                  className="px-5 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white font-semibold text-sm transition"
-                >
+                  className="px-5 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white font-semibold text-sm transition">
                   {showAddTypeForm ? t("common.cancel") : `+ ${t("hse.stock.addTypeButton")}`}
                 </button>
               )}
@@ -907,9 +773,7 @@ export default function PPEStock() {
             {/* Add Type Form */}
             {canAddType && showAddTypeForm && (
               <div className="mb-6 bg-gray-800 border border-gray-700 rounded-2xl p-6">
-                <h2 className="text-lg font-semibold text-yellow-400 mb-4">
-                  {t("hse.stock.addTypeForm.title")}
-                </h2>
+                <h2 className="text-lg font-semibold text-yellow-400 mb-4">{t("hse.stock.addTypeForm.title")}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.typeName")} *</label>
@@ -957,7 +821,6 @@ export default function PPEStock() {
                     const isEditing  = editTypeIndex === type.rowindex;
                     const isExpanded = expandedTypeIdx === idx;
 
-                    // ── Edit card ──
                     if (isEditing) {
                       return (
                         <div key={type.rowindex} className="bg-gray-800 border border-yellow-600 rounded-2xl p-4 space-y-3">
@@ -996,7 +859,6 @@ export default function PPEStock() {
                       );
                     }
 
-                    // ── Normal card ──
                     return (
                       <div key={type.rowindex} className="bg-gray-800/60 border border-gray-700 rounded-2xl p-4 shadow-lg">
                         <button
@@ -1007,9 +869,7 @@ export default function PPEStock() {
                             <p className="text-base font-semibold text-yellow-400 leading-tight">{type.Name}</p>
                             <div className="flex items-center gap-2 shrink-0">
                               <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                                type.Has_Size === "YES"
-                                  ? "bg-blue-900/50 text-blue-300"
-                                  : "bg-gray-700 text-gray-400"
+                                type.Has_Size === "YES" ? "bg-blue-900/50 text-blue-300" : "bg-gray-700 text-gray-400"
                               }`}>
                                 {type.Has_Size}
                               </span>
@@ -1104,9 +964,7 @@ export default function PPEStock() {
                             <td className="px-4 py-3 font-medium">{type.Name}</td>
                             <td className="px-4 py-3">
                               <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                type.Has_Size === "YES"
-                                  ? "bg-blue-900/50 text-blue-300"
-                                  : "bg-gray-700 text-gray-400"
+                                type.Has_Size === "YES" ? "bg-blue-900/50 text-blue-300" : "bg-gray-700 text-gray-400"
                               }`}>
                                 {type.Has_Size}
                               </span>
