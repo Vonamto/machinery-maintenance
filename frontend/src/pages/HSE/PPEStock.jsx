@@ -20,9 +20,9 @@ const getStatus = (available) => {
 };
 
 const STATUS_COLORS = {
-  out:  { num: "text-red-400",    badge: "bg-red-900/50 text-red-300",       border: "border-red-700/60",    bg: "bg-red-950/40",    rowBg: "bg-red-900/10"  },
+  out:  { num: "text-red-400",    badge: "bg-red-900/50 text-red-300",       border: "border-red-700/60",    bg: "bg-red-950/40",    rowBg: "bg-red-900/10"   },
   low:  { num: "text-yellow-400", badge: "bg-yellow-900/50 text-yellow-300", border: "border-yellow-700/60", bg: "bg-yellow-950/30", rowBg: "bg-yellow-900/10" },
-  good: { num: "text-green-400",  badge: "bg-green-900/50 text-green-300",   border: "border-gray-700",      bg: "bg-gray-800/80",   rowBg: "" },
+  good: { num: "text-green-400",  badge: "bg-green-900/50 text-green-300",   border: "border-gray-700",      bg: "bg-gray-800/80",   rowBg: ""                },
 };
 
 const STATUS_LABEL = (status, t) => {
@@ -530,7 +530,6 @@ export default function PPEStock() {
                     const isEditing  = editStockIndex === entry.rowindex;
                     const isExpanded = expandedStockIdx === idx;
 
-                    // ── Edit card ──
                     if (isEditing) {
                       return (
                         <div key={entry.rowindex} className="bg-gray-800 border border-yellow-600 rounded-2xl p-4 space-y-3">
@@ -577,14 +576,12 @@ export default function PPEStock() {
                       );
                     }
 
-                    // ── Normal card ──
                     return (
                       <div key={entry.rowindex} className="bg-gray-800/60 border border-gray-700 rounded-2xl p-4 shadow-lg">
                         <button
                           onClick={() => setExpandedStockIdx(isExpanded ? null : idx)}
                           className="w-full text-left"
                         >
-                          {/* Row 1: PPE type name + date + chevron */}
                           <div className="flex items-start justify-between gap-2 mb-3">
                             <p className="text-base font-semibold text-yellow-400 leading-tight">{entry.PPE_Type}</p>
                             <div className="flex items-center gap-2 shrink-0">
@@ -594,8 +591,6 @@ export default function PPEStock() {
                                 : <ChevronDown size={16} className="text-gray-400" />}
                             </div>
                           </div>
-
-                          {/* Row 2: Size (if any) + Quantity — both labelled */}
                           <div className="flex items-end gap-5">
                             {entry.Size && (
                               <div>
@@ -614,7 +609,6 @@ export default function PPEStock() {
                           </div>
                         </button>
 
-                        {/* Expanded section */}
                         {isExpanded && (
                           <>
                             <div className="mt-3 pt-3 border-t border-gray-700 space-y-1 text-sm">
@@ -859,30 +853,36 @@ export default function PPEStock() {
                       );
                     }
 
+                    // ── Normal card ── (THE ONLY CHANGED PART)
                     return (
                       <div key={type.rowindex} className="bg-gray-800/60 border border-gray-700 rounded-2xl p-4 shadow-lg">
+                        {/* Collapsed: just the name + chevron */}
                         <button
                           onClick={() => setExpandedTypeIdx(isExpanded ? null : idx)}
                           className="w-full text-left"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-base font-semibold text-yellow-400 leading-tight">{type.Name}</p>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                                type.Has_Size === "YES" ? "bg-blue-900/50 text-blue-300" : "bg-gray-700 text-gray-400"
-                              }`}>
-                                {type.Has_Size}
-                              </span>
-                              {isExpanded
-                                ? <ChevronUp size={16} className="text-gray-400" />
-                                : <ChevronDown size={16} className="text-gray-400" />}
-                            </div>
+                            {isExpanded
+                              ? <ChevronUp size={16} className="text-gray-400 shrink-0" />
+                              : <ChevronDown size={16} className="text-gray-400 shrink-0" />}
                           </div>
                         </button>
 
+                        {/* Expanded: Has Size? label + badge, Category, actions */}
                         {isExpanded && (
                           <>
-                            <div className="mt-3 pt-3 border-t border-gray-700 space-y-1 text-sm">
+                            <div className="mt-3 pt-3 border-t border-gray-700 space-y-2 text-sm">
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-400">{t("hse.stock.table.hasSize")}:</span>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                                  type.Has_Size === "YES"
+                                    ? "bg-blue-900/50 text-blue-300"
+                                    : "bg-gray-700 text-gray-400"
+                                }`}>
+                                  {type.Has_Size}
+                                </span>
+                              </div>
                               <p>
                                 <span className="text-gray-400">{t("hse.stock.table.category")}: </span>
                                 <span className="text-gray-200">{type.Category || "—"}</span>
