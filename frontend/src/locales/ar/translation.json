@@ -975,7 +975,7 @@
       "ppeType": "نوع المعدة",
       "size": "الحجم",
       "restocked": "الوارد",
-      "distributed": "الموزّع",
+      "distributed": "الكمية الموزعة في الشهر الحالي",
       "available": "المتاح",
       "status": "الحالة"
     }
