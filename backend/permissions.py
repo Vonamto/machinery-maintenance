@@ -65,4 +65,36 @@ SHEET_PERMISSIONS = {
         "edit":   [ROLES["SUPERVISOR"], ROLES["MECHANIC"], ROLES["ADMIN"], ROLES["GUEST"], ROLES["SUP_LOG"]],
         "delete": [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
     },
+
+    # ==========================================
+    # 🆕 HSE MODULE — PPE Stock Management
+    # ==========================================
+
+    "PPE_Types": {
+        "view":   [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
+        "add":    [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
+        "edit":   [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
+        "delete": [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
+    },
+
+    "PPE_Stock": {
+        "view":   [ROLES["SUPERVISOR"], ROLES["ADMIN"], ROLES["MANAGER"]],
+        "add":    [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
+        "edit":   [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
+        "delete": [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
+    },
+
+    "PPE_Distribution_Log": {
+        "view":   [ROLES["SUPERVISOR"], ROLES["ADMIN"], ROLES["MANAGER"], ROLES["SUP_LOG"]],
+        "add":    [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
+        "edit":   [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
+        "delete": [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
+    },
+
+    "Workers_HSE": {
+        "view":   [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
+        "add":    [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
+        "edit":   [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
+        "delete": [ROLES["SUPERVISOR"], ROLES["ADMIN"]],
+    },
 }
