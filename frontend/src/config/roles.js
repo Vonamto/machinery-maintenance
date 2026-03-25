@@ -23,7 +23,7 @@ export const PAGE_PERMISSIONS = {
   CHECKLIST_FORM:    [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.SUP_LOG],
   CHECKLIST_HISTORY: [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG],
 
-  // Maintenance — neither new role can access frontend pages
+  // Maintenance
   MAINTENANCE:         [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER],
   MAINTENANCE_FORM:    [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.ADMIN, ROLES.GUEST],
   MAINTENANCE_HISTORY: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER],
@@ -40,11 +40,29 @@ export const PAGE_PERMISSIONS = {
   SUIVIDETAIL: [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG, ROLES.HSE_GTG],
 
   // Users
-  USERS: [ROLES.ADMIN], // 🔒 Only Admin
+  USERS: [ROLES.ADMIN],
+
+  // ==========================================
+  // 🆕 HSE Module
+  // ==========================================
+
+  // Landing page — everyone who can access at least one sub-page
+  HSE: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.MANAGER, ROLES.SUP_LOG],
+
+  // Stock page — Supervisor & Admin full access, Manager view only
+  HSE_STOCK: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.MANAGER],
+
+  // Distribute page — Supervisor & Admin only
+  HSE_DISTRIBUTE: [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // History page — Supervisor & Admin full, Manager & Sup Log view only
+  HSE_HISTORY: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.MANAGER, ROLES.SUP_LOG],
+
+  // Workers page — Supervisor & Admin only
+  HSE_WORKERS: [ROLES.SUPERVISOR, ROLES.ADMIN],
 };
 
 /* ================= Action Permissions ================= */
-// Based on backend/permissions.py - Single source of truth for who can perform actions
 
 export const ACTION_PERMISSIONS = {
   // ========== Cleaning History ==========
@@ -65,6 +83,33 @@ export const ACTION_PERMISSIONS = {
   USERS_ADD:    [ROLES.ADMIN],
   USERS_EDIT:   [ROLES.ADMIN],
   USERS_DELETE: [ROLES.ADMIN],
+
+  // ==========================================
+  // 🆕 HSE Module Actions
+  // ==========================================
+
+  // PPE Stock
+  HSE_STOCK_VIEW:        [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.MANAGER],
+  HSE_STOCK_RESTOCK:     [ROLES.SUPERVISOR, ROLES.ADMIN],  // Add received stock
+  HSE_STOCK_EDIT:        [ROLES.SUPERVISOR, ROLES.ADMIN],  // Correct a stock mistake
+  HSE_STOCK_DELETE:      [ROLES.SUPERVISOR, ROLES.ADMIN],  // Remove a stock row entirely
+
+  // PPE Types
+  HSE_TYPES_ADD:         [ROLES.SUPERVISOR, ROLES.ADMIN],
+  HSE_TYPES_EDIT:        [ROLES.SUPERVISOR, ROLES.ADMIN],
+  HSE_TYPES_DELETE:      [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // PPE Distribution
+  HSE_DISTRIBUTE_ADD:    [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // PPE History
+  HSE_HISTORY_EDIT:      [ROLES.SUPERVISOR, ROLES.ADMIN],
+  HSE_HISTORY_DELETE:    [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // Workers
+  HSE_WORKERS_ADD:       [ROLES.SUPERVISOR, ROLES.ADMIN],
+  HSE_WORKERS_EDIT:      [ROLES.SUPERVISOR, ROLES.ADMIN],
+  HSE_WORKERS_DELETE:    [ROLES.SUPERVISOR, ROLES.ADMIN],
 };
 
 /* ================= Helper Functions ================= */
