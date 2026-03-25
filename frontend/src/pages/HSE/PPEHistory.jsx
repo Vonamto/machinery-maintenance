@@ -274,20 +274,17 @@ export default function PPEHistory() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-              {/* Date */}
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">{t("hse.history.fields.date")} *</label>
                 <input type="date" className={inp} value={editForm.Date}
                   onChange={(e) => setEditForm({ ...editForm, Date: e.target.value })} />
               </div>
 
-              {/* Given By — locked */}
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">{t("hse.history.fields.givenBy")}</label>
                 <input className={locked} value={editEntry.Given_By || ""} readOnly />
               </div>
 
-              {/* Worker Name — autocomplete */}
               <div className="relative">
                 <label className="text-xs text-gray-400 mb-1 block">{t("hse.history.fields.workerName")} *</label>
                 <div className="flex gap-2">
@@ -323,13 +320,11 @@ export default function PPEHistory() {
                 )}
               </div>
 
-              {/* Worker Position — locked */}
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">{t("hse.history.fields.workerPosition")}</label>
                 <input className={locked} value={editForm.Worker_Position} readOnly />
               </div>
 
-              {/* PPE Type */}
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">{t("hse.history.fields.ppeType")} *</label>
                 <select className={inp} value={editForm.PPE_Type}
@@ -341,7 +336,6 @@ export default function PPEHistory() {
                 </select>
               </div>
 
-              {/* Size — conditional */}
               {editTypeHasSize && (
                 <div>
                   <label className="text-xs text-gray-400 mb-1 block">{t("hse.history.fields.size")} *</label>
@@ -359,7 +353,6 @@ export default function PPEHistory() {
                 </div>
               )}
 
-              {/* Quantity */}
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">
                   {t("hse.history.fields.quantity")} *
@@ -374,7 +367,6 @@ export default function PPEHistory() {
                   onChange={(e) => setEditForm({ ...editForm, Quantity: e.target.value })} />
               </div>
 
-              {/* Notes */}
               <div className="sm:col-span-2">
                 <label className="text-xs text-gray-400 mb-1 block">{t("hse.history.fields.notes")}</label>
                 <input className={inp} value={editForm.Notes}
@@ -448,7 +440,7 @@ export default function PPEHistory() {
                     key={entry.rowindex}
                     className="bg-gray-800/60 border border-gray-700 rounded-2xl p-4 shadow-lg"
                   >
-                    {/* Card header — always visible, tap to expand */}
+                    {/* Card header — tap to expand */}
                     <button
                       onClick={() => setExpandedIndex(isExpanded ? null : idx)}
                       className="w-full text-left"
@@ -469,55 +461,57 @@ export default function PPEHistory() {
                             : <ChevronDown size={16} className="text-gray-400" />}
                         </div>
                       </div>
+
+                      {/* Always visible: PPE info */}
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <span className="text-sm font-medium text-white">{entry.PPE_Type}</span>
+                        {entry.Size && (
+                          <span className="px-2 py-0.5 rounded-full bg-blue-900/50 text-blue-300 text-xs font-bold">
+                            {entry.Size}
+                          </span>
+                        )}
+                        <span className="px-2 py-0.5 rounded-full bg-green-900/50 text-green-300 text-xs font-bold">
+                          × {entry.Quantity}
+                        </span>
+                      </div>
                     </button>
 
-                    {/* Always visible: PPE info */}
-                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <span className="text-sm font-medium text-white">{entry.PPE_Type}</span>
-                      {entry.Size && (
-                        <span className="px-2 py-0.5 rounded-full bg-blue-900/50 text-blue-300 text-xs font-bold">
-                          {entry.Size}
-                        </span>
-                      )}
-                      <span className="px-2 py-0.5 rounded-full bg-green-900/50 text-green-300 text-xs font-bold">
-                        × {entry.Quantity}
-                      </span>
-                    </div>
-
-                    {/* Expanded details */}
+                    {/* ── Expanded section: details + actions ── */}
                     {isExpanded && (
-                      <div className="mt-3 pt-3 border-t border-gray-700 space-y-1 text-sm">
-                        <p>
-                          <span className="text-gray-400">{t("hse.history.table.givenBy")}: </span>
-                          <span className="text-gray-200">{entry.Given_By || "—"}</span>
-                        </p>
-                        <p>
-                          <span className="text-gray-400">{t("hse.history.fields.notes")}: </span>
-                          <span className="text-gray-200">{entry.Notes || "—"}</span>
-                        </p>
-                      </div>
-                    )}
+                      <>
+                        <div className="mt-3 pt-3 border-t border-gray-700 space-y-1 text-sm">
+                          <p>
+                            <span className="text-gray-400">{t("hse.history.table.givenBy")}: </span>
+                            <span className="text-gray-200">{entry.Given_By || "—"}</span>
+                          </p>
+                          <p>
+                            <span className="text-gray-400">{t("hse.history.fields.notes")}: </span>
+                            <span className="text-gray-200">{entry.Notes || "—"}</span>
+                          </p>
+                        </div>
 
-                    {/* Action buttons */}
-                    {(canEdit || canDelete) && (
-                      <div className="flex gap-2 mt-3 pt-3 border-t border-gray-700/60">
-                        {canEdit && (
-                          <button
-                            onClick={() => startEdit(entry)}
-                            className="flex-1 px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold transition"
-                          >
-                            {t("common.edit")}
-                          </button>
+                        {/* Action buttons — only visible when expanded */}
+                        {(canEdit || canDelete) && (
+                          <div className="flex gap-2 mt-3 pt-3 border-t border-gray-700/60">
+                            {canEdit && (
+                              <button
+                                onClick={() => startEdit(entry)}
+                                className="flex-1 px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold transition"
+                              >
+                                {t("common.edit")}
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button
+                                onClick={() => setDeleteTarget(entry)}
+                                className="flex-1 px-3 py-1.5 rounded-lg bg-red-700 hover:bg-red-600 text-white text-xs font-semibold transition"
+                              >
+                                {t("common.delete")}
+                              </button>
+                            )}
+                          </div>
                         )}
-                        {canDelete && (
-                          <button
-                            onClick={() => setDeleteTarget(entry)}
-                            className="flex-1 px-3 py-1.5 rounded-lg bg-red-700 hover:bg-red-600 text-white text-xs font-semibold transition"
-                          >
-                            {t("common.delete")}
-                          </button>
-                        )}
-                      </div>
+                      </>
                     )}
                   </div>
                 );
