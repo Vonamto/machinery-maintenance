@@ -973,7 +973,7 @@
       "ppeType": "PPE Type",
       "size": "Size",
       "restocked": "Restocked",
-      "distributed": "Distributed",
+      "distributed": "Distributed this Month",
       "available": "Available",
       "status": "Status"
     }
