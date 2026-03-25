@@ -856,6 +856,44 @@
           "description": "Manage worker List"
         }
       }
+    },
+    "workers": {
+      "title": "Workers List",
+      "subtitle": "Manage worker safety profiles",
+      "addButton": "Add Worker",
+      "searchPlaceholder": "Search by name, position or badge...",
+      "noResults": "No workers found.",
+      "fields": {
+        "fullName": "Full Name",
+        "position": "Position",
+        "badgeNumber": "Badge Number",
+        "phone": "Phone"
+      },
+      "placeholders": {
+        "fullName": "Enter full name",
+        "position": "Enter position/job title",
+        "badgeNumber": "e.g. B-001",
+        "phone": "e.g. 0770 000 000"
+      },
+      "addForm": {
+        "title": "Add New Worker",
+        "submit": "Add Worker"
+      },
+      "table": {
+        "fullName": "Full Name",
+        "position": "Position",
+        "badgeNumber": "Badge Number",
+        "phone": "Phone"
+      },
+      "alerts": {
+        "missingFields": "Please fill in Full Name and Position.",
+        "addSuccess": "✅ Worker added successfully!",
+        "editSuccess": "✅ Worker updated successfully!",
+        "deleteSuccess": "✅ Worker deleted successfully!",
+        "deleteConfirm": "Are you sure you want to delete worker \"{{name}}\"? This cannot be undone.",
+        "error": "An error occurred.",
+        "networkError": "Network error. Please try again."
+      }
     }
   },
   "users": {
