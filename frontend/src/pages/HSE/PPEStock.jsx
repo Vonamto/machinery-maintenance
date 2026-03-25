@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import Navbar from "../../components/Navbar";
 import { canUserPerformAction } from "@/config/roles";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -107,6 +108,10 @@ export default function PPEStock() {
   // ── Summary filter ────────────────────────────────────────────
   const [summarySearch, setSummarySearch] = useState("");
 
+  // ── Mobile expand ─────────────────────────────────────────────
+  const [expandedStockIdx, setExpandedStockIdx] = useState(null);
+  const [expandedTypeIdx,  setExpandedTypeIdx]  = useState(null);
+
   // ── Alert ─────────────────────────────────────────────────────
   const [alert, setAlert] = useState(null);
   const showAlert = (type, message) => {
@@ -181,8 +186,6 @@ export default function PPEStock() {
     const now       = new Date();
     const thisMonth = now.getMonth();
     const thisYear  = now.getFullYear();
-
-    // map: PPE_Type -> size -> { restocked, distributed, distributedThisMonth }
     const map = {};
 
     stockEntries.forEach((e) => {
@@ -226,11 +229,7 @@ export default function PPEStock() {
           };
         }
 
-        const sortedSizes = entries
-          .filter((s) => s.size !== "")
-          .sort(sortSizes);
-
-        // Overall card status = worst among all sizes
+        const sortedSizes = entries.filter((s) => s.size !== "").sort(sortSizes);
         const overallStatus = sortedSizes.some((s) => s.available <= 0)
           ? "out"
           : sortedSizes.some((s) => s.available <= 5)
@@ -511,7 +510,6 @@ export default function PPEStock() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredGrouped.map((group, idx) => {
-                  // ── No-size card ──
                   if (!group.hasSize) {
                     const st = getStatus(group.available);
                     const c  = STATUS_COLORS[st];
@@ -535,38 +533,26 @@ export default function PPEStock() {
                     );
                   }
 
-                  // ── Sized card ──
                   const oc = STATUS_COLORS[group.overallStatus];
                   return (
                     <div key={idx} className={`border rounded-2xl p-5 flex flex-col gap-3 ${oc.bg} ${oc.border}`}>
-                      {/* Header */}
                       <div className="flex items-center justify-between gap-2">
                         <p className="font-semibold text-white text-sm leading-tight">{group.PPE_Type}</p>
                         <span className={`shrink-0 px-2 py-1 rounded-full text-xs font-bold ${oc.badge}`}>
                           {STATUS_LABEL(group.overallStatus, t)}
                         </span>
                       </div>
-
-                      {/* Size rows */}
                       <div className="flex flex-col divide-y divide-gray-700/50">
                         {group.sizes.map((sizeRow) => {
                           const st = getStatus(sizeRow.available);
                           const sc = STATUS_COLORS[st];
                           return (
-                            <div
-                              key={sizeRow.size}
-                              className={`flex items-center justify-between py-2 px-1 rounded ${sc.rowBg}`}
-                            >
-                              {/* Size label */}
-                              <span className="text-sm font-bold text-gray-200 w-10 shrink-0">
-                                {sizeRow.size}
-                              </span>
-                              {/* Available */}
+                            <div key={sizeRow.size} className={`flex items-center justify-between py-2 px-1 rounded ${sc.rowBg}`}>
+                              <span className="text-sm font-bold text-gray-200 w-10 shrink-0">{sizeRow.size}</span>
                               <div className="flex items-center gap-1">
                                 <span className="text-xs text-gray-400">{t("hse.stock.summary.table.available")}:</span>
                                 <span className={`text-lg font-bold ${sc.num}`}>{sizeRow.available}</span>
                               </div>
-                              {/* Status pill */}
                               <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${sc.badge}`}>
                                 {st === "out" ? "🔴" : st === "low" ? "🟡" : "🟢"}
                               </span>
@@ -574,8 +560,6 @@ export default function PPEStock() {
                           );
                         })}
                       </div>
-
-                      {/* Footer: distributed this month */}
                       <div className="border-t border-gray-700/60 pt-3">
                         <p className="text-xs text-gray-400">{t("hse.stock.summary.table.distributed")}</p>
                         <p className="text-xl font-semibold text-orange-400">{group.totalDistributedThisMonth}</p>
@@ -628,7 +612,6 @@ export default function PPEStock() {
                       ))}
                     </select>
                   </div>
-
                   {typeHasSize(restockForm.PPE_Type) && (
                     <div>
                       <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.size")}</label>
@@ -640,19 +623,15 @@ export default function PPEStock() {
                       />
                     </div>
                   )}
-
                   <div>
                     <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.quantity")} *</label>
                     <input
-                      type="number"
-                      min="1"
-                      className={inp}
+                      type="number" min="1" className={inp}
                       value={restockForm.Quantity}
                       onChange={(e) => setRestockForm({ ...restockForm, Quantity: e.target.value })}
                       placeholder="0"
                     />
                   </div>
-
                   <div>
                     <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.notes")}</label>
                     <input
@@ -663,158 +642,244 @@ export default function PPEStock() {
                     />
                   </div>
                 </div>
-
                 <div className="mt-3 flex gap-6 text-xs text-gray-500">
                   <span>{t("hse.stock.fields.lastUpdated")}: <span className="text-gray-300">{today()}</span></span>
                   <span>{t("hse.stock.fields.addedBy")}: <span className="text-gray-300">{addedBy}</span></span>
                 </div>
-
                 <div className="mt-4 flex gap-3">
-                  <button
-                    onClick={handleRestock}
-                    disabled={restockLoading}
-                    className="px-5 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-semibold transition disabled:opacity-50"
-                  >
+                  <button onClick={handleRestock} disabled={restockLoading}
+                    className="px-5 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-semibold transition disabled:opacity-50">
                     {restockLoading ? t("common.submitting") : t("hse.stock.restockForm.submit")}
                   </button>
-                  <button
-                    onClick={() => setShowRestockForm(false)}
-                    className="px-5 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm transition"
-                  >
+                  <button onClick={() => setShowRestockForm(false)}
+                    className="px-5 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm transition">
                     {t("common.cancel")}
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Stock Table */}
             {stockLoading ? (
               <p className="text-gray-400 text-sm">{t("common.loading")}</p>
             ) : filteredStock.length === 0 ? (
               <p className="text-gray-400 text-sm">{t("hse.stock.noResults")}</p>
             ) : (
-              <div className="overflow-x-auto rounded-2xl border border-gray-700">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
-                    <tr>
-                      <th className="px-4 py-3">#</th>
-                      <th className="px-4 py-3">{t("hse.stock.table.ppeType")}</th>
-                      <th className="px-4 py-3">{t("hse.stock.table.size")}</th>
-                      <th className="px-4 py-3">{t("hse.stock.table.quantity")}</th>
-                      <th className="px-4 py-3">{t("hse.stock.table.lastUpdated")}</th>
-                      <th className="px-4 py-3">{t("hse.stock.table.addedBy")}</th>
-                      <th className="px-4 py-3">{t("hse.stock.table.notes")}</th>
-                      {(canEditStock || canDeleteStock) && (
-                        <th className="px-4 py-3">{t("common.actions")}</th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredStock.map((entry, idx) =>
-                      editStockIndex === entry.rowindex ? (
-                        <tr key={entry.rowindex} className="bg-gray-700 border-t border-gray-600">
-                          <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
-                          <td className="px-4 py-3">
-                            <select
-                              className={inp}
-                              value={editStockForm.PPE_Type}
-                              onChange={(e) =>
-                                setEditStockForm({ ...editStockForm, PPE_Type: e.target.value, Size: "" })
-                              }
-                            >
+              <>
+                {/* ════ MOBILE CARDS ════ */}
+                <div className="md:hidden space-y-3">
+                  {filteredStock.map((entry, idx) => {
+                    const isEditing  = editStockIndex === entry.rowindex;
+                    const isExpanded = expandedStockIdx === idx;
+
+                    // ── Edit card ──
+                    if (isEditing) {
+                      return (
+                        <div key={entry.rowindex} className="bg-gray-800 border border-yellow-600 rounded-2xl p-4 space-y-3">
+                          <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wide">
+                            {t("common.edit")} #{idx + 1}
+                          </p>
+                          <div>
+                            <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.ppeType")}</label>
+                            <select className={inp} value={editStockForm.PPE_Type}
+                              onChange={(e) => setEditStockForm({ ...editStockForm, PPE_Type: e.target.value, Size: "" })}>
                               {ppeTypes.map((type) => (
                                 <option key={type.rowindex} value={type.Name}>{type.Name}</option>
                               ))}
                             </select>
-                          </td>
-                          <td className="px-4 py-3">
-                            {typeHasSize(editStockForm.PPE_Type) ? (
-                              <input
-                                className={inp}
-                                value={editStockForm.Size}
-                                onChange={(e) => setEditStockForm({ ...editStockForm, Size: e.target.value })}
-                              />
-                            ) : (
-                              <span className="text-gray-500">—</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="number"
-                              min="1"
-                              className={inp}
-                              value={editStockForm.Quantity}
-                              onChange={(e) => setEditStockForm({ ...editStockForm, Quantity: e.target.value })}
-                            />
-                          </td>
-                          <td className="px-4 py-3 text-gray-400 text-xs">{today()}</td>
-                          <td className="px-4 py-3 text-gray-400 text-xs">{addedBy}</td>
-                          <td className="px-4 py-3">
-                            <input
-                              className={inp}
-                              value={editStockForm.Notes}
-                              onChange={(e) => setEditStockForm({ ...editStockForm, Notes: e.target.value })}
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-2">
-                              <button
-                                onClick={handleSaveEditStock}
-                                disabled={editStockLoading}
-                                className="px-3 py-1 rounded bg-green-700 hover:bg-green-600 text-white text-xs font-semibold transition disabled:opacity-50"
-                              >
-                                {editStockLoading ? t("common.submitting") : t("common.submit")}
-                              </button>
-                              <button
-                                onClick={() => setEditStockIndex(null)}
-                                className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-500 text-white text-xs transition"
-                              >
-                                {t("common.cancel")}
-                              </button>
+                          </div>
+                          {typeHasSize(editStockForm.PPE_Type) && (
+                            <div>
+                              <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.size")}</label>
+                              <input className={inp} value={editStockForm.Size}
+                                onChange={(e) => setEditStockForm({ ...editStockForm, Size: e.target.value })} />
                             </div>
-                          </td>
-                        </tr>
-                      ) : (
-                        <tr key={entry.rowindex} className="border-t border-gray-700 hover:bg-gray-800/50 transition">
-                          <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
-                          <td className="px-4 py-3 font-medium">{entry.PPE_Type}</td>
-                          <td className="px-4 py-3 text-gray-300">{entry.Size || "—"}</td>
-                          <td className="px-4 py-3">
-                            <span className="px-2 py-1 rounded-full bg-yellow-900/50 text-yellow-300 text-xs font-bold">
-                              {entry.Quantity}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-gray-400 text-xs">{entry.Last_Updated}</td>
-                          <td className="px-4 py-3 text-gray-300 text-xs">{entry.Added_by}</td>
-                          <td className="px-4 py-3 text-gray-400 text-xs">{entry.Notes || "—"}</td>
-                          {(canEditStock || canDeleteStock) && (
-                            <td className="px-4 py-3">
-                              <div className="flex gap-2">
+                          )}
+                          <div>
+                            <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.quantity")}</label>
+                            <input type="number" min="1" className={inp} value={editStockForm.Quantity}
+                              onChange={(e) => setEditStockForm({ ...editStockForm, Quantity: e.target.value })} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.notes")}</label>
+                            <input className={inp} value={editStockForm.Notes}
+                              onChange={(e) => setEditStockForm({ ...editStockForm, Notes: e.target.value })} />
+                          </div>
+                          <div className="flex gap-2 pt-1">
+                            <button onClick={handleSaveEditStock} disabled={editStockLoading}
+                              className="flex-1 px-3 py-2 rounded-lg bg-green-700 hover:bg-green-600 text-white text-xs font-semibold transition disabled:opacity-50">
+                              {editStockLoading ? t("common.submitting") : t("common.submit")}
+                            </button>
+                            <button onClick={() => setEditStockIndex(null)}
+                              className="flex-1 px-3 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-xs transition">
+                              {t("common.cancel")}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // ── Normal card ──
+                    return (
+                      <div key={entry.rowindex} className="bg-gray-800/60 border border-gray-700 rounded-2xl p-4 shadow-lg">
+                        <button
+                          onClick={() => setExpandedStockIdx(isExpanded ? null : idx)}
+                          className="w-full text-left"
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <p className="text-base font-semibold text-yellow-400 leading-tight">{entry.PPE_Type}</p>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="px-2 py-0.5 rounded-full bg-yellow-900/50 text-yellow-300 text-xs font-bold">
+                                × {entry.Quantity}
+                              </span>
+                              {isExpanded
+                                ? <ChevronUp size={16} className="text-gray-400" />
+                                : <ChevronDown size={16} className="text-gray-400" />}
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {entry.Size && (
+                              <span className="px-2 py-0.5 rounded-full bg-blue-900/50 text-blue-300 text-xs font-bold">
+                                {entry.Size}
+                              </span>
+                            )}
+                            <span className="text-xs text-gray-400">{entry.Last_Updated}</span>
+                          </div>
+                        </button>
+
+                        {isExpanded && (
+                          <>
+                            <div className="mt-3 pt-3 border-t border-gray-700 space-y-1 text-sm">
+                              <p>
+                                <span className="text-gray-400">{t("hse.stock.table.addedBy")}: </span>
+                                <span className="text-gray-200">{entry.Added_by || "—"}</span>
+                              </p>
+                              <p>
+                                <span className="text-gray-400">{t("hse.stock.table.notes")}: </span>
+                                <span className="text-gray-200">{entry.Notes || "—"}</span>
+                              </p>
+                            </div>
+                            {(canEditStock || canDeleteStock) && (
+                              <div className="flex gap-2 mt-3 pt-3 border-t border-gray-700/60">
                                 {canEditStock && (
-                                  <button
-                                    onClick={() => startEditStock(entry)}
-                                    className="px-3 py-1 rounded bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold transition"
-                                  >
+                                  <button onClick={() => startEditStock(entry)}
+                                    className="flex-1 px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold transition">
                                     {t("common.edit")}
                                   </button>
                                 )}
                                 {canDeleteStock && (
-                                  <button
-                                    onClick={() => handleDeleteStock(entry)}
-                                    className="px-3 py-1 rounded bg-red-700 hover:bg-red-600 text-white text-xs font-semibold transition"
-                                  >
+                                  <button onClick={() => handleDeleteStock(entry)}
+                                    className="flex-1 px-3 py-1.5 rounded-lg bg-red-700 hover:bg-red-600 text-white text-xs font-semibold transition">
                                     {t("common.delete")}
                                   </button>
                                 )}
                               </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* ════ DESKTOP TABLE ════ */}
+                <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-700">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
+                      <tr>
+                        <th className="px-4 py-3">#</th>
+                        <th className="px-4 py-3">{t("hse.stock.table.ppeType")}</th>
+                        <th className="px-4 py-3">{t("hse.stock.table.size")}</th>
+                        <th className="px-4 py-3">{t("hse.stock.table.quantity")}</th>
+                        <th className="px-4 py-3">{t("hse.stock.table.lastUpdated")}</th>
+                        <th className="px-4 py-3">{t("hse.stock.table.addedBy")}</th>
+                        <th className="px-4 py-3">{t("hse.stock.table.notes")}</th>
+                        {(canEditStock || canDeleteStock) && (
+                          <th className="px-4 py-3">{t("common.actions")}</th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredStock.map((entry, idx) =>
+                        editStockIndex === entry.rowindex ? (
+                          <tr key={entry.rowindex} className="bg-gray-700 border-t border-gray-600">
+                            <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
+                            <td className="px-4 py-3">
+                              <select className={inp} value={editStockForm.PPE_Type}
+                                onChange={(e) => setEditStockForm({ ...editStockForm, PPE_Type: e.target.value, Size: "" })}>
+                                {ppeTypes.map((type) => (
+                                  <option key={type.rowindex} value={type.Name}>{type.Name}</option>
+                                ))}
+                              </select>
                             </td>
-                          )}
-                        </tr>
-                      )
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                            <td className="px-4 py-3">
+                              {typeHasSize(editStockForm.PPE_Type) ? (
+                                <input className={inp} value={editStockForm.Size}
+                                  onChange={(e) => setEditStockForm({ ...editStockForm, Size: e.target.value })} />
+                              ) : (
+                                <span className="text-gray-500">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <input type="number" min="1" className={inp} value={editStockForm.Quantity}
+                                onChange={(e) => setEditStockForm({ ...editStockForm, Quantity: e.target.value })} />
+                            </td>
+                            <td className="px-4 py-3 text-gray-400 text-xs">{today()}</td>
+                            <td className="px-4 py-3 text-gray-400 text-xs">{addedBy}</td>
+                            <td className="px-4 py-3">
+                              <input className={inp} value={editStockForm.Notes}
+                                onChange={(e) => setEditStockForm({ ...editStockForm, Notes: e.target.value })} />
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex gap-2">
+                                <button onClick={handleSaveEditStock} disabled={editStockLoading}
+                                  className="px-3 py-1 rounded bg-green-700 hover:bg-green-600 text-white text-xs font-semibold transition disabled:opacity-50">
+                                  {editStockLoading ? t("common.submitting") : t("common.submit")}
+                                </button>
+                                <button onClick={() => setEditStockIndex(null)}
+                                  className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-500 text-white text-xs transition">
+                                  {t("common.cancel")}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          <tr key={entry.rowindex} className="border-t border-gray-700 hover:bg-gray-800/50 transition">
+                            <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
+                            <td className="px-4 py-3 font-medium">{entry.PPE_Type}</td>
+                            <td className="px-4 py-3 text-gray-300">{entry.Size || "—"}</td>
+                            <td className="px-4 py-3">
+                              <span className="px-2 py-1 rounded-full bg-yellow-900/50 text-yellow-300 text-xs font-bold">
+                                {entry.Quantity}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-400 text-xs">{entry.Last_Updated}</td>
+                            <td className="px-4 py-3 text-gray-300 text-xs">{entry.Added_by}</td>
+                            <td className="px-4 py-3 text-gray-400 text-xs">{entry.Notes || "—"}</td>
+                            {(canEditStock || canDeleteStock) && (
+                              <td className="px-4 py-3">
+                                <div className="flex gap-2">
+                                  {canEditStock && (
+                                    <button onClick={() => startEditStock(entry)}
+                                      className="px-3 py-1 rounded bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold transition">
+                                      {t("common.edit")}
+                                    </button>
+                                  )}
+                                  {canDeleteStock && (
+                                    <button onClick={() => handleDeleteStock(entry)}
+                                      className="px-3 py-1 rounded bg-red-700 hover:bg-red-600 text-white text-xs font-semibold transition">
+                                      {t("common.delete")}
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         )}
@@ -848,160 +913,230 @@ export default function PPEStock() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.typeName")} *</label>
-                    <input
-                      className={inp}
-                      value={addTypeForm.Name}
+                    <input className={inp} value={addTypeForm.Name}
                       onChange={(e) => setAddTypeForm({ ...addTypeForm, Name: e.target.value })}
-                      placeholder={t("hse.stock.placeholders.typeName")}
-                    />
+                      placeholder={t("hse.stock.placeholders.typeName")} />
                   </div>
                   <div>
                     <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.hasSize")}</label>
-                    <select
-                      className={inp}
-                      value={addTypeForm.Has_Size}
-                      onChange={(e) => setAddTypeForm({ ...addTypeForm, Has_Size: e.target.value })}
-                    >
+                    <select className={inp} value={addTypeForm.Has_Size}
+                      onChange={(e) => setAddTypeForm({ ...addTypeForm, Has_Size: e.target.value })}>
                       <option value="NO">NO</option>
                       <option value="YES">YES</option>
                     </select>
                   </div>
                   <div>
                     <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.category")}</label>
-                    <input
-                      className={inp}
-                      value={addTypeForm.Category}
+                    <input className={inp} value={addTypeForm.Category}
                       onChange={(e) => setAddTypeForm({ ...addTypeForm, Category: e.target.value })}
-                      placeholder={t("hse.stock.placeholders.category")}
-                    />
+                      placeholder={t("hse.stock.placeholders.category")} />
                   </div>
                 </div>
                 <div className="mt-4 flex gap-3">
-                  <button
-                    onClick={handleAddType}
-                    disabled={addTypeLoading}
-                    className="px-5 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-semibold transition disabled:opacity-50"
-                  >
+                  <button onClick={handleAddType} disabled={addTypeLoading}
+                    className="px-5 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-semibold transition disabled:opacity-50">
                     {addTypeLoading ? t("common.submitting") : t("hse.stock.addTypeForm.submit")}
                   </button>
-                  <button
-                    onClick={() => setShowAddTypeForm(false)}
-                    className="px-5 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm transition"
-                  >
+                  <button onClick={() => setShowAddTypeForm(false)}
+                    className="px-5 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm transition">
                     {t("common.cancel")}
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Types Table */}
             {typesLoading ? (
               <p className="text-gray-400 text-sm">{t("common.loading")}</p>
             ) : filteredTypes.length === 0 ? (
               <p className="text-gray-400 text-sm">{t("hse.stock.noTypeResults")}</p>
             ) : (
-              <div className="overflow-x-auto rounded-2xl border border-gray-700">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
-                    <tr>
-                      <th className="px-4 py-3">#</th>
-                      <th className="px-4 py-3">{t("hse.stock.table.typeName")}</th>
-                      <th className="px-4 py-3">{t("hse.stock.table.hasSize")}</th>
-                      <th className="px-4 py-3">{t("hse.stock.table.category")}</th>
-                      {(canEditType || canDeleteType) && (
-                        <th className="px-4 py-3">{t("common.actions")}</th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTypes.map((type, idx) =>
-                      editTypeIndex === type.rowindex ? (
-                        <tr key={type.rowindex} className="bg-gray-700 border-t border-gray-600">
-                          <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
-                          <td className="px-4 py-3">
-                            <input
-                              className={inp}
-                              value={editTypeForm.Name}
-                              onChange={(e) => setEditTypeForm({ ...editTypeForm, Name: e.target.value })}
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <select
-                              className={inp}
-                              value={editTypeForm.Has_Size}
-                              onChange={(e) => setEditTypeForm({ ...editTypeForm, Has_Size: e.target.value })}
-                            >
+              <>
+                {/* ════ MOBILE CARDS ════ */}
+                <div className="md:hidden space-y-3">
+                  {filteredTypes.map((type, idx) => {
+                    const isEditing  = editTypeIndex === type.rowindex;
+                    const isExpanded = expandedTypeIdx === idx;
+
+                    // ── Edit card ──
+                    if (isEditing) {
+                      return (
+                        <div key={type.rowindex} className="bg-gray-800 border border-yellow-600 rounded-2xl p-4 space-y-3">
+                          <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wide">
+                            {t("common.edit")} #{idx + 1}
+                          </p>
+                          <div>
+                            <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.typeName")}</label>
+                            <input className={inp} value={editTypeForm.Name}
+                              onChange={(e) => setEditTypeForm({ ...editTypeForm, Name: e.target.value })} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.hasSize")}</label>
+                            <select className={inp} value={editTypeForm.Has_Size}
+                              onChange={(e) => setEditTypeForm({ ...editTypeForm, Has_Size: e.target.value })}>
                               <option value="NO">NO</option>
                               <option value="YES">YES</option>
                             </select>
-                          </td>
-                          <td className="px-4 py-3">
-                            <input
-                              className={inp}
-                              value={editTypeForm.Category}
-                              onChange={(e) => setEditTypeForm({ ...editTypeForm, Category: e.target.value })}
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-2">
-                              <button
-                                onClick={handleSaveEditType}
-                                disabled={editTypeLoading}
-                                className="px-3 py-1 rounded bg-green-700 hover:bg-green-600 text-white text-xs font-semibold transition disabled:opacity-50"
-                              >
-                                {editTypeLoading ? t("common.submitting") : t("common.submit")}
-                              </button>
-                              <button
-                                onClick={() => setEditTypeIndex(null)}
-                                className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-500 text-white text-xs transition"
-                              >
-                                {t("common.cancel")}
-                              </button>
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.category")}</label>
+                            <input className={inp} value={editTypeForm.Category}
+                              onChange={(e) => setEditTypeForm({ ...editTypeForm, Category: e.target.value })} />
+                          </div>
+                          <div className="flex gap-2 pt-1">
+                            <button onClick={handleSaveEditType} disabled={editTypeLoading}
+                              className="flex-1 px-3 py-2 rounded-lg bg-green-700 hover:bg-green-600 text-white text-xs font-semibold transition disabled:opacity-50">
+                              {editTypeLoading ? t("common.submitting") : t("common.submit")}
+                            </button>
+                            <button onClick={() => setEditTypeIndex(null)}
+                              className="flex-1 px-3 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-xs transition">
+                              {t("common.cancel")}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // ── Normal card ──
+                    return (
+                      <div key={type.rowindex} className="bg-gray-800/60 border border-gray-700 rounded-2xl p-4 shadow-lg">
+                        <button
+                          onClick={() => setExpandedTypeIdx(isExpanded ? null : idx)}
+                          className="w-full text-left"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-base font-semibold text-yellow-400 leading-tight">{type.Name}</p>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                                type.Has_Size === "YES"
+                                  ? "bg-blue-900/50 text-blue-300"
+                                  : "bg-gray-700 text-gray-400"
+                              }`}>
+                                {type.Has_Size}
+                              </span>
+                              {isExpanded
+                                ? <ChevronUp size={16} className="text-gray-400" />
+                                : <ChevronDown size={16} className="text-gray-400" />}
                             </div>
-                          </td>
-                        </tr>
-                      ) : (
-                        <tr key={type.rowindex} className="border-t border-gray-700 hover:bg-gray-800/50 transition">
-                          <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
-                          <td className="px-4 py-3 font-medium">{type.Name}</td>
-                          <td className="px-4 py-3">
-                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                              type.Has_Size === "YES"
-                                ? "bg-blue-900/50 text-blue-300"
-                                : "bg-gray-700 text-gray-400"
-                            }`}>
-                              {type.Has_Size}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-gray-300">{type.Category || "—"}</td>
-                          {(canEditType || canDeleteType) && (
-                            <td className="px-4 py-3">
-                              <div className="flex gap-2">
+                          </div>
+                        </button>
+
+                        {isExpanded && (
+                          <>
+                            <div className="mt-3 pt-3 border-t border-gray-700 space-y-1 text-sm">
+                              <p>
+                                <span className="text-gray-400">{t("hse.stock.table.category")}: </span>
+                                <span className="text-gray-200">{type.Category || "—"}</span>
+                              </p>
+                            </div>
+                            {(canEditType || canDeleteType) && (
+                              <div className="flex gap-2 mt-3 pt-3 border-t border-gray-700/60">
                                 {canEditType && (
-                                  <button
-                                    onClick={() => startEditType(type)}
-                                    className="px-3 py-1 rounded bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold transition"
-                                  >
+                                  <button onClick={() => startEditType(type)}
+                                    className="flex-1 px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold transition">
                                     {t("common.edit")}
                                   </button>
                                 )}
                                 {canDeleteType && (
-                                  <button
-                                    onClick={() => handleDeleteType(type)}
-                                    className="px-3 py-1 rounded bg-red-700 hover:bg-red-600 text-white text-xs font-semibold transition"
-                                  >
+                                  <button onClick={() => handleDeleteType(type)}
+                                    className="flex-1 px-3 py-1.5 rounded-lg bg-red-700 hover:bg-red-600 text-white text-xs font-semibold transition">
                                     {t("common.delete")}
                                   </button>
                                 )}
                               </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* ════ DESKTOP TABLE ════ */}
+                <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-700">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
+                      <tr>
+                        <th className="px-4 py-3">#</th>
+                        <th className="px-4 py-3">{t("hse.stock.table.typeName")}</th>
+                        <th className="px-4 py-3">{t("hse.stock.table.hasSize")}</th>
+                        <th className="px-4 py-3">{t("hse.stock.table.category")}</th>
+                        {(canEditType || canDeleteType) && (
+                          <th className="px-4 py-3">{t("common.actions")}</th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTypes.map((type, idx) =>
+                        editTypeIndex === type.rowindex ? (
+                          <tr key={type.rowindex} className="bg-gray-700 border-t border-gray-600">
+                            <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
+                            <td className="px-4 py-3">
+                              <input className={inp} value={editTypeForm.Name}
+                                onChange={(e) => setEditTypeForm({ ...editTypeForm, Name: e.target.value })} />
                             </td>
-                          )}
-                        </tr>
-                      )
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                            <td className="px-4 py-3">
+                              <select className={inp} value={editTypeForm.Has_Size}
+                                onChange={(e) => setEditTypeForm({ ...editTypeForm, Has_Size: e.target.value })}>
+                                <option value="NO">NO</option>
+                                <option value="YES">YES</option>
+                              </select>
+                            </td>
+                            <td className="px-4 py-3">
+                              <input className={inp} value={editTypeForm.Category}
+                                onChange={(e) => setEditTypeForm({ ...editTypeForm, Category: e.target.value })} />
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex gap-2">
+                                <button onClick={handleSaveEditType} disabled={editTypeLoading}
+                                  className="px-3 py-1 rounded bg-green-700 hover:bg-green-600 text-white text-xs font-semibold transition disabled:opacity-50">
+                                  {editTypeLoading ? t("common.submitting") : t("common.submit")}
+                                </button>
+                                <button onClick={() => setEditTypeIndex(null)}
+                                  className="px-3 py-1 rounded bg-gray-600 hover:bg-gray-500 text-white text-xs transition">
+                                  {t("common.cancel")}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          <tr key={type.rowindex} className="border-t border-gray-700 hover:bg-gray-800/50 transition">
+                            <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
+                            <td className="px-4 py-3 font-medium">{type.Name}</td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                type.Has_Size === "YES"
+                                  ? "bg-blue-900/50 text-blue-300"
+                                  : "bg-gray-700 text-gray-400"
+                              }`}>
+                                {type.Has_Size}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-300">{type.Category || "—"}</td>
+                            {(canEditType || canDeleteType) && (
+                              <td className="px-4 py-3">
+                                <div className="flex gap-2">
+                                  {canEditType && (
+                                    <button onClick={() => startEditType(type)}
+                                      className="px-3 py-1 rounded bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold transition">
+                                      {t("common.edit")}
+                                    </button>
+                                  )}
+                                  {canDeleteType && (
+                                    <button onClick={() => handleDeleteType(type)}
+                                      className="px-3 py-1 rounded bg-red-700 hover:bg-red-600 text-white text-xs font-semibold transition">
+                                      {t("common.delete")}
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         )}
