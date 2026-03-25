@@ -9,7 +9,7 @@ export const ROLES = {
   DRIVER:     "Driver",
   CLEANER:    "Cleaning Guy",
   ADMIN:      "Admin",        // Full access (including Users page)
-  GUEST:      "Guest",        // Access to all except Users page
+  GUEST:      "Guest",        // Access to some pages
   MANAGER:    "Manager",      // Read-only access to history pages
   SUP_LOG:    "Sup Log",      // 🆕 Logistics Supervisor
   HSE_GTG:    "HSE GTG",      // 🆕 HSE GTG (Suivi view only)
@@ -19,32 +19,50 @@ export const ROLES = {
 
 export const PAGE_PERMISSIONS = {
   // Checklist
-  CHECKLIST:         [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG],
-  CHECKLIST_FORM:    [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.SUP_LOG],
+  CHECKLIST:         [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.MANAGER, ROLES.SUP_LOG],
+  CHECKLIST_FORM:    [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.SUP_LOG],
   CHECKLIST_HISTORY: [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG],
 
-  // Maintenance — neither new role can access frontend pages
+  // Maintenance
   MAINTENANCE:         [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER],
-  MAINTENANCE_FORM:    [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.ADMIN, ROLES.GUEST],
+  MAINTENANCE_FORM:    [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.ADMIN],
   MAINTENANCE_HISTORY: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER],
 
   // Cleaning
   CLEANING:         [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.CLEANER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG],
-  CLEANING_FORM:    [ROLES.SUPERVISOR, ROLES.CLEANER, ROLES.ADMIN, ROLES.GUEST, ROLES.SUP_LOG],
+  CLEANING_FORM:    [ROLES.SUPERVISOR, ROLES.CLEANER, ROLES.ADMIN, ROLES.SUP_LOG],
   CLEANING_HISTORY: [ROLES.SUPERVISOR, ROLES.MECHANIC, ROLES.DRIVER, ROLES.CLEANER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG],
 
   // Suivi (Machinery Tracking)
-  SUIVI:       [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG, ROLES.HSE_GTG],
-  SUIVILIST:   [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG, ROLES.HSE_GTG],
+  SUIVI:       [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.MANAGER, ROLES.SUP_LOG, ROLES.HSE_GTG],
+  SUIVILIST:   [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.MANAGER, ROLES.SUP_LOG, ROLES.HSE_GTG],
   SUIVIMANAGE: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.SUP_LOG],
-  SUIVIDETAIL: [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.GUEST, ROLES.MANAGER, ROLES.SUP_LOG, ROLES.HSE_GTG],
+  SUIVIDETAIL: [ROLES.SUPERVISOR, ROLES.DRIVER, ROLES.ADMIN, ROLES.MANAGER, ROLES.SUP_LOG, ROLES.HSE_GTG],
 
   // Users
-  USERS: [ROLES.ADMIN], // 🔒 Only Admin
+  USERS: [ROLES.ADMIN],
+
+  // ==========================================
+  // HSE Module
+  // ==========================================
+
+  // Landing page — everyone who can access at least one sub-page
+  HSE: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.MANAGER, ROLES.SUP_LOG],
+
+  // Stock page — Supervisor & Admin full access, Manager view only
+  HSE_STOCK: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.MANAGER],
+
+  // Distribute page — Supervisor & Admin only
+  HSE_DISTRIBUTE: [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // History page — Supervisor & Admin full, Manager & Sup Log view only
+  HSE_HISTORY: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.MANAGER, ROLES.SUP_LOG],
+
+  // Workers page — Supervisor & Admin only
+  HSE_WORKERS: [ROLES.SUPERVISOR, ROLES.ADMIN],
 };
 
 /* ================= Action Permissions ================= */
-// Based on backend/permissions.py - Single source of truth for who can perform actions
 
 export const ACTION_PERMISSIONS = {
   // ========== Cleaning History ==========
@@ -65,6 +83,42 @@ export const ACTION_PERMISSIONS = {
   USERS_ADD:    [ROLES.ADMIN],
   USERS_EDIT:   [ROLES.ADMIN],
   USERS_DELETE: [ROLES.ADMIN],
+
+  // ==========================================
+  // HSE Module Actions
+  // ==========================================
+
+  // PPE Stock
+  HSE_STOCK_VIEW:        [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.MANAGER],
+  HSE_STOCK_RESTOCK:     [ROLES.SUPERVISOR, ROLES.ADMIN],
+  HSE_STOCK_EDIT:        [ROLES.SUPERVISOR, ROLES.ADMIN],
+  HSE_STOCK_DELETE:      [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // PPE Types
+  HSE_TYPES_ADD:         [ROLES.SUPERVISOR, ROLES.ADMIN],
+  HSE_TYPES_EDIT:        [ROLES.SUPERVISOR, ROLES.ADMIN],
+  HSE_TYPES_DELETE:      [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // PPE Distribution
+  HSE_DISTRIBUTE_ADD:    [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // PPE History
+  HSE_HISTORY_EDIT:      [ROLES.SUPERVISOR, ROLES.ADMIN],
+  HSE_HISTORY_DELETE:    [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // Workers
+  HSE_WORKERS_ADD:       [ROLES.SUPERVISOR, ROLES.ADMIN],
+  HSE_WORKERS_EDIT:      [ROLES.SUPERVISOR, ROLES.ADMIN],
+  HSE_WORKERS_DELETE:    [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // ==========================================
+  // HSE Stock — Tab Visibility
+  // ==========================================
+  HSE_STOCK_TAB_SUMMARY: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.MANAGER],
+  HSE_STOCK_TAB_STOCK:   [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.MANAGER],
+  HSE_STOCK_TAB_TYPES:   [ROLES.SUPERVISOR, ROLES.ADMIN],
+  // 👆 To give any role access to a tab in the future,
+  //    just add the role here — no need to touch PPEStock.jsx
 };
 
 /* ================= Helper Functions ================= */

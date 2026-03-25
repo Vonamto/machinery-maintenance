@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, Droplets, Users, CheckCircle, FileText } from "lucide-react";
+import { Wrench, Droplets, Users, CheckCircle, FileText, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 // 🔐 Centralized roles & permissions
@@ -64,6 +64,17 @@ export default function Dashboard() {
       allowed: PAGE_PERMISSIONS.USERS,
       glow: "shadow-[0_0_15px_2px_rgba(168,85,247,0.6)]",
       gradient: "from-purple-600 to-pink-500",
+    },
+
+    // 🆕 HSE Module
+    {
+      title: t("dashboard.hse.title"),
+      description: t("dashboard.hse.description"),
+      icon: <ShieldCheck className="w-8 h-8 text-white drop-shadow-md" />,
+      link: "/hse",
+      allowed: PAGE_PERMISSIONS.HSE,
+      glow: "shadow-[0_0_15px_2px_rgba(234,179,8,0.6)]",
+      gradient: "from-yellow-600 to-orange-500",
     },
   ];
 

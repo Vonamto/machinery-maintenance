@@ -36,6 +36,13 @@ import SuiviDetail from "./pages/Suivi/SuiviDetail";
 // --- Users ---
 import UsersManage from "./pages/Users/Manage";
 
+// --- HSE ---
+import HSEIndex from "./pages/HSE/index";
+import PPEStock from "./pages/HSE/PPEStock";
+import PPEDistribution from "./pages/HSE/PPEDistribution";
+import PPEHistory from "./pages/HSE/PPEHistory";
+import HSEWorkers from "./pages/HSE/Workers";
+
 export default function App() {
   const { i18n } = useTranslation();
 
@@ -184,6 +191,48 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.USERS}>
                 <UsersManage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ================= HSE ================= */}
+          <Route
+            path="/hse"
+            element={
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.HSE}>
+                <HSEIndex />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/hse/stock"
+            element={
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.HSE_STOCK}>
+                <PPEStock />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/hse/distribute"
+            element={
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.HSE_DISTRIBUTE}>
+                <PPEDistribution />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/hse/history"
+            element={
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.HSE_HISTORY}>
+                <PPEHistory />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/hse/workers"
+            element={
+              <ProtectedRoute allowedRoles={PAGE_PERMISSIONS.HSE_WORKERS}>
+                <HSEWorkers />
               </ProtectedRoute>
             }
           />

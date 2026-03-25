@@ -63,6 +63,10 @@
     "suivi": {
       "title": "Machinery Tracking",
       "description": "Track machinery documents and inspections"
+    },
+    "hse": {
+      "title": "HSE Module",
+      "description": "Manage PPE stock, distribution and worker safety"
     }
   },
   "maintenance": {
@@ -829,6 +833,245 @@
       "permanent": "Permanent",
       "callOff": "Call-Off"
     }
+  },
+    "hse": {
+    "menu": {
+      "title": "HSE — Health, Safety & Environment",
+      "subtitle": "Manage PPE stock, distribution and worker safety records",
+      "cards": {
+        "stock": {
+          "title": "PPE Stock",
+          "description": "View and manage personal protective equipment inventory"
+        },
+        "distribute": {
+          "title": "PPE Distribution",
+          "description": "Issue PPE items to workers and log distributions"
+        },
+        "history": {
+          "title": "Distribution History",
+          "description": "View all past PPE distribution records"
+        },
+        "workers": {
+          "title": "Workers List",
+          "description": "Manage worker List"
+        }
+      }
+    },
+    "workers": {
+      "title": "Workers List",
+      "subtitle": "Manage worker safety profiles",
+      "addButton": "Add Worker",
+      "searchPlaceholder": "Search by name, position or badge...",
+      "noResults": "No workers found.",
+      "fields": {
+        "fullName": "Full Name",
+        "position": "Position",
+        "badgeNumber": "Badge Number",
+        "phone": "Phone"
+      },
+      "placeholders": {
+        "fullName": "Enter full name",
+        "position": "Enter position/job title",
+        "badgeNumber": "e.g. B-001",
+        "phone": "e.g. 0770 000 000"
+      },
+      "addForm": {
+        "title": "Add New Worker",
+        "submit": "Add Worker"
+      },
+      "table": {
+        "fullName": "Full Name",
+        "position": "Position",
+        "badgeNumber": "Badge Number",
+        "phone": "Phone"
+      },
+      "alerts": {
+        "missingFields": "Please fill in Full Name and Position.",
+        "addSuccess": "✅ Worker added successfully!",
+        "editSuccess": "✅ Worker updated successfully!",
+        "deleteSuccess": "✅ Worker deleted successfully!",
+        "deleteConfirm": "Are you sure you want to delete worker \"{{name}}\"? This cannot be undone.",
+        "error": "An error occurred.",
+        "networkError": "Network error. Please try again."
+      }
+    },
+"stock": {
+  "title": "PPE Stock",
+  "subtitle": "Manage personal protective equipment inventory and types",
+  "tabs": {
+    "summary": "Stock Summary",
+    "stock": "Stock Ledger",
+    "types": "PPE Types"
+  },
+  "restockButton": "Add Stock Entry",
+  "addTypeButton": "Add PPE Type",
+  "searchPlaceholder": "Search by type, size or added by...",
+  "typeSearchPlaceholder": "Search by name or category...",
+  "summarySearchPlaceholder": "Search by PPE type or size...",
+  "noResults": "No stock entries found.",
+  "noTypeResults": "No PPE types found.",
+  "fields": {
+    "ppeType": "PPE Type",
+    "size": "Size",
+    "quantity": "Quantity",
+    "lastUpdated": "Last Updated",
+    "addedBy": "Added By",
+    "notes": "Notes",
+    "typeName": "PPE Name",
+    "hasSize": "Has Size?",
+    "category": "Category"
+  },
+  "placeholders": {
+    "selectType": "--- Select PPE Type ---",
+    "size": "e.g. 42, L, XL",
+    "notes": "e.g. Received from supplier",
+    "typeName": "e.g. Safety Shoes",
+    "category": "e.g. Foot Protection"
+  },
+  "restockForm": {
+    "title": "Add Stock Entry",
+    "submit": "Add to Stock"
+  },
+  "addTypeForm": {
+    "title": "Add New PPE Type",
+    "submit": "Add Type"
+  },
+  "table": {
+    "ppeType": "PPE Type",
+    "size": "Size",
+    "quantity": "Qty",
+    "lastUpdated": "Last Updated",
+    "addedBy": "Added By",
+    "notes": "Notes",
+    "typeName": "PPE Name",
+    "hasSize": "Has Size?",
+    "category": "Category"
+  },
+  "alerts": {
+    "missingFields": "Please select a PPE Type and enter a quantity.",
+    "missingTypeName": "Please enter the PPE type name.",
+    "restockSuccess": "✅ Stock entry added successfully!",
+    "editSuccess": "✅ Stock entry updated successfully!",
+    "deleteSuccess": "✅ Stock entry deleted successfully!",
+    "deleteConfirm": "Are you sure you want to delete this stock entry for \"{{type}}\"?",
+    "typeAddSuccess": "✅ PPE type added successfully!",
+    "typeEditSuccess": "✅ PPE type updated successfully!",
+    "typeDeleteSuccess": "✅ PPE type deleted successfully!",
+    "typeDeleteConfirm": "Are you sure you want to delete PPE type \"{{name}}\"? This cannot be undone.",
+    "error": "An error occurred.",
+    "networkError": "Network error. Please try again."
+  },
+    "summary": {
+    "totalTypes": "Total Entries",
+    "totalRestocked": "Total Restocked",
+    "totalDistributed": "Total Distributed",
+    "totalAvailable": "Available Now",
+    "outOfStock": "Out of Stock",
+    "lowStock": "Low Stock",
+    "inStock": "In Stock",
+    "table": {
+      "ppeType": "PPE Type",
+      "size": "Size",
+      "restocked": "Restocked",
+      "distributed": "Distributed this Month",
+      "available": "Available",
+      "status": "Status"
+    }
+  }
+},
+"distribute": {
+  "title": "PPE Distribution",
+  "subtitle": "Issue personal protective equipment to workers",
+  "formTitle": "New Distribution Entry",
+  "submitButton": "Record Distribution",
+  "accessDenied": "You do not have permission to distribute PPE.",
+  "outOfStock": "Out of stock",
+  "available": "Available",
+  "noWorkerFound": "No worker found. Please add them to the Workers list first.",
+  "fields": {
+    "date": "Date",
+    "workerName": "Worker Name",
+    "workerPosition": "Position",
+    "ppeType": "PPE Type",
+    "size": "Size",
+    "quantity": "Quantity",
+    "givenBy": "Given By",
+    "notes": "Notes"
+  },
+  "placeholders": {
+    "workerName": "Type to search worker...",
+    "ppeType": "--- Select PPE Type ---",
+    "size": "--- Select Size ---",
+    "notes": "Optional notes..."
+  },
+  "alerts": {
+    "missingWorker": "Please select a worker from the list.",
+    "missingType": "Please select a PPE type.",
+    "missingSize": "Please select a size.",
+    "missingQty": "Please enter a valid quantity.",
+    "exceedsStock": "Quantity exceeds available stock (max: {{max}}).",
+    "success": "✅ Distribution recorded successfully!",
+    "error": "An error occurred.",
+    "networkError": "Network error. Please try again."
+  }
+},
+"history": {
+  "title": "Distribution History",
+  "subtitle": "View, edit and manage all PPE distribution records",
+  "noResults": "No distribution records found.",
+  "editForm": {
+    "title": "Edit Distribution Record"
+  },
+  "fields": {
+    "date": "Date",
+    "workerName": "Worker Name",
+    "workerPosition": "Position",
+    "ppeType": "PPE Type",
+    "size": "Size",
+    "quantity": "Quantity",
+    "givenBy": "Given By",
+    "notes": "Notes"
+  },
+  "placeholders": {
+    "workerName": "Type to search worker...",
+    "ppeType": "--- Select PPE Type ---",
+    "size": "--- Select Size ---",
+    "notes": "Optional notes..."
+  },
+  "filters": {
+    "worker": "Filter by worker name...",
+    "allTypes": "All PPE Types",
+    "reset": "Reset Filters"
+  },
+  "table": {
+    "date": "Date",
+    "workerName": "Worker",
+    "workerPosition": "Position",
+    "ppeType": "PPE Type",
+    "size": "Size",
+    "quantity": "Qty",
+    "givenBy": "Given By",
+    "notes": "Notes"
+  },
+  "deleteModal": {
+    "title": "Delete Distribution Record",
+    "question": "Do you want to return this item back to stock?",
+    "deleteReturn": "Delete & Return to Stock",
+    "deleteOnly": "Delete Only (no stock return)"
+  },
+  "alerts": {
+    "missingWorker": "Please select a worker from the list.",
+    "missingType": "Please select a PPE type.",
+    "missingSize": "Please select a size.",
+    "missingQty": "Please enter a valid quantity.",
+    "exceedsStock": "Quantity exceeds available stock (max: {{max}}).",
+    "editSuccess": "✅ Distribution record updated successfully!",
+    "deleteSuccess": "✅ Record deleted successfully.",
+    "deleteReturnSuccess": "✅ Record deleted and items returned to stock.",
+    "error": "An error occurred.",
+    "networkError": "Network error. Please try again."
+  }
+}
   },
   "users": {
     "manage": {
