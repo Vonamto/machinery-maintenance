@@ -26,35 +26,35 @@ export default function PPEStock() {
   const canEditType    = canUserPerformAction(role, "HSE_TYPES_EDIT");
   const canDeleteType  = canUserPerformAction(role, "HSE_TYPES_DELETE");
 
-  // ── Tabs — summary is default ─────────────────────────────────
+  // ── Tabs ──────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("summary");
 
   // ── Stock state ───────────────────────────────────────────────
-  const [stockEntries,      setStockEntries]      = useState([]);
-  const [stockLoading,      setStockLoading]      = useState(true);
-  const [showRestockForm,   setShowRestockForm]   = useState(false);
-  const [restockForm,       setRestockForm]       = useState(emptyStockForm);
-  const [restockLoading,    setRestockLoading]    = useState(false);
-  const [editStockIndex,    setEditStockIndex]    = useState(null);
-  const [editStockForm,     setEditStockForm]     = useState(emptyStockForm);
-  const [editStockLoading,  setEditStockLoading]  = useState(false);
-  const [stockSearch,       setStockSearch]       = useState("");
+  const [stockEntries,     setStockEntries]     = useState([]);
+  const [stockLoading,     setStockLoading]     = useState(true);
+  const [showRestockForm,  setShowRestockForm]  = useState(false);
+  const [restockForm,      setRestockForm]      = useState(emptyStockForm);
+  const [restockLoading,   setRestockLoading]   = useState(false);
+  const [editStockIndex,   setEditStockIndex]   = useState(null);
+  const [editStockForm,    setEditStockForm]    = useState(emptyStockForm);
+  const [editStockLoading, setEditStockLoading] = useState(false);
+  const [stockSearch,      setStockSearch]      = useState("");
 
   // ── Distribution log (for summary calc) ──────────────────────
   const [distEntries, setDistEntries] = useState([]);
 
   // ── PPE Types state ───────────────────────────────────────────
-  const [ppeTypes,         setPpeTypes]         = useState([]);
-  const [typesLoading,     setTypesLoading]     = useState(true);
-  const [showAddTypeForm,  setShowAddTypeForm]  = useState(false);
-  const [addTypeForm,      setAddTypeForm]      = useState(emptyTypeForm);
-  const [addTypeLoading,   setAddTypeLoading]   = useState(false);
-  const [editTypeIndex,    setEditTypeIndex]    = useState(null);
-  const [editTypeForm,     setEditTypeForm]     = useState(emptyTypeForm);
-  const [editTypeLoading,  setEditTypeLoading]  = useState(false);
-  const [typeSearch,       setTypeSearch]       = useState("");
+  const [ppeTypes,        setPpeTypes]        = useState([]);
+  const [typesLoading,    setTypesLoading]    = useState(true);
+  const [showAddTypeForm, setShowAddTypeForm] = useState(false);
+  const [addTypeForm,     setAddTypeForm]     = useState(emptyTypeForm);
+  const [addTypeLoading,  setAddTypeLoading]  = useState(false);
+  const [editTypeIndex,   setEditTypeIndex]   = useState(null);
+  const [editTypeForm,    setEditTypeForm]    = useState(emptyTypeForm);
+  const [editTypeLoading, setEditTypeLoading] = useState(false);
+  const [typeSearch,      setTypeSearch]      = useState("");
 
-  // ── Summary filter ─────────────────────────────────────────────
+  // ── Summary filter ────────────────────────────────────────────
   const [summarySearch, setSummarySearch] = useState("");
 
   // ── Alert ─────────────────────────────────────────────────────
@@ -128,18 +128,25 @@ export default function PPEStock() {
 
   // ── Summary calculation ───────────────────────────────────────
   const summaryRows = useMemo(() => {
+    const now       = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear  = now.getFullYear();
     const map = {};
 
     stockEntries.forEach((e) => {
       const key = `${e.PPE_Type}||${e.Size || ""}`;
-      if (!map[key]) map[key] = { PPE_Type: e.PPE_Type, Size: e.Size || "", restocked: 0, distributed: 0 };
+      if (!map[key]) map[key] = { PPE_Type: e.PPE_Type, Size: e.Size || "", restocked: 0, distributed: 0, distributedThisMonth: 0 };
       map[key].restocked += Number(e.Quantity || 0);
     });
 
     distEntries.forEach((e) => {
       const key = `${e.PPE_Type}||${e.Size || ""}`;
-      if (!map[key]) map[key] = { PPE_Type: e.PPE_Type, Size: e.Size || "", restocked: 0, distributed: 0 };
+      if (!map[key]) map[key] = { PPE_Type: e.PPE_Type, Size: e.Size || "", restocked: 0, distributed: 0, distributedThisMonth: 0 };
       map[key].distributed += Number(e.Quantity || 0);
+      const d = new Date(e.Date || e.date || "");
+      if (!isNaN(d) && d.getMonth() === thisMonth && d.getFullYear() === thisYear) {
+        map[key].distributedThisMonth += Number(e.Quantity || 0);
+      }
     });
 
     return Object.values(map).map((row) => ({
@@ -209,11 +216,7 @@ export default function PPEStock() {
     }
     setEditStockLoading(true);
     try {
-      const payload = {
-        ...editStockForm,
-        Last_Updated: today(),
-        Added_by:     addedBy,
-      };
+      const payload = { ...editStockForm, Last_Updated: today(), Added_by: addedBy };
       const res  = await fetch(`${API_BASE}/api/edit/PPE_Stock/${editStockIndex}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -235,9 +238,7 @@ export default function PPEStock() {
   };
 
   const handleDeleteStock = async (entry) => {
-    if (!window.confirm(
-      t("hse.stock.alerts.deleteConfirm", { type: entry.PPE_Type })
-    )) return;
+    if (!window.confirm(t("hse.stock.alerts.deleteConfirm", { type: entry.PPE_Type }))) return;
     try {
       const res  = await fetch(`${API_BASE}/api/delete/PPE_Stock/${entry.rowindex}`, {
         method: "DELETE",
@@ -319,9 +320,7 @@ export default function PPEStock() {
   };
 
   const handleDeleteType = async (type) => {
-    if (!window.confirm(
-      t("hse.stock.alerts.typeDeleteConfirm", { name: type.Name })
-    )) return;
+    if (!window.confirm(t("hse.stock.alerts.typeDeleteConfirm", { name: type.Name }))) return;
     try {
       const res  = await fetch(`${API_BASE}/api/delete/PPE_Types/${type.rowindex}`, {
         method: "DELETE",
@@ -387,7 +386,7 @@ export default function PPEStock() {
           <p className="text-gray-400 text-sm mt-1">{t("hse.stock.subtitle")}</p>
         </div>
 
-        {/* Tabs — summary | stock | types */}
+        {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b border-gray-700">
           {["summary", "stock", "types"].map((tab) => (
             <button
@@ -407,7 +406,7 @@ export default function PPEStock() {
         {/* ══════════ SUMMARY TAB ══════════ */}
         {activeTab === "summary" && (
           <div>
-            <div className="mb-4">
+            <div className="mb-5">
               <input
                 className="w-full sm:w-72 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-yellow-500"
                 placeholder={t("hse.stock.summarySearchPlaceholder")}
@@ -421,95 +420,52 @@ export default function PPEStock() {
             ) : filteredSummary.length === 0 ? (
               <p className="text-gray-400 text-sm">{t("hse.stock.noResults")}</p>
             ) : (
-              <>
-                {/* Stats cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 text-center">
-                    <p className="text-xs text-gray-400 mb-1">{t("hse.stock.summary.totalTypes")}</p>
-                    <p className="text-2xl font-bold text-yellow-400">{filteredSummary.length}</p>
-                  </div>
-                  <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 text-center">
-                    <p className="text-xs text-gray-400 mb-1">{t("hse.stock.summary.totalRestocked")}</p>
-                    <p className="text-2xl font-bold text-blue-400">
-                      {filteredSummary.reduce((a, r) => a + r.restocked, 0)}
-                    </p>
-                  </div>
-                  <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 text-center">
-                    <p className="text-xs text-gray-400 mb-1">{t("hse.stock.summary.totalDistributed")}</p>
-                    <p className="text-2xl font-bold text-orange-400">
-                      {filteredSummary.reduce((a, r) => a + r.distributed, 0)}
-                    </p>
-                  </div>
-                  <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 text-center">
-                    <p className="text-xs text-gray-400 mb-1">{t("hse.stock.summary.totalAvailable")}</p>
-                    <p className="text-2xl font-bold text-green-400">
-                      {filteredSummary.reduce((a, r) => a + r.available, 0)}
-                    </p>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredSummary.map((row, idx) => {
+                  const isOut = row.available <= 0;
+                  const isLow = row.available > 0 && row.available <= 5;
+                  const colors = isOut
+                    ? { card: "bg-red-950/40 border-red-700/60",       num: "text-red-400",    badge: "bg-red-900/50 text-red-300" }
+                    : isLow
+                    ? { card: "bg-yellow-950/30 border-yellow-700/60", num: "text-yellow-400", badge: "bg-yellow-900/50 text-yellow-300" }
+                    : { card: "bg-gray-800/80 border-gray-700",        num: "text-green-400",  badge: "bg-green-900/50 text-green-300" };
 
-                {/* Summary Table */}
-                <div className="overflow-x-auto rounded-2xl border border-gray-700">
-                  <table className="w-full text-sm text-left">
-                    <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
-                      <tr>
-                        <th className="px-4 py-3">#</th>
-                        <th className="px-4 py-3">{t("hse.stock.summary.table.ppeType")}</th>
-                        <th className="px-4 py-3">{t("hse.stock.summary.table.size")}</th>
-                        <th className="px-4 py-3">{t("hse.stock.summary.table.restocked")}</th>
-                        <th className="px-4 py-3">{t("hse.stock.summary.table.distributed")}</th>
-                        <th className="px-4 py-3">{t("hse.stock.summary.table.available")}</th>
-                        <th className="px-4 py-3">{t("hse.stock.summary.table.status")}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredSummary.map((row, idx) => (
-                        <tr key={idx} className="border-t border-gray-700 hover:bg-gray-800/50 transition">
-                          <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
-                          <td className="px-4 py-3 font-medium">{row.PPE_Type}</td>
-                          <td className="px-4 py-3 text-gray-300">{row.Size || "—"}</td>
-                          <td className="px-4 py-3">
-                            <span className="px-2 py-1 rounded-full bg-blue-900/50 text-blue-300 text-xs font-bold">
-                              {row.restocked}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="px-2 py-1 rounded-full bg-orange-900/50 text-orange-300 text-xs font-bold">
-                              {row.distributed}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                              row.available <= 0
-                                ? "bg-red-900/50 text-red-300"
-                                : row.available <= 5
-                                ? "bg-yellow-900/50 text-yellow-300"
-                                : "bg-green-900/50 text-green-300"
-                            }`}>
-                              {row.available}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            {row.available <= 0 ? (
-                              <span className="px-2 py-1 rounded-full bg-red-900/40 text-red-400 text-xs">
-                                🔴 {t("hse.stock.summary.outOfStock")}
-                              </span>
-                            ) : row.available <= 5 ? (
-                              <span className="px-2 py-1 rounded-full bg-yellow-900/40 text-yellow-400 text-xs">
-                                🟡 {t("hse.stock.summary.lowStock")}
-                              </span>
-                            ) : (
-                              <span className="px-2 py-1 rounded-full bg-green-900/40 text-green-400 text-xs">
-                                🟢 {t("hse.stock.summary.inStock")}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
+                  return (
+                    <div key={idx} className={`border rounded-2xl p-5 flex flex-col gap-3 transition ${colors.card}`}>
+                      {/* Name + status badge */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-semibold text-white text-sm leading-tight">{row.PPE_Type}</p>
+                          {row.Size && (
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {t("hse.stock.fields.size")}: <span className="text-gray-300">{row.Size}</span>
+                            </p>
+                          )}
+                        </div>
+                        <span className={`shrink-0 px-2 py-1 rounded-full text-xs font-bold ${colors.badge}`}>
+                          {isOut
+                            ? `🔴 ${t("hse.stock.summary.outOfStock")}`
+                            : isLow
+                            ? `🟡 ${t("hse.stock.summary.lowStock")}`
+                            : `🟢 ${t("hse.stock.summary.inStock")}`}
+                        </span>
+                      </div>
+
+                      {/* Available — big number */}
+                      <div>
+                        <p className="text-xs text-gray-400 mb-0.5">{t("hse.stock.summary.table.available")}</p>
+                        <p className={`text-4xl font-bold leading-none ${colors.num}`}>{row.available}</p>
+                      </div>
+
+                      {/* Distributed this month */}
+                      <div className="border-t border-gray-700/60 pt-3">
+                        <p className="text-xs text-gray-400">{t("hse.stock.summary.table.distributed")}</p>
+                        <p className="text-xl font-semibold text-orange-400">{row.distributedThisMonth}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
@@ -542,15 +498,11 @@ export default function PPEStock() {
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-gray-400 mb-1 block">
-                      {t("hse.stock.fields.ppeType")} *
-                    </label>
+                    <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.ppeType")} *</label>
                     <select
                       className={inp}
                       value={restockForm.PPE_Type}
-                      onChange={(e) =>
-                        setRestockForm({ ...restockForm, PPE_Type: e.target.value, Size: "" })
-                      }
+                      onChange={(e) => setRestockForm({ ...restockForm, PPE_Type: e.target.value, Size: "" })}
                     >
                       <option value="">{t("hse.stock.placeholders.selectType")}</option>
                       {ppeTypes.map((type) => (
@@ -561,9 +513,7 @@ export default function PPEStock() {
 
                   {typeHasSize(restockForm.PPE_Type) && (
                     <div>
-                      <label className="text-xs text-gray-400 mb-1 block">
-                        {t("hse.stock.fields.size")}
-                      </label>
+                      <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.size")}</label>
                       <input
                         className={inp}
                         value={restockForm.Size}
@@ -574,9 +524,7 @@ export default function PPEStock() {
                   )}
 
                   <div>
-                    <label className="text-xs text-gray-400 mb-1 block">
-                      {t("hse.stock.fields.quantity")} *
-                    </label>
+                    <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.quantity")} *</label>
                     <input
                       type="number"
                       min="1"
@@ -588,9 +536,7 @@ export default function PPEStock() {
                   </div>
 
                   <div>
-                    <label className="text-xs text-gray-400 mb-1 block">
-                      {t("hse.stock.fields.notes")}
-                    </label>
+                    <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.notes")}</label>
                     <input
                       className={inp}
                       value={restockForm.Notes}
@@ -601,14 +547,8 @@ export default function PPEStock() {
                 </div>
 
                 <div className="mt-3 flex gap-6 text-xs text-gray-500">
-                  <span>
-                    {t("hse.stock.fields.lastUpdated")}:{" "}
-                    <span className="text-gray-300">{today()}</span>
-                  </span>
-                  <span>
-                    {t("hse.stock.fields.addedBy")}:{" "}
-                    <span className="text-gray-300">{addedBy}</span>
-                  </span>
+                  <span>{t("hse.stock.fields.lastUpdated")}: <span className="text-gray-300">{today()}</span></span>
+                  <span>{t("hse.stock.fields.addedBy")}: <span className="text-gray-300">{addedBy}</span></span>
                 </div>
 
                 <div className="mt-4 flex gap-3">
@@ -674,9 +614,7 @@ export default function PPEStock() {
                               <input
                                 className={inp}
                                 value={editStockForm.Size}
-                                onChange={(e) =>
-                                  setEditStockForm({ ...editStockForm, Size: e.target.value })
-                                }
+                                onChange={(e) => setEditStockForm({ ...editStockForm, Size: e.target.value })}
                               />
                             ) : (
                               <span className="text-gray-500">—</span>
@@ -688,9 +626,7 @@ export default function PPEStock() {
                               min="1"
                               className={inp}
                               value={editStockForm.Quantity}
-                              onChange={(e) =>
-                                setEditStockForm({ ...editStockForm, Quantity: e.target.value })
-                              }
+                              onChange={(e) => setEditStockForm({ ...editStockForm, Quantity: e.target.value })}
                             />
                           </td>
                           <td className="px-4 py-3 text-gray-400 text-xs">{today()}</td>
@@ -699,9 +635,7 @@ export default function PPEStock() {
                             <input
                               className={inp}
                               value={editStockForm.Notes}
-                              onChange={(e) =>
-                                setEditStockForm({ ...editStockForm, Notes: e.target.value })
-                              }
+                              onChange={(e) => setEditStockForm({ ...editStockForm, Notes: e.target.value })}
                             />
                           </td>
                           <td className="px-4 py-3">
@@ -723,10 +657,7 @@ export default function PPEStock() {
                           </td>
                         </tr>
                       ) : (
-                        <tr
-                          key={entry.rowindex}
-                          className="border-t border-gray-700 hover:bg-gray-800/50 transition"
-                        >
+                        <tr key={entry.rowindex} className="border-t border-gray-700 hover:bg-gray-800/50 transition">
                           <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
                           <td className="px-4 py-3 font-medium">{entry.PPE_Type}</td>
                           <td className="px-4 py-3 text-gray-300">{entry.Size || "—"}</td>
@@ -790,6 +721,7 @@ export default function PPEStock() {
               )}
             </div>
 
+            {/* Add Type Form */}
             {canAddType && showAddTypeForm && (
               <div className="mb-6 bg-gray-800 border border-gray-700 rounded-2xl p-6">
                 <h2 className="text-lg font-semibold text-yellow-400 mb-4">
@@ -797,9 +729,7 @@ export default function PPEStock() {
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-xs text-gray-400 mb-1 block">
-                      {t("hse.stock.fields.typeName")} *
-                    </label>
+                    <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.typeName")} *</label>
                     <input
                       className={inp}
                       value={addTypeForm.Name}
@@ -808,9 +738,7 @@ export default function PPEStock() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-400 mb-1 block">
-                      {t("hse.stock.fields.hasSize")}
-                    </label>
+                    <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.hasSize")}</label>
                     <select
                       className={inp}
                       value={addTypeForm.Has_Size}
@@ -821,9 +749,7 @@ export default function PPEStock() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-400 mb-1 block">
-                      {t("hse.stock.fields.category")}
-                    </label>
+                    <label className="text-xs text-gray-400 mb-1 block">{t("hse.stock.fields.category")}</label>
                     <input
                       className={inp}
                       value={addTypeForm.Category}
@@ -850,6 +776,7 @@ export default function PPEStock() {
               </div>
             )}
 
+            {/* Types Table */}
             {typesLoading ? (
               <p className="text-gray-400 text-sm">{t("common.loading")}</p>
             ) : filteredTypes.length === 0 ? (
@@ -877,18 +804,14 @@ export default function PPEStock() {
                             <input
                               className={inp}
                               value={editTypeForm.Name}
-                              onChange={(e) =>
-                                setEditTypeForm({ ...editTypeForm, Name: e.target.value })
-                              }
+                              onChange={(e) => setEditTypeForm({ ...editTypeForm, Name: e.target.value })}
                             />
                           </td>
                           <td className="px-4 py-3">
                             <select
                               className={inp}
                               value={editTypeForm.Has_Size}
-                              onChange={(e) =>
-                                setEditTypeForm({ ...editTypeForm, Has_Size: e.target.value })
-                              }
+                              onChange={(e) => setEditTypeForm({ ...editTypeForm, Has_Size: e.target.value })}
                             >
                               <option value="NO">NO</option>
                               <option value="YES">YES</option>
@@ -898,9 +821,7 @@ export default function PPEStock() {
                             <input
                               className={inp}
                               value={editTypeForm.Category}
-                              onChange={(e) =>
-                                setEditTypeForm({ ...editTypeForm, Category: e.target.value })
-                              }
+                              onChange={(e) => setEditTypeForm({ ...editTypeForm, Category: e.target.value })}
                             />
                           </td>
                           <td className="px-4 py-3">
@@ -922,10 +843,7 @@ export default function PPEStock() {
                           </td>
                         </tr>
                       ) : (
-                        <tr
-                          key={type.rowindex}
-                          className="border-t border-gray-700 hover:bg-gray-800/50 transition"
-                        >
+                        <tr key={type.rowindex} className="border-t border-gray-700 hover:bg-gray-800/50 transition">
                           <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
                           <td className="px-4 py-3 font-medium">{type.Name}</td>
                           <td className="px-4 py-3">
