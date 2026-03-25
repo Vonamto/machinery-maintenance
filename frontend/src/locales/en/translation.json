@@ -995,6 +995,63 @@
     "error": "An error occurred.",
     "networkError": "Network error. Please try again."
   }
+},
+"history": {
+  "title": "Distribution History",
+  "subtitle": "View, edit and manage all PPE distribution records",
+  "noResults": "No distribution records found.",
+  "editForm": {
+    "title": "Edit Distribution Record"
+  },
+  "fields": {
+    "date": "Date",
+    "workerName": "Worker Name",
+    "workerPosition": "Position",
+    "ppeType": "PPE Type",
+    "size": "Size",
+    "quantity": "Quantity",
+    "givenBy": "Given By",
+    "notes": "Notes"
+  },
+  "placeholders": {
+    "workerName": "Type to search worker...",
+    "ppeType": "--- Select PPE Type ---",
+    "size": "--- Select Size ---",
+    "notes": "Optional notes..."
+  },
+  "filters": {
+    "worker": "Filter by worker name...",
+    "allTypes": "All PPE Types",
+    "reset": "Reset Filters"
+  },
+  "table": {
+    "date": "Date",
+    "workerName": "Worker",
+    "workerPosition": "Position",
+    "ppeType": "PPE Type",
+    "size": "Size",
+    "quantity": "Qty",
+    "givenBy": "Given By",
+    "notes": "Notes"
+  },
+  "deleteModal": {
+    "title": "Delete Distribution Record",
+    "question": "Do you want to return this item back to stock?",
+    "deleteReturn": "Delete & Return to Stock",
+    "deleteOnly": "Delete Only (no stock return)"
+  },
+  "alerts": {
+    "missingWorker": "Please select a worker from the list.",
+    "missingType": "Please select a PPE type.",
+    "missingSize": "Please select a size.",
+    "missingQty": "Please enter a valid quantity.",
+    "exceedsStock": "Quantity exceeds available stock (max: {{max}}).",
+    "editSuccess": "✅ Distribution record updated successfully!",
+    "deleteSuccess": "✅ Record deleted successfully.",
+    "deleteReturnSuccess": "✅ Record deleted and items returned to stock.",
+    "error": "An error occurred.",
+    "networkError": "Network error. Please try again."
+  }
 }
   },
   "users": {
