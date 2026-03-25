@@ -1,6 +1,6 @@
 // frontend/src/pages/HSE/PPEStock.jsx
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
@@ -26,30 +26,36 @@ export default function PPEStock() {
   const canEditType    = canUserPerformAction(role, "HSE_TYPES_EDIT");
   const canDeleteType  = canUserPerformAction(role, "HSE_TYPES_DELETE");
 
-  // ── Tabs ─────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState("stock");
+  // ── Tabs — summary is default ─────────────────────────────────
+  const [activeTab, setActiveTab] = useState("summary");
 
   // ── Stock state ───────────────────────────────────────────────
-  const [stockEntries, setStockEntries]     = useState([]);
-  const [stockLoading, setStockLoading]     = useState(true);
-  const [showRestockForm, setShowRestockForm] = useState(false);
-  const [restockForm, setRestockForm]       = useState(emptyStockForm);
-  const [restockLoading, setRestockLoading] = useState(false);
-  const [editStockIndex, setEditStockIndex] = useState(null);
-  const [editStockForm, setEditStockForm]   = useState(emptyStockForm);
-  const [editStockLoading, setEditStockLoading] = useState(false);
-  const [stockSearch, setStockSearch]       = useState("");
+  const [stockEntries,      setStockEntries]      = useState([]);
+  const [stockLoading,      setStockLoading]      = useState(true);
+  const [showRestockForm,   setShowRestockForm]   = useState(false);
+  const [restockForm,       setRestockForm]       = useState(emptyStockForm);
+  const [restockLoading,    setRestockLoading]    = useState(false);
+  const [editStockIndex,    setEditStockIndex]    = useState(null);
+  const [editStockForm,     setEditStockForm]     = useState(emptyStockForm);
+  const [editStockLoading,  setEditStockLoading]  = useState(false);
+  const [stockSearch,       setStockSearch]       = useState("");
+
+  // ── Distribution log (for summary calc) ──────────────────────
+  const [distEntries, setDistEntries] = useState([]);
 
   // ── PPE Types state ───────────────────────────────────────────
-  const [ppeTypes, setPpeTypes]             = useState([]);
-  const [typesLoading, setTypesLoading]     = useState(true);
-  const [showAddTypeForm, setShowAddTypeForm] = useState(false);
-  const [addTypeForm, setAddTypeForm]       = useState(emptyTypeForm);
-  const [addTypeLoading, setAddTypeLoading] = useState(false);
-  const [editTypeIndex, setEditTypeIndex]   = useState(null);
-  const [editTypeForm, setEditTypeForm]     = useState(emptyTypeForm);
-  const [editTypeLoading, setEditTypeLoading] = useState(false);
-  const [typeSearch, setTypeSearch]         = useState("");
+  const [ppeTypes,         setPpeTypes]         = useState([]);
+  const [typesLoading,     setTypesLoading]     = useState(true);
+  const [showAddTypeForm,  setShowAddTypeForm]  = useState(false);
+  const [addTypeForm,      setAddTypeForm]      = useState(emptyTypeForm);
+  const [addTypeLoading,   setAddTypeLoading]   = useState(false);
+  const [editTypeIndex,    setEditTypeIndex]    = useState(null);
+  const [editTypeForm,     setEditTypeForm]     = useState(emptyTypeForm);
+  const [editTypeLoading,  setEditTypeLoading]  = useState(false);
+  const [typeSearch,       setTypeSearch]       = useState("");
+
+  // ── Summary filter ─────────────────────────────────────────────
+  const [summarySearch, setSummarySearch] = useState("");
 
   // ── Alert ─────────────────────────────────────────────────────
   const [alert, setAlert] = useState(null);
@@ -60,19 +66,42 @@ export default function PPEStock() {
 
   // ── Helpers ───────────────────────────────────────────────────
   const today   = () => new Date().toISOString().split("T")[0];
-  const addedBy = user?.name || user?.full_name || user?.username || "";
+  const addedBy = user?.full_name || user?.username || "";
   const typeHasSize = (typeName) =>
     ppeTypes.find((p) => p.Name === typeName)?.Has_Size === "YES";
 
-  // ── Fetch ─────────────────────────────────────────────────────
+  // ── Fetch all in parallel ─────────────────────────────────────
+  const fetchAll = async () => {
+    setStockLoading(true);
+    setTypesLoading(true);
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const [s, p, d] = await Promise.all([
+        fetch(`${API_BASE}/api/PPE_Stock`,            { headers }).then((r) => r.json()),
+        fetch(`${API_BASE}/api/PPE_Types`,            { headers }).then((r) => r.json()),
+        fetch(`${API_BASE}/api/PPE_Distribution_Log`, { headers }).then((r) => r.json()),
+      ]);
+      setStockEntries(Array.isArray(s) ? s : []);
+      setPpeTypes    (Array.isArray(p) ? p : []);
+      setDistEntries (Array.isArray(d) ? d : []);
+    } catch {
+      showAlert("error", t("hse.stock.alerts.networkError"));
+    } finally {
+      setStockLoading(false);
+      setTypesLoading(false);
+    }
+  };
+
   const fetchStock = async () => {
     setStockLoading(true);
     try {
-      const res  = await fetch(`${API_BASE}/api/PPE_Stock`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      setStockEntries(Array.isArray(data) ? data : []);
+      const headers = { Authorization: `Bearer ${token}` };
+      const [s, d] = await Promise.all([
+        fetch(`${API_BASE}/api/PPE_Stock`,            { headers }).then((r) => r.json()),
+        fetch(`${API_BASE}/api/PPE_Distribution_Log`, { headers }).then((r) => r.json()),
+      ]);
+      setStockEntries(Array.isArray(s) ? s : []);
+      setDistEntries (Array.isArray(d) ? d : []);
     } catch {
       showAlert("error", t("hse.stock.alerts.networkError"));
     } finally {
@@ -95,7 +124,37 @@ export default function PPEStock() {
     }
   };
 
-  useEffect(() => { fetchStock(); fetchTypes(); }, []);
+  useEffect(() => { fetchAll(); }, []);
+
+  // ── Summary calculation ───────────────────────────────────────
+  const summaryRows = useMemo(() => {
+    const map = {};
+
+    stockEntries.forEach((e) => {
+      const key = `${e.PPE_Type}||${e.Size || ""}`;
+      if (!map[key]) map[key] = { PPE_Type: e.PPE_Type, Size: e.Size || "", restocked: 0, distributed: 0 };
+      map[key].restocked += Number(e.Quantity || 0);
+    });
+
+    distEntries.forEach((e) => {
+      const key = `${e.PPE_Type}||${e.Size || ""}`;
+      if (!map[key]) map[key] = { PPE_Type: e.PPE_Type, Size: e.Size || "", restocked: 0, distributed: 0 };
+      map[key].distributed += Number(e.Quantity || 0);
+    });
+
+    return Object.values(map).map((row) => ({
+      ...row,
+      available: row.restocked - row.distributed,
+    }));
+  }, [stockEntries, distEntries]);
+
+  const filteredSummary = summaryRows.filter((r) => {
+    const q = summarySearch.toLowerCase();
+    return (
+      (r.PPE_Type || "").toLowerCase().includes(q) ||
+      (r.Size     || "").toLowerCase().includes(q)
+    );
+  });
 
   // ── Restock ───────────────────────────────────────────────────
   const handleRestock = async () => {
@@ -328,9 +387,9 @@ export default function PPEStock() {
           <p className="text-gray-400 text-sm mt-1">{t("hse.stock.subtitle")}</p>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs — summary | stock | types */}
         <div className="flex gap-2 mb-6 border-b border-gray-700">
-          {["stock", "types"].map((tab) => (
+          {["summary", "stock", "types"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -344,6 +403,116 @@ export default function PPEStock() {
             </button>
           ))}
         </div>
+
+        {/* ══════════ SUMMARY TAB ══════════ */}
+        {activeTab === "summary" && (
+          <div>
+            <div className="mb-4">
+              <input
+                className="w-full sm:w-72 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-yellow-500"
+                placeholder={t("hse.stock.summarySearchPlaceholder")}
+                value={summarySearch}
+                onChange={(e) => setSummarySearch(e.target.value)}
+              />
+            </div>
+
+            {stockLoading ? (
+              <p className="text-gray-400 text-sm">{t("common.loading")}</p>
+            ) : filteredSummary.length === 0 ? (
+              <p className="text-gray-400 text-sm">{t("hse.stock.noResults")}</p>
+            ) : (
+              <>
+                {/* Stats cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 text-center">
+                    <p className="text-xs text-gray-400 mb-1">{t("hse.stock.summary.totalTypes")}</p>
+                    <p className="text-2xl font-bold text-yellow-400">{filteredSummary.length}</p>
+                  </div>
+                  <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 text-center">
+                    <p className="text-xs text-gray-400 mb-1">{t("hse.stock.summary.totalRestocked")}</p>
+                    <p className="text-2xl font-bold text-blue-400">
+                      {filteredSummary.reduce((a, r) => a + r.restocked, 0)}
+                    </p>
+                  </div>
+                  <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 text-center">
+                    <p className="text-xs text-gray-400 mb-1">{t("hse.stock.summary.totalDistributed")}</p>
+                    <p className="text-2xl font-bold text-orange-400">
+                      {filteredSummary.reduce((a, r) => a + r.distributed, 0)}
+                    </p>
+                  </div>
+                  <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 text-center">
+                    <p className="text-xs text-gray-400 mb-1">{t("hse.stock.summary.totalAvailable")}</p>
+                    <p className="text-2xl font-bold text-green-400">
+                      {filteredSummary.reduce((a, r) => a + r.available, 0)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Summary Table */}
+                <div className="overflow-x-auto rounded-2xl border border-gray-700">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
+                      <tr>
+                        <th className="px-4 py-3">#</th>
+                        <th className="px-4 py-3">{t("hse.stock.summary.table.ppeType")}</th>
+                        <th className="px-4 py-3">{t("hse.stock.summary.table.size")}</th>
+                        <th className="px-4 py-3">{t("hse.stock.summary.table.restocked")}</th>
+                        <th className="px-4 py-3">{t("hse.stock.summary.table.distributed")}</th>
+                        <th className="px-4 py-3">{t("hse.stock.summary.table.available")}</th>
+                        <th className="px-4 py-3">{t("hse.stock.summary.table.status")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSummary.map((row, idx) => (
+                        <tr key={idx} className="border-t border-gray-700 hover:bg-gray-800/50 transition">
+                          <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
+                          <td className="px-4 py-3 font-medium">{row.PPE_Type}</td>
+                          <td className="px-4 py-3 text-gray-300">{row.Size || "—"}</td>
+                          <td className="px-4 py-3">
+                            <span className="px-2 py-1 rounded-full bg-blue-900/50 text-blue-300 text-xs font-bold">
+                              {row.restocked}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="px-2 py-1 rounded-full bg-orange-900/50 text-orange-300 text-xs font-bold">
+                              {row.distributed}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                              row.available <= 0
+                                ? "bg-red-900/50 text-red-300"
+                                : row.available <= 5
+                                ? "bg-yellow-900/50 text-yellow-300"
+                                : "bg-green-900/50 text-green-300"
+                            }`}>
+                              {row.available}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {row.available <= 0 ? (
+                              <span className="px-2 py-1 rounded-full bg-red-900/40 text-red-400 text-xs">
+                                🔴 {t("hse.stock.summary.outOfStock")}
+                              </span>
+                            ) : row.available <= 5 ? (
+                              <span className="px-2 py-1 rounded-full bg-yellow-900/40 text-yellow-400 text-xs">
+                                🟡 {t("hse.stock.summary.lowStock")}
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 rounded-full bg-green-900/40 text-green-400 text-xs">
+                                🟢 {t("hse.stock.summary.inStock")}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* ══════════ STOCK TAB ══════════ */}
         {activeTab === "stock" && (
@@ -390,7 +559,6 @@ export default function PPEStock() {
                     </select>
                   </div>
 
-                  {/* Size — only if Has_Size = YES */}
                   {typeHasSize(restockForm.PPE_Type) && (
                     <div>
                       <label className="text-xs text-gray-400 mb-1 block">
@@ -432,7 +600,6 @@ export default function PPEStock() {
                   </div>
                 </div>
 
-                {/* Auto-filled preview */}
                 <div className="mt-3 flex gap-6 text-xs text-gray-500">
                   <span>
                     {t("hse.stock.fields.lastUpdated")}:{" "}
@@ -487,7 +654,6 @@ export default function PPEStock() {
                   <tbody>
                     {filteredStock.map((entry, idx) =>
                       editStockIndex === entry.rowindex ? (
-                        // Inline edit row
                         <tr key={entry.rowindex} className="bg-gray-700 border-t border-gray-600">
                           <td className="px-4 py-3 text-gray-400">{idx + 1}</td>
                           <td className="px-4 py-3">
@@ -557,7 +723,6 @@ export default function PPEStock() {
                           </td>
                         </tr>
                       ) : (
-                        // Normal row
                         <tr
                           key={entry.rowindex}
                           className="border-t border-gray-700 hover:bg-gray-800/50 transition"
@@ -625,7 +790,6 @@ export default function PPEStock() {
               )}
             </div>
 
-            {/* Add Type Form */}
             {canAddType && showAddTypeForm && (
               <div className="mb-6 bg-gray-800 border border-gray-700 rounded-2xl p-6">
                 <h2 className="text-lg font-semibold text-yellow-400 mb-4">
@@ -686,7 +850,6 @@ export default function PPEStock() {
               </div>
             )}
 
-            {/* Types Table */}
             {typesLoading ? (
               <p className="text-gray-400 text-sm">{t("common.loading")}</p>
             ) : filteredTypes.length === 0 ? (
