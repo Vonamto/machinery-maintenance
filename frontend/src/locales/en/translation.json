@@ -900,12 +900,14 @@
   "subtitle": "Manage personal protective equipment inventory and types",
   "tabs": {
     "stock": "Stock Entries",
+    "stock": "Stock Ledger",
     "types": "PPE Types"
   },
   "restockButton": "Add Stock Entry",
   "addTypeButton": "Add PPE Type",
   "searchPlaceholder": "Search by type, size or added by...",
   "typeSearchPlaceholder": "Search by name or category...",
+  "summarySearchPlaceholder": "Search by PPE type or size...",
   "noResults": "No stock entries found.",
   "noTypeResults": "No PPE types found.",
   "fields": {
@@ -958,6 +960,23 @@
     "typeDeleteConfirm": "Are you sure you want to delete PPE type \"{{name}}\"? This cannot be undone.",
     "error": "An error occurred.",
     "networkError": "Network error. Please try again."
+  },
+    "summary": {
+    "totalTypes": "Total Entries",
+    "totalRestocked": "Total Restocked",
+    "totalDistributed": "Total Distributed",
+    "totalAvailable": "Available Now",
+    "outOfStock": "Out of Stock",
+    "lowStock": "Low Stock",
+    "inStock": "In Stock",
+    "table": {
+      "ppeType": "PPE Type",
+      "size": "Size",
+      "restocked": "Restocked",
+      "distributed": "Distributed",
+      "available": "Available",
+      "status": "Status"
+    }
   }
 },
 "distribute": {
