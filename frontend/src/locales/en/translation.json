@@ -899,7 +899,7 @@
   "title": "PPE Stock",
   "subtitle": "Manage personal protective equipment inventory and types",
   "tabs": {
-    "stock": "Stock Entries",
+    "summary": "Stock Summary",
     "stock": "Stock Ledger",
     "types": "PPE Types"
   },
