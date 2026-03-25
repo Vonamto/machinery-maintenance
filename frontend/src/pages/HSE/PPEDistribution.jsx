@@ -38,9 +38,9 @@ export default function PPEDistribution() {
   const [loading,      setLoading]      = useState(true);
 
   // ── Form ──────────────────────────────────────────────────────
-  const [form,         setForm]         = useState({ ...emptyForm, Date: today(), Given_By: givenBy });
+  const [form,          setForm]          = useState({ ...emptyForm, Date: today(), Given_By: givenBy });
   const [submitLoading, setSubmitLoading] = useState(false);
-  const [alert,        setAlert]        = useState(null);
+  const [alert,         setAlert]         = useState(null);
 
   // ── Worker autocomplete ───────────────────────────────────────
   const [workerQuery,   setWorkerQuery]   = useState("");
@@ -59,10 +59,10 @@ export default function PPEDistribution() {
     try {
       const headers = { Authorization: `Bearer ${token}` };
       const [w, p, s, d] = await Promise.all([
-        fetch(`${API_BASE}/api/Workers_HSE`,      { headers }).then((r) => r.json()),
-        fetch(`${API_BASE}/api/PPE_Types`,         { headers }).then((r) => r.json()),
-        fetch(`${API_BASE}/api/PPE_Stock`,         { headers }).then((r) => r.json()),
-        fetch(`${API_BASE}/api/PPE_Distribution`,  { headers }).then((r) => r.json()),
+        fetch(`${API_BASE}/api/Workers_HSE`,           { headers }).then((r) => r.json()),
+        fetch(`${API_BASE}/api/PPE_Types`,             { headers }).then((r) => r.json()),
+        fetch(`${API_BASE}/api/PPE_Stock`,             { headers }).then((r) => r.json()),
+        fetch(`${API_BASE}/api/PPE_Distribution_Log`,  { headers }).then((r) => r.json()), // ✅ matches backend
       ]);
       setWorkers     (Array.isArray(w) ? w : []);
       setPpeTypes    (Array.isArray(p) ? p : []);
@@ -78,30 +78,24 @@ export default function PPEDistribution() {
   useEffect(() => { fetchAll(); }, []);
 
   // ── Stock calculator ──────────────────────────────────────────
-  // Returns available qty for a given type+size
   const availableQty = useMemo(() => {
     const map = {};
-
     stockEntries.forEach((e) => {
       const key = `${e.PPE_Type}||${e.Size || ""}`;
       map[key] = (map[key] || 0) + Number(e.Quantity || 0);
     });
-
     distEntries.forEach((e) => {
       const key = `${e.PPE_Type}||${e.Size || ""}`;
       map[key] = (map[key] || 0) - Number(e.Quantity || 0);
     });
-
-    return map; // key → available qty (can be negative if data error)
+    return map;
   }, [stockEntries, distEntries]);
 
-  // Is a PPE type fully depleted (all sizes/quantities = 0)?
   const isTypeDepleted = (typeName) => {
     const typeHasSize = ppeTypes.find((p) => p.Name === typeName)?.Has_Size === "YES";
     if (!typeHasSize) {
       return (availableQty[`${typeName}||`] || 0) <= 0;
     }
-    // Has sizes — check if ALL sizes are depleted
     const relevantKeys = Object.keys(availableQty).filter((k) =>
       k.startsWith(`${typeName}||`) && !k.endsWith("||")
     );
@@ -109,7 +103,6 @@ export default function PPEDistribution() {
     return relevantKeys.every((k) => availableQty[k] <= 0);
   };
 
-  // Get available sizes for selected PPE type
   const availableSizes = useMemo(() => {
     if (!form.PPE_Type) return [];
     return Object.keys(availableQty)
@@ -171,17 +164,17 @@ export default function PPEDistribution() {
     setSubmitLoading(true);
     try {
       const payload = {
-        Date:             form.Date,
-        Worker_Name:      form.Worker_Name,
-        Worker_Position:  form.Worker_Position,
-        PPE_Type:         form.PPE_Type,
-        Size:             selectedTypeHasSize ? form.Size : "",
-        Quantity:         form.Quantity,
-        Given_By:         givenBy,
-        Notes:            form.Notes,
+        Date:            form.Date,
+        Worker_Name:     form.Worker_Name,
+        Worker_Position: form.Worker_Position,
+        PPE_Type:        form.PPE_Type,
+        Size:            selectedTypeHasSize ? form.Size : "",
+        Quantity:        form.Quantity,
+        Given_By:        givenBy,
+        Notes:           form.Notes,
       };
 
-      const res  = await fetch(`${API_BASE}/api/add/PPE_Distribution`, {
+      const res  = await fetch(`${API_BASE}/api/add/PPE_Distribution_Log`, { // ✅ matches backend
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -193,11 +186,9 @@ export default function PPEDistribution() {
 
       if (data.status === "success") {
         showAlert("success", t("hse.distribute.alerts.success"));
-        // Reset form but keep date and Given_By
         setForm({ ...emptyForm, Date: today(), Given_By: givenBy });
         setWorkerQuery("");
         setWorkerLocked(false);
-        // Refresh distribution entries for updated stock calc
         fetchAll();
       } else {
         showAlert("error", data.message || t("hse.distribute.alerts.error"));
@@ -209,8 +200,8 @@ export default function PPEDistribution() {
     }
   };
 
-  // ── Input style ───────────────────────────────────────────────
-  const inp = "w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500";
+  // ── Input styles ──────────────────────────────────────────────
+  const inp    = "w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500";
   const locked = "w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-400 text-sm cursor-not-allowed";
 
   return (
@@ -248,7 +239,6 @@ export default function PPEDistribution() {
         ) : loading ? (
           <p className="text-gray-400 text-sm">{t("common.loading")}</p>
         ) : (
-
           <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 space-y-5">
             <h2 className="text-lg font-semibold text-orange-400">
               {t("hse.distribute.formTitle")}
@@ -382,7 +372,9 @@ export default function PPEDistribution() {
                         disabled={qty <= 0}
                         className={qty <= 0 ? "text-gray-500" : ""}
                       >
-                        {size}{qty <= 0 ? ` (${t("hse.distribute.outOfStock")})` : ` — ${t("hse.distribute.available")}: ${qty}`}
+                        {size}{qty <= 0
+                          ? ` (${t("hse.distribute.outOfStock")})`
+                          : ` — ${t("hse.distribute.available")}: ${qty}`}
                       </option>
                     ))}
                   </select>
