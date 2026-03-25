@@ -43,7 +43,7 @@ export const PAGE_PERMISSIONS = {
   USERS: [ROLES.ADMIN],
 
   // ==========================================
-  // 🆕 HSE Module
+  // HSE Module
   // ==========================================
 
   // Landing page — everyone who can access at least one sub-page
@@ -85,14 +85,14 @@ export const ACTION_PERMISSIONS = {
   USERS_DELETE: [ROLES.ADMIN],
 
   // ==========================================
-  // 🆕 HSE Module Actions
+  // HSE Module Actions
   // ==========================================
 
   // PPE Stock
   HSE_STOCK_VIEW:        [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.MANAGER],
-  HSE_STOCK_RESTOCK:     [ROLES.SUPERVISOR, ROLES.ADMIN],  // Add received stock
-  HSE_STOCK_EDIT:        [ROLES.SUPERVISOR, ROLES.ADMIN],  // Correct a stock mistake
-  HSE_STOCK_DELETE:      [ROLES.SUPERVISOR, ROLES.ADMIN],  // Remove a stock row entirely
+  HSE_STOCK_RESTOCK:     [ROLES.SUPERVISOR, ROLES.ADMIN],
+  HSE_STOCK_EDIT:        [ROLES.SUPERVISOR, ROLES.ADMIN],
+  HSE_STOCK_DELETE:      [ROLES.SUPERVISOR, ROLES.ADMIN],
 
   // PPE Types
   HSE_TYPES_ADD:         [ROLES.SUPERVISOR, ROLES.ADMIN],
@@ -110,6 +110,15 @@ export const ACTION_PERMISSIONS = {
   HSE_WORKERS_ADD:       [ROLES.SUPERVISOR, ROLES.ADMIN],
   HSE_WORKERS_EDIT:      [ROLES.SUPERVISOR, ROLES.ADMIN],
   HSE_WORKERS_DELETE:    [ROLES.SUPERVISOR, ROLES.ADMIN],
+
+  // ==========================================
+  // HSE Stock — Tab Visibility
+  // ==========================================
+  HSE_STOCK_TAB_SUMMARY: [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.MANAGER],
+  HSE_STOCK_TAB_STOCK:   [ROLES.SUPERVISOR, ROLES.ADMIN, ROLES.MANAGER],
+  HSE_STOCK_TAB_TYPES:   [ROLES.SUPERVISOR, ROLES.ADMIN],
+  // 👆 To give any role access to a tab in the future,
+  //    just add the role here — no need to touch PPEStock.jsx
 };
 
 /* ================= Helper Functions ================= */
