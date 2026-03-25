@@ -92,6 +92,20 @@ export default function PPEStock() {
     setTimeout(() => setAlert(null), 4000);
   };
 
+  // ── Visible tabs — driven entirely by roles.js ─────────────────
+  const visibleTabs = [
+    { key: "summary", permission: "HSE_STOCK_TAB_SUMMARY" },
+    { key: "stock",   permission: "HSE_STOCK_TAB_STOCK"   },
+    { key: "types",   permission: "HSE_STOCK_TAB_TYPES"   },
+  ].filter(({ permission }) => canUserPerformAction(role, permission));
+
+  // Redirect to first allowed tab if the current one is not accessible
+  useEffect(() => {
+    if (visibleTabs.length > 0 && !visibleTabs.find((tab) => tab.key === activeTab)) {
+      setActiveTab(visibleTabs[0].key);
+    }
+  }, [role]);
+
   const today   = () => new Date().toISOString().split("T")[0];
   const addedBy = user?.full_name || user?.username || "";
   const typeHasSize = (typeName) =>
@@ -360,14 +374,17 @@ export default function PPEStock() {
           <p className="text-gray-400 text-sm mt-1">{t("hse.stock.subtitle")}</p>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs — rendered from visibleTabs, controlled by roles.js */}
         <div className="flex gap-2 mb-6 border-b border-gray-700">
-          {["summary", "stock", "types"].map((tab) => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
+          {visibleTabs.map(({ key }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
               className={`px-5 py-2 text-sm font-semibold rounded-t-lg transition ${
-                activeTab === tab ? "bg-yellow-600 text-white" : "text-gray-400 hover:text-white"
-              }`}>
-              {t(`hse.stock.tabs.${tab}`)}
+                activeTab === key ? "bg-yellow-600 text-white" : "text-gray-400 hover:text-white"
+              }`}
+            >
+              {t(`hse.stock.tabs.${key}`)}
             </button>
           ))}
         </div>
@@ -853,10 +870,8 @@ export default function PPEStock() {
                       );
                     }
 
-                    // ── Normal card ── (THE ONLY CHANGED PART)
                     return (
                       <div key={type.rowindex} className="bg-gray-800/60 border border-gray-700 rounded-2xl p-4 shadow-lg">
-                        {/* Collapsed: just the name + chevron */}
                         <button
                           onClick={() => setExpandedTypeIdx(isExpanded ? null : idx)}
                           className="w-full text-left"
@@ -869,7 +884,6 @@ export default function PPEStock() {
                           </div>
                         </button>
 
-                        {/* Expanded: Has Size? label + badge, Category, actions */}
                         {isExpanded && (
                           <>
                             <div className="mt-3 pt-3 border-t border-gray-700 space-y-2 text-sm">
