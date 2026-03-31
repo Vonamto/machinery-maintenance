@@ -248,7 +248,7 @@ def hse_restock():
                 row_dict = dict(zip(headers, existing))
                 row_dict['Quantity'] = new_qty
                 row_dict['Last_Updated'] = current_time
-                row_dict['Added_by'] = added_by  # ✅ update who last restocked
+                row_dict['Added_by'] = added_by
                 sheet.update(
                     range_name=f'A{idx}:{col_letter}{idx}',
                     values=[[row_dict.get(h, '') for h in headers]]
@@ -261,7 +261,7 @@ def hse_restock():
         new_row['Size'] = size
         new_row['Quantity'] = quantity
         new_row['Last_Updated'] = current_time
-        new_row['Added_by'] = added_by  # ✅ record who added this stock entry
+        new_row['Added_by'] = added_by
         sheet.append_row([new_row.get(h, '') for h in headers])
         return jsonify({'status': 'success', 'new_quantity': quantity, 'action': 'created'})
 
@@ -358,9 +358,17 @@ def hse_distribute():
 
 
 # =====================================================
-# 🆕 HSE: Delete distribution log
-#         option A — delete log only
-#         option B — delete log + return item to stock
+# ✅ HSE: Delete distribution log entry
+#
+# PPE_Stock is a pure restock ledger — it is NEVER
+# decremented when PPE is distributed (the frontend
+# uses /api/add/PPE_Distribution_Log for that).
+# Available stock is computed on the frontend as:
+#   available = sum(PPE_Stock.Quantity)
+#             - sum(PPE_Distribution_Log.Quantity)
+# Deleting a log entry already reduces distributed
+# total so available goes up automatically.
+# We must NOT touch PPE_Stock here at all.
 # =====================================================
 @app.route('/api/hse/delete-distribution/<int:row_index>', methods=['DELETE'])
 @require_token
@@ -369,62 +377,27 @@ def hse_delete_distribution(row_index):
     if check:
         return check
 
+    # return_to_stock is kept for frontend compatibility but has no
+    # effect on PPE_Stock — deleting the log entry is always an
+    # implicit "return" since available = stock - dist recalculates.
     return_to_stock = request.args.get('return_to_stock', 'false').lower() == 'true'
 
-    from sheets_service import client, SPREADSHEET_ID, get_current_time, delete_row
+    from sheets_service import delete_row
     try:
-        current_time = get_current_time()
-        log_sheet = client.open_by_key(SPREADSHEET_ID).worksheet('PPE_Distribution_Log')
-        log_headers = log_sheet.row_values(1)
-
-        # Read the row before deleting
-        row_data = log_sheet.row_values(row_index)
-        if len(row_data) < len(log_headers):
-            row_data += [''] * (len(log_headers) - len(row_data))
-        row_dict = dict(zip(log_headers, row_data))
-
-        # If return to stock requested — add quantity back
-        if return_to_stock:
-            ppe_type = row_dict.get('PPE_Type', '').strip()
-            size = str(row_dict.get('Size', '')).strip()
-            try:
-                quantity = int(row_dict.get('Quantity', 1))
-            except:
-                quantity = 1
-
-            if ppe_type:
-                stock_sheet = client.open_by_key(SPREADSHEET_ID).worksheet('PPE_Stock')
-                stock_records = stock_sheet.get_all_records()
-                stock_headers = stock_sheet.row_values(1)
-                col_letter = chr(64 + len(stock_headers))
-
-                for idx, row in enumerate(stock_records, start=2):
-                    if row.get('PPE_Type', '').strip() == ppe_type and str(row.get('Size', '')).strip() == size:
-                        new_qty = int(row.get('Quantity', 0)) + quantity
-                        existing = stock_sheet.row_values(idx)
-                        if len(existing) < len(stock_headers):
-                            existing += [''] * (len(stock_headers) - len(existing))
-                        r = dict(zip(stock_headers, existing))
-                        r['Quantity'] = new_qty
-                        r['Last_Updated'] = current_time
-                        stock_sheet.update(
-                            range_name=f'A{idx}:{col_letter}{idx}',
-                            values=[[r.get(h, '') for h in stock_headers]]
-                        )
-                        break
-
-        # Delete the log row
-        result = delete_row('PPE_Distribution_Log', row_index)
+        delete_row('PPE_Distribution_Log', row_index)
         msg = 'Log deleted and item returned to stock.' if return_to_stock else 'Log deleted successfully.'
         return jsonify({'status': 'success', 'message': msg})
-
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 # =====================================================
-# 🆕 HSE: Edit distribution log
-#         Atomically: return old to stock → deduct new → update log
+# ✅ HSE: Edit distribution log entry
+#
+# Same reasoning as delete above — PPE_Stock is a
+# restock ledger and must NOT be touched here.
+# Just update the log row. The frontend formula
+# (available = stock - dist) recalculates automatically.
 # =====================================================
 @app.route('/api/hse/edit-distribution/<int:row_index>', methods=['PUT'])
 @require_token
@@ -434,11 +407,11 @@ def hse_edit_distribution(row_index):
         return check
 
     data = request.get_json() or {}
-    new_ppe_type = data.get('PPE_Type', '').strip()
-    new_size = str(data.get('Size', '')).strip()
-    new_worker_name = data.get('Worker_Name', '').strip()
+    new_ppe_type        = data.get('PPE_Type', '').strip()
+    new_size            = str(data.get('Size', '')).strip()
+    new_worker_name     = data.get('Worker_Name', '').strip()
     new_worker_position = data.get('Worker_Position', '').strip()
-    new_notes = data.get('Notes', '').strip()
+    new_notes           = data.get('Notes', '').strip()
     try:
         new_quantity = int(data.get('Quantity', 1))
     except (ValueError, TypeError):
@@ -449,84 +422,35 @@ def hse_edit_distribution(row_index):
 
     from sheets_service import client, SPREADSHEET_ID, get_current_time
     try:
-        current_time = get_current_time()
-        log_sheet = client.open_by_key(SPREADSHEET_ID).worksheet('PPE_Distribution_Log')
-        log_headers = log_sheet.row_values(1)
+        current_time   = get_current_time()
+        log_sheet      = client.open_by_key(SPREADSHEET_ID).worksheet('PPE_Distribution_Log')
+        log_headers    = log_sheet.row_values(1)
         log_col_letter = chr(64 + len(log_headers))
 
-        # Read existing log row
+        # Read existing row to preserve original Date and Given_By
         row_data = log_sheet.row_values(row_index)
         if len(row_data) < len(log_headers):
             row_data += [''] * (len(log_headers) - len(row_data))
         old_row = dict(zip(log_headers, row_data))
 
-        old_ppe_type = old_row.get('PPE_Type', '').strip()
-        old_size = str(old_row.get('Size', '')).strip()
-        try:
-            old_quantity = int(old_row.get('Quantity', 1))
-        except:
-            old_quantity = 1
-
-        stock_sheet = client.open_by_key(SPREADSHEET_ID).worksheet('PPE_Stock')
-        stock_records = stock_sheet.get_all_records()
-        stock_headers = stock_sheet.row_values(1)
-        stock_col_letter = chr(64 + len(stock_headers))
-
-        def update_stock_row(ppe_type, size, delta):
-            """Add delta (positive=add, negative=deduct) to a stock row. Returns new qty or raises."""
-            for idx, row in enumerate(stock_records, start=2):
-                if row.get('PPE_Type', '').strip() == ppe_type and str(row.get('Size', '')).strip() == size:
-                    new_qty = int(row.get('Quantity', 0)) + delta
-                    if new_qty < 0:
-                        raise ValueError(f'Not enough stock for {ppe_type}{" size " + size if size else ""}. Only {row.get("Quantity", 0)} available.')
-                    existing = stock_sheet.row_values(idx)
-                    if len(existing) < len(stock_headers):
-                        existing += [''] * (len(stock_headers) - len(existing))
-                    r = dict(zip(stock_headers, existing))
-                    r['Quantity'] = new_qty
-                    r['Last_Updated'] = current_time
-                    stock_sheet.update(
-                        range_name=f'A{idx}:{stock_col_letter}{idx}',
-                        values=[[r.get(h, '') for h in stock_headers]]
-                    )
-                    # Update local cache so second call sees updated value
-                    row['Quantity'] = new_qty
-                    return new_qty
-            raise ValueError(f'No stock entry found for {ppe_type}{" size " + size if size else ""}.')
-
-        # --- Step 1: Return old quantity to stock ---
-        update_stock_row(old_ppe_type, old_size, +old_quantity)
-
-        # --- Step 2: Deduct new quantity from stock (will raise if insufficient) ---
-        try:
-            new_remaining = update_stock_row(new_ppe_type, new_size, -new_quantity)
-        except ValueError as ve:
-            # Rollback step 1 — put old quantity back out
-            update_stock_row(old_ppe_type, old_size, -old_quantity)
-            return jsonify({'status': 'error', 'message': str(ve)}), 400
-
-        # --- Step 3: Update the log row ---
         given_by = request.user.get('full_name') or request.user.get('username', '')
+
         updated_log = {
-            'Date': old_row.get('Date', current_time),
-            'Worker_Name': new_worker_name,
+            'Date':            old_row.get('Date', current_time),
+            'Worker_Name':     new_worker_name,
             'Worker_Position': new_worker_position,
-            'PPE_Type': new_ppe_type,
-            'Size': new_size,
-            'Quantity': new_quantity,
-            'Given_By': given_by,
-            'Notes': new_notes
+            'PPE_Type':        new_ppe_type,
+            'Size':            new_size,
+            'Quantity':        new_quantity,
+            'Given_By':        given_by,
+            'Notes':           new_notes,
         }
         log_sheet.update(
             range_name=f'A{row_index}:{log_col_letter}{row_index}',
             values=[[updated_log.get(h, '') for h in log_headers]]
         )
 
-        return jsonify({
-            'status': 'success',
-            'remaining_stock': new_remaining,
-            'message': f'Distribution log updated. Remaining stock for new item: {new_remaining}'
-        })
+        return jsonify({'status': 'success', 'message': 'Distribution log updated successfully.'})
 
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
