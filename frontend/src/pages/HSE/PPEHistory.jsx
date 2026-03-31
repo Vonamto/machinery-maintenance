@@ -44,8 +44,8 @@ export default function PPEHistory() {
   const [deleteTarget,  setDeleteTarget]  = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // ── Mobile expand ─────────────────────────────────────────────
-  const [expandedIndex, setExpandedIndex] = useState(null);
+  // ── Mobile expand (uses rowindex instead of array position) ───
+  const [expandedRow, setExpandedRow] = useState(null);
 
   // ── Alert ─────────────────────────────────────────────────────
   const [alert, setAlert] = useState(null);
@@ -65,7 +65,13 @@ export default function PPEHistory() {
         fetch(`${API_BASE}/api/PPE_Types`,            { headers }).then((r) => r.json()),
         fetch(`${API_BASE}/api/PPE_Stock`,            { headers }).then((r) => r.json()),
       ]);
-      setDistLog     (Array.isArray(d) ? d : []);
+
+      // Sort newest first — rowindex stays untouched, safe for edit/delete
+      const sorted = Array.isArray(d)
+        ? [...d].sort((a, b) => new Date(b.Date) - new Date(a.Date))
+        : [];
+
+      setDistLog(sorted);
       setWorkers     (Array.isArray(w) ? w : []);
       setPpeTypes    (Array.isArray(p) ? p : []);
       setStockEntries(Array.isArray(s) ? s : []);
@@ -78,19 +84,17 @@ export default function PPEHistory() {
 
   useEffect(() => { fetchAll(); }, []);
 
-  // ── Available qty map (stock − distributed) ───────────────────
+  // ── Available qty map ─────────────────────────────────────────
+  // PPE_Stock already tracks net available (deducted on distribute,
+  // added back on return) — do NOT subtract distLog or it double-counts.
   const availableQty = useMemo(() => {
     const map = {};
     stockEntries.forEach((e) => {
       const key = `${e.PPE_Type}||${e.Size || ""}`;
       map[key] = (map[key] || 0) + Number(e.Quantity || 0);
     });
-    distLog.forEach((e) => {
-      const key = `${e.PPE_Type}||${e.Size || ""}`;
-      map[key] = (map[key] || 0) - Number(e.Quantity || 0);
-    });
     return map;
-  }, [stockEntries, distLog]);
+  }, [stockEntries]);
 
   // ── Filtered table ────────────────────────────────────────────
   const filtered = distLog.filter((e) => {
@@ -433,16 +437,15 @@ export default function PPEHistory() {
           <>
             {/* ════ MOBILE CARDS (hidden on md+) ════ */}
             <div className="md:hidden space-y-3">
-              {filtered.map((entry, idx) => {
-                const isExpanded = expandedIndex === idx;
+              {filtered.map((entry) => {
+                const isExpanded = expandedRow === entry.rowindex;
                 return (
                   <div
                     key={entry.rowindex}
                     className="bg-gray-800/60 border border-gray-700 rounded-2xl p-4 shadow-lg"
                   >
-                    {/* Card header — tap to expand */}
                     <button
-                      onClick={() => setExpandedIndex(isExpanded ? null : idx)}
+                      onClick={() => setExpandedRow(isExpanded ? null : entry.rowindex)}
                       className="w-full text-left"
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
@@ -462,7 +465,6 @@ export default function PPEHistory() {
                         </div>
                       </div>
 
-                      {/* Always visible: PPE info */}
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className="text-sm font-medium text-white">{entry.PPE_Type}</span>
                         {entry.Size && (
@@ -476,7 +478,6 @@ export default function PPEHistory() {
                       </div>
                     </button>
 
-                    {/* ── Expanded section: details + actions ── */}
                     {isExpanded && (
                       <>
                         <div className="mt-3 pt-3 border-t border-gray-700 space-y-1 text-sm">
@@ -490,7 +491,6 @@ export default function PPEHistory() {
                           </p>
                         </div>
 
-                        {/* Action buttons — only visible when expanded */}
                         {(canEdit || canDelete) && (
                           <div className="flex gap-2 mt-3 pt-3 border-t border-gray-700/60">
                             {canEdit && (
