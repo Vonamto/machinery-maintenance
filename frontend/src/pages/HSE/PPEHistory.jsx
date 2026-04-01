@@ -85,16 +85,21 @@ export default function PPEHistory() {
   useEffect(() => { fetchAll(); }, []);
 
   // ── Available qty map ─────────────────────────────────────────
-  // PPE_Stock already tracks net available (deducted on distribute,
-  // added back on return) — do NOT subtract distLog or it double-counts.
+  // PPE_Stock is a restock ledger — Quantity is NEVER decremented
+  // when PPE is distributed. True available = total restocked
+  // minus total distributed. Must subtract distLog here.
   const availableQty = useMemo(() => {
     const map = {};
     stockEntries.forEach((e) => {
       const key = `${e.PPE_Type}||${e.Size || ""}`;
       map[key] = (map[key] || 0) + Number(e.Quantity || 0);
     });
+    distLog.forEach((e) => {
+      const key = `${e.PPE_Type}||${e.Size || ""}`;
+      map[key] = (map[key] || 0) - Number(e.Quantity || 0);
+    });
     return map;
-  }, [stockEntries]);
+  }, [stockEntries, distLog]);
 
   // ── Filtered table ────────────────────────────────────────────
   const filtered = distLog.filter((e) => {
