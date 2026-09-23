@@ -13,7 +13,10 @@ import {
   Zap,
   Circle,
   Settings,
-  ArrowUpCircle
+  ArrowUpCircle,
+  Layers,
+  Box,
+  ShieldCheck
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
@@ -62,8 +65,10 @@ export default function ChecklistForm() {
       try {
         // Check if essential data exists in cache
         const hasModels = cache.getModels && cache.getModels().length > 0;
-        const hasEquipment = cache.getEquipment && cache.getEquipmentList().length > 0;
-        const hasUsernames = cache.getUsernames && cache.getUsernames().length > 0;
+        const hasEquipment =
+          cache.getEquipment && cache.getEquipmentList().length > 0;
+        const hasUsernames =
+          cache.getUsernames && cache.getUsernames().length > 0;
 
         // If data is missing, force a refresh
         if (!hasModels || !hasEquipment || !hasUsernames) {
@@ -80,6 +85,7 @@ export default function ChecklistForm() {
         // For Drivers: Auto-fill their assigned equipment
         if (isDriver && cache.getEquipment) {
           const equipment = cache.getEquipmentList();
+
           const assigned = equipment.find(
             e =>
               e["Driver 1"] === user.full_name ||
@@ -113,110 +119,185 @@ export default function ChecklistForm() {
   }, [cache, isDriver, user]);
 
   /* -------------------- DYNAMIC DROPDOWN LOGIC (Non-Driver Roles) -------------------- */
-  
+
   // Update plate options and drivers based on selected model
   useEffect(() => {
     if (isDriver) return; // Skip for drivers
 
     const model = formData["Model / Type"];
+
     if (!model) {
       setPlateOptions([]);
       return;
     }
 
     // Get all plates that match the selected model
-    const plates = cache.getPlatesByModel ? cache.getPlatesByModel(model) : [];
+    const plates = cache.getPlatesByModel
+      ? cache.getPlatesByModel(model)
+      : [];
+
     setPlateOptions(plates);
 
-    // Only update drivers if NO plate is selected (plate has priority over model)
+    // Only update drivers if NO plate is selected
+    // (plate has priority over model)
     if (!formData["Plate Number"]) {
-      // Get all drivers assigned to equipment of this model type
-      const allEquipment = cache.getEquipment ? cache.getEquipmentList() : [];
-      const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === model);
-      const driversForThisModel = [...new Set(
-        equipmentOfThisModel.flatMap(e => [e["Driver 1"], e["Driver 2"]]).filter(Boolean)
-      )];
+      const allEquipment = cache.getEquipment
+        ? cache.getEquipmentList()
+        : [];
+
+      const equipmentOfThisModel = allEquipment.filter(
+        e => e["Model / Type"] === model
+      );
+
+      const driversForThisModel = [
+        ...new Set(
+          equipmentOfThisModel
+            .flatMap(e => [e["Driver 1"], e["Driver 2"]])
+            .filter(Boolean)
+        )
+      ];
+
       setDriverOptions(driversForThisModel);
     }
-    // If plate is selected, drivers are already set by the plate useEffect, so don't override
-  }, [formData["Model / Type"], formData["Plate Number"], cache, isDriver]);
+
+    // If plate is selected, drivers are already set
+    // by the plate useEffect, so don't override
+  }, [
+    formData["Model / Type"],
+    formData["Plate Number"],
+    cache,
+    isDriver
+  ]);
 
   // Update model, equipment type, and drivers based on selected plate
   useEffect(() => {
     if (isDriver) return; // Skip for drivers
 
     const plate = formData["Plate Number"];
+
     if (!plate) {
-      // If plate is cleared but model is still selected, restore drivers for that model
+      // If plate is cleared but model is still selected,
+      // restore drivers for that model
       if (formData["Model / Type"]) {
-        const allEquipment = cache.getEquipment ? cache.getEquipmentList() : [];
-        const equipmentOfThisModel = allEquipment.filter(e => e["Model / Type"] === formData["Model / Type"]);
-        const driversForThisModel = [...new Set(
-          equipmentOfThisModel.flatMap(e => [e["Driver 1"], e["Driver 2"]]).filter(Boolean)
-        )];
+        const allEquipment = cache.getEquipment
+          ? cache.getEquipmentList()
+          : [];
+
+        const equipmentOfThisModel = allEquipment.filter(
+          e => e["Model / Type"] === formData["Model / Type"]
+        );
+
+        const driversForThisModel = [
+          ...new Set(
+            equipmentOfThisModel
+              .flatMap(e => [e["Driver 1"], e["Driver 2"]])
+              .filter(Boolean)
+          )
+        ];
+
         setDriverOptions(driversForThisModel);
       } else {
         setDriverOptions([]);
       }
+
       return;
     }
 
     // Get the equipment that matches this plate
-    const eq = cache.getEquipmentByPlate ? cache.getEquipmentByPlate(plate) : null;
+    const eq = cache.getEquipmentByPlate
+      ? cache.getEquipmentByPlate(plate)
+      : null;
+
     if (eq) {
       // Auto-fill the Model/Type and Equipment Type fields
       setFormData(prev => ({
         ...prev,
         "Model / Type": eq["Model / Type"] || prev["Model / Type"],
-        "Equipment Type": eq["Equipment Type"] || prev["Equipment Type"]
+        "Equipment Type":
+          eq["Equipment Type"] || prev["Equipment Type"]
       }));
 
-      // Update driver options to only show the 2 drivers for this specific equipment
-      const drivers = cache.getDriversByPlate ? cache.getDriversByPlate(plate) : [];
+      // Update driver options to only show the drivers
+      // for this specific equipment
+      const drivers = cache.getDriversByPlate
+        ? cache.getDriversByPlate(plate)
+        : [];
+
       setDriverOptions(drivers);
     }
-  }, [formData["Plate Number"], formData["Model / Type"], cache, isDriver]);
+  }, [
+    formData["Plate Number"],
+    formData["Model / Type"],
+    cache,
+    isDriver
+  ]);
 
   // Update plates and model based on selected driver
   useEffect(() => {
     if (isDriver) return; // Skip for drivers
 
     const driver = formData["Full Name"];
+
     if (!driver) return;
 
     // Get all equipment that this driver is assigned to
-    const allEquipment = cache.getEquipment ? cache.getEquipmentList() : [];
+    const allEquipment = cache.getEquipment
+      ? cache.getEquipmentList()
+      : [];
+
     const matches = allEquipment.filter(
       e => e["Driver 1"] === driver || e["Driver 2"] === driver
     );
 
-    // If driver is assigned to only ONE equipment, auto-fill everything
+    // If driver is assigned to only ONE equipment,
+    // auto-fill everything
     if (matches.length === 1) {
       const eq = matches[0];
+
       setFormData(prev => ({
         ...prev,
-        "Plate Number": eq["Plate Number"] || prev["Plate Number"],
-        "Model / Type": eq["Model / Type"] || prev["Model / Type"],
-        "Equipment Type": eq["Equipment Type"] || prev["Equipment Type"]
+        "Plate Number":
+          eq["Plate Number"] || prev["Plate Number"],
+        "Model / Type":
+          eq["Model / Type"] || prev["Model / Type"],
+        "Equipment Type":
+          eq["Equipment Type"] || prev["Equipment Type"]
       }));
+
       setPlateOptions([eq["Plate Number"]]);
-      setDriverOptions([eq["Driver 1"], eq["Driver 2"]].filter(Boolean));
-    } 
-    // If driver is assigned to multiple equipment, show all matching plates and models
+
+      setDriverOptions(
+        [eq["Driver 1"], eq["Driver 2"]].filter(Boolean)
+      );
+    }
+
+    // If driver is assigned to multiple equipment,
+    // show all matching plates and models
     else if (matches.length > 1) {
-      const models = [...new Set(matches.map(m => m["Model / Type"]))];
-      
-      // If driver has only one model type, auto-fill model
+      const models = [
+        ...new Set(matches.map(m => m["Model / Type"]))
+      ];
+
+      // If driver has only one model type,
+      // auto-fill model
       if (models.length === 1) {
         setFormData(prev => ({
           ...prev,
           "Model / Type": models[0]
         }));
       }
-      
+
       setPlateOptions(matches.map(m => m["Plate Number"]));
-      setDriverOptions([...new Set(matches.flatMap(m => [m["Driver 1"], m["Driver 2"]]).filter(Boolean))]);
-    } 
+
+      setDriverOptions([
+        ...new Set(
+          matches
+            .flatMap(m => [m["Driver 1"], m["Driver 2"]])
+            .filter(Boolean)
+        )
+      ]);
+    }
+
     // If no matches found, reset plate options
     else {
       setPlateOptions([]);
@@ -227,14 +308,23 @@ export default function ChecklistForm() {
   useEffect(() => {
     if (!formData["Equipment Type"]) return;
 
-    const template = getChecklistTemplate(formData["Equipment Type"]);
+    const template = getChecklistTemplate(
+      formData["Equipment Type"]
+    );
+
     if (!template.length) return;
 
     const initial = {};
+
     template.forEach(section => {
       section.items.forEach(item => {
         const key = `${section.sectionKey}.${item.key}`;
-        initial[key] = { status: null, comment: "", photo: "" };
+
+        initial[key] = {
+          status: null,
+          comment: "",
+          photo: ""
+        };
       });
     });
 
@@ -256,82 +346,169 @@ export default function ChecklistForm() {
   const handleCommentChange = (key, value) => {
     setChecklistData(prev => ({
       ...prev,
-      [key]: { ...prev[key], comment: value }
+      [key]: {
+        ...prev[key],
+        comment: value
+      }
     }));
   };
 
   const handlePhotoUpload = (key, file) => {
     const reader = new FileReader();
+
     reader.onload = () => {
       setChecklistData(prev => ({
         ...prev,
-        [key]: { ...prev[key], photo: reader.result }
+        [key]: {
+          ...prev[key],
+          photo: reader.result
+        }
       }));
     };
+
     reader.readAsDataURL(file);
   };
 
   /* -------------------- SECTION ICON & COLORS -------------------- */
   const getSectionIcon = (sectionKey, size = 20) => {
     const iconMap = {
-      "general_inspection": <ClipboardCheck size={size} />,
-      "fluids_check": <Droplets size={size} />,
-      "electrical": <Zap size={size} />,
-      "tires": <Circle size={size} />,
-      "emergency_equipment": <AlertTriangle size={size} />,
-      "hydraulic_system": <Settings size={size} />,
-      "lifting_system": <ArrowUpCircle size={size} />
+      general_inspection: <ClipboardCheck size={size} />,
+      fluids_check: <Droplets size={size} />,
+      electrical: <Zap size={size} />,
+      tires: <Circle size={size} />,
+      emergency_equipment: <AlertTriangle size={size} />,
+      hydraulic_system: <Settings size={size} />,
+      lifting_system: <ArrowUpCircle size={size} />,
+
+      // New machinery sections
+      tracks_undercarriage: <Layers size={size} />,
+      blade_work_equipment: <Box size={size} />,
+      boom_arm_bucket: <ArrowUpCircle size={size} />,
+      blade_grading_system: <Box size={size} />,
+      drum_compaction_system: <Circle size={size} />,
+      loader_arms_bucket: <ArrowUpCircle size={size} />,
+      loader_arms_attachment: <ArrowUpCircle size={size} />,
+      safety_system: <ShieldCheck size={size} />
     };
-    return iconMap[sectionKey] || <ClipboardCheck size={size} />;
+
+    return (
+      iconMap[sectionKey] || <ClipboardCheck size={size} />
+    );
   };
 
-  const getSectionColors = (sectionKey) => {
+  const getSectionColors = sectionKey => {
     const colorMap = {
-      "general_inspection": {
+      general_inspection: {
         gradient: "from-emerald-900/30 to-teal-900/30",
         border: "border-emerald-700/30",
         iconBg: "bg-emerald-500/10",
         textColor: "text-emerald-300"
       },
-      "fluids_check": {
+
+      fluids_check: {
         gradient: "from-blue-900/30 to-cyan-900/30",
         border: "border-blue-700/30",
         iconBg: "bg-blue-500/10",
         textColor: "text-blue-300"
       },
-      "electrical": {
+
+      electrical: {
         gradient: "from-yellow-900/30 to-amber-900/30",
         border: "border-yellow-700/30",
         iconBg: "bg-yellow-500/10",
         textColor: "text-yellow-300"
       },
-      "tires": {
+
+      tires: {
         gradient: "from-gray-900/30 to-slate-900/30",
         border: "border-gray-700/30",
         iconBg: "bg-gray-500/10",
         textColor: "text-gray-300"
       },
-      "emergency_equipment": {
+
+      emergency_equipment: {
         gradient: "from-red-900/30 to-orange-900/30",
         border: "border-red-700/30",
         iconBg: "bg-red-500/10",
         textColor: "text-red-300"
       },
-      "hydraulic_system": {
+
+      hydraulic_system: {
         gradient: "from-purple-900/30 to-indigo-900/30",
         border: "border-purple-700/30",
         iconBg: "bg-purple-500/10",
         textColor: "text-purple-300"
       },
-      "lifting_system": {
+
+      lifting_system: {
         gradient: "from-pink-900/30 to-rose-900/30",
         border: "border-pink-700/30",
         iconBg: "bg-pink-500/10",
         textColor: "text-pink-300"
+      },
+
+      // New machinery sections
+      tracks_undercarriage: {
+        gradient: "from-slate-900/30 to-gray-900/30",
+        border: "border-slate-700/30",
+        iconBg: "bg-slate-500/10",
+        textColor: "text-slate-300"
+      },
+
+      blade_work_equipment: {
+        gradient: "from-orange-900/30 to-amber-900/30",
+        border: "border-orange-700/30",
+        iconBg: "bg-orange-500/10",
+        textColor: "text-orange-300"
+      },
+
+      boom_arm_bucket: {
+        gradient: "from-cyan-900/30 to-blue-900/30",
+        border: "border-cyan-700/30",
+        iconBg: "bg-cyan-500/10",
+        textColor: "text-cyan-300"
+      },
+
+      blade_grading_system: {
+        gradient: "from-orange-900/30 to-yellow-900/30",
+        border: "border-orange-700/30",
+        iconBg: "bg-orange-500/10",
+        textColor: "text-orange-300"
+      },
+
+      drum_compaction_system: {
+        gradient: "from-indigo-900/30 to-blue-900/30",
+        border: "border-indigo-700/30",
+        iconBg: "bg-indigo-500/10",
+        textColor: "text-indigo-300"
+      },
+
+      loader_arms_bucket: {
+        gradient: "from-cyan-900/30 to-teal-900/30",
+        border: "border-cyan-700/30",
+        iconBg: "bg-cyan-500/10",
+        textColor: "text-cyan-300"
+      },
+
+      loader_arms_attachment: {
+        gradient: "from-teal-900/30 to-emerald-900/30",
+        border: "border-teal-700/30",
+        iconBg: "bg-teal-500/10",
+        textColor: "text-teal-300"
+      },
+
+      safety_system: {
+        gradient: "from-green-900/30 to-emerald-900/30",
+        border: "border-green-700/30",
+        iconBg: "bg-green-500/10",
+        textColor: "text-green-300"
       }
     };
-    
-    return colorMap[sectionKey] || colorMap["general_inspection"];
+
+    return (
+      colorMap[sectionKey] ||
+      colorMap.general_inspection
+    );
   };
 
   /* -------------------- SUBMIT -------------------- */
@@ -339,12 +516,20 @@ export default function ChecklistForm() {
     e.preventDefault();
 
     // Validate all items are checked
-    if (Object.values(checklistData).some(i => i.status === null)) {
-      alert(t("checklist.form.alerts.error") || "Please check all items before submitting.");
+    if (
+      Object.values(checklistData).some(
+        i => i.status === null
+      )
+    ) {
+      alert(
+        t("checklist.form.alerts.error") ||
+          "Please check all items before submitting."
+      );
       return;
     }
 
     setSubmitting(true);
+
     try {
       const payload = {
         ...formData,
@@ -353,35 +538,56 @@ export default function ChecklistForm() {
         "Checklist Data": JSON.stringify(checklistData)
       };
 
-      const res = await fetchWithAuth("/api/add/Checklist_Log", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      const res = await fetchWithAuth(
+        "/api/add/Checklist_Log",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        }
+      );
 
       const json = await res.json();
+
       if (json.status === "success") {
-        alert(t("checklist.form.alerts.success"));
+        alert(
+          t("checklist.form.alerts.success")
+        );
         navigate("/checklist");
       } else {
-        alert(t("checklist.form.alerts.error"));
+        alert(
+          t("checklist.form.alerts.error")
+        );
       }
     } catch {
-      alert(t("checklist.form.alerts.networkError"));
+      alert(
+        t("checklist.form.alerts.networkError")
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  const template = getChecklistTemplate(formData["Equipment Type"]);
+  const template = getChecklistTemplate(
+    formData["Equipment Type"]
+  );
 
-  // Get all driver names from Equipment_List for dropdown (for non-Driver roles)
+  // Get all driver names from Equipment_List
+  // for dropdown (for non-Driver roles)
   const allDriverNames = cache.getEquipment
-    ? [...new Set(
-        cache.getEquipmentList()
-          .flatMap(e => [e["Driver 1"], e["Driver 2"]])
-          .filter(Boolean)
-      )]
+    ? [
+        ...new Set(
+          cache
+            .getEquipmentList()
+            .flatMap(e => [
+              e["Driver 1"],
+              e["Driver 2"]
+            ])
+            .filter(Boolean)
+        )
+      ]
     : [];
 
   /* -------------------- LOADING SCREEN -------------------- */
@@ -389,9 +595,14 @@ export default function ChecklistForm() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
         <Navbar user={user} />
+
         <div className="max-w-6xl mx-auto p-4 md:p-6 flex flex-col items-center justify-center h-[calc(100vh-120px)]">
           <Loader2 className="h-12 w-12 animate-spin text-emerald-400 mb-4" />
-          <p className="text-lg text-gray-300">{t("common.loading") || "Loading form data..."}</p>
+
+          <p className="text-lg text-gray-300">
+            {t("common.loading") ||
+              "Loading form data..."}
+          </p>
         </div>
       </div>
     );
@@ -401,13 +612,18 @@ export default function ChecklistForm() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white">
       <Navbar user={user} />
+
       <div className="max-w-6xl mx-auto p-4 md:p-6">
         {/* Back Button */}
         <button
-          onClick={() => navigate('/checklist')}
+          onClick={() => navigate("/checklist")}
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition group"
         >
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+          <ArrowLeft
+            size={18}
+            className="group-hover:-translate-x-1 transition-transform"
+          />
+
           {t("common.back")}
         </button>
 
@@ -417,10 +633,12 @@ export default function ChecklistForm() {
             <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-500 shadow-lg shadow-emerald-500/40">
               <ClipboardCheck className="w-8 h-8 text-white" />
             </div>
+
             <div>
               <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">
                 {t("checklist.form.title")}
               </h1>
+
               <p className="text-gray-400 text-sm mt-1">
                 {t("checklist.form.subtitle")}
               </p>
@@ -434,18 +652,23 @@ export default function ChecklistForm() {
             <CheckCircle size={20} />
             {t("checklist.form.basicInfo")}
           </h2>
+
           <div className="grid grid-cols-1 gap-4">
             {/* Date */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 {t("checklist.form.date")}
               </label>
+
               <input
                 type="date"
                 value={formData.Date}
                 disabled={isDriver}
                 onChange={e =>
-                  setFormData(prev => ({ ...prev, Date: e.target.value }))
+                  setFormData(prev => ({
+                    ...prev,
+                    Date: e.target.value
+                  }))
                 }
                 className="w-full p-3 rounded-xl bg-gray-900/70 border border-gray-700 text-white disabled:bg-gray-900/50 disabled:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
               />
@@ -456,6 +679,7 @@ export default function ChecklistForm() {
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 {t("checklist.form.fullName")}
               </label>
+
               {isDriver ? (
                 <input
                   value={formData["Full Name"]}
@@ -476,7 +700,11 @@ export default function ChecklistForm() {
                   <option value="">
                     {t("checklist.form.chooseInspector")}
                   </option>
-                  {(driverOptions.length ? driverOptions : allDriverNames).map(d => (
+
+                  {(driverOptions.length
+                    ? driverOptions
+                    : allDriverNames
+                  ).map(d => (
                     <option key={d} value={d}>
                       {d}
                     </option>
@@ -490,6 +718,7 @@ export default function ChecklistForm() {
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 {t("checklist.form.model")}
               </label>
+
               {isDriver ? (
                 <input
                   value={formData["Model / Type"]}
@@ -511,8 +740,11 @@ export default function ChecklistForm() {
                   <option value="">
                     {t("checklist.form.chooseModel")}
                   </option>
+
                   {modelOptions.map(m => (
-                    <option key={m} value={m}>{m}</option>
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
                   ))}
                 </select>
               )}
@@ -523,6 +755,7 @@ export default function ChecklistForm() {
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 {t("checklist.form.plate")}
               </label>
+
               {isDriver ? (
                 <input
                   value={formData["Plate Number"]}
@@ -543,13 +776,18 @@ export default function ChecklistForm() {
                   <option value="">
                     {t("checklist.form.choosePlate")}
                   </option>
+
                   {(plateOptions.length
                     ? plateOptions
                     : cache.getEquipment
-                    ? (cache.getEquipmentList() || []).map(e => e["Plate Number"])
+                    ? (cache.getEquipmentList() || []).map(
+                        e => e["Plate Number"]
+                      )
                     : []
                   ).map(p => (
-                    <option key={p} value={p}>{p}</option>
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
                   ))}
                 </select>
               )}
@@ -559,20 +797,36 @@ export default function ChecklistForm() {
 
         {/* CHECKLIST */}
         {formData["Equipment Type"] && !loading ? (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-6"
+          >
             {template.map(section => {
-              const colors = getSectionColors(section.sectionKey);
+              const colors = getSectionColors(
+                section.sectionKey
+              );
+
               return (
                 <div
                   key={section.sectionKey}
                   className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 transition-all"
                 >
                   {/* Section Header with Section-Specific Colors */}
-                  <div className={`bg-gradient-to-r ${colors.gradient} -mx-6 -mt-6 px-6 py-4 mb-6 rounded-t-2xl border-b ${colors.border}`}>
-                    <h3 className={`text-lg font-semibold ${colors.textColor} flex items-center gap-3`}>
-                      <div className={`p-2 rounded-lg ${colors.iconBg}`}>
-                        {getSectionIcon(section.sectionKey, 20)}
+                  <div
+                    className={`bg-gradient-to-r ${colors.gradient} -mx-6 -mt-6 px-6 py-4 mb-6 rounded-t-2xl border-b ${colors.border}`}
+                  >
+                    <h3
+                      className={`text-lg font-semibold ${colors.textColor} flex items-center gap-3`}
+                    >
+                      <div
+                        className={`p-2 rounded-lg ${colors.iconBg}`}
+                      >
+                        {getSectionIcon(
+                          section.sectionKey,
+                          20
+                        )}
                       </div>
+
                       {t(section.titleKey)}
                     </h3>
                   </div>
@@ -582,6 +836,7 @@ export default function ChecklistForm() {
                     {section.items.map(item => {
                       const key = `${section.sectionKey}.${item.key}`;
                       const state = checklistData[key];
+
                       return (
                         <div
                           key={key}
@@ -589,62 +844,100 @@ export default function ChecklistForm() {
                         >
                           <div className="flex justify-between items-center">
                             <span className="text-gray-200 font-medium">
-                              {t(`checklist.items.${item.key}`)}
+                              {t(
+                                `checklist.items.${item.key}`
+                              )}
                             </span>
+
                             <div className="flex gap-3">
                               <CheckCircle
                                 size={22}
-                                onClick={() => handleStatusChange(key, "OK")}
+                                onClick={() =>
+                                  handleStatusChange(
+                                    key,
+                                    "OK"
+                                  )
+                                }
                                 className={`cursor-pointer transition-all hover:scale-110 ${
-                                  state?.status === "OK" 
-                                    ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" 
+                                  state?.status === "OK"
+                                    ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
                                     : "text-gray-600 hover:text-emerald-400"
                                 }`}
                               />
+
                               <AlertTriangle
                                 size={22}
-                                onClick={() => handleStatusChange(key, "Warning")}
+                                onClick={() =>
+                                  handleStatusChange(
+                                    key,
+                                    "Warning"
+                                  )
+                                }
                                 className={`cursor-pointer transition-all hover:scale-110 ${
-                                  state?.status === "Warning" 
-                                    ? "text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" 
+                                  state?.status === "Warning"
+                                    ? "text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]"
                                     : "text-gray-600 hover:text-amber-400"
                                 }`}
                               />
+
                               <XCircle
                                 size={22}
-                                onClick={() => handleStatusChange(key, "Fail")}
+                                onClick={() =>
+                                  handleStatusChange(
+                                    key,
+                                    "Fail"
+                                  )
+                                }
                                 className={`cursor-pointer transition-all hover:scale-110 ${
-                                  state?.status === "Fail" 
-                                    ? "text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.6)]" 
+                                  state?.status === "Fail"
+                                    ? "text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.6)]"
                                     : "text-gray-600 hover:text-red-400"
                                 }`}
                               />
                             </div>
                           </div>
-                          {(state?.status === "Warning" || state?.status === "Fail") && (
+
+                          {(state?.status === "Warning" ||
+                            state?.status === "Fail") && (
                             <div className="mt-3 space-y-3 pt-3 border-t border-gray-700">
                               <textarea
                                 value={state.comment}
                                 onChange={e =>
-                                  handleCommentChange(key, e.target.value)
+                                  handleCommentChange(
+                                    key,
+                                    e.target.value
+                                  )
                                 }
                                 rows={2}
                                 className="w-full p-3 rounded-lg bg-gray-900/70 border border-gray-700 text-white placeholder-gray-500 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all resize-none"
-                                placeholder={t("checklist.form.commentPlaceholder")}
+                                placeholder={t(
+                                  "checklist.form.commentPlaceholder"
+                                )}
                               />
+
                               <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-400 hover:text-cyan-400 transition">
                                 <Camera size={16} />
-                                <span>{t("checklist.form.uploadPhoto")}</span>
+
+                                <span>
+                                  {t(
+                                    "checklist.form.uploadPhoto"
+                                  )}
+                                </span>
+
                                 <input
                                   type="file"
                                   accept="image/*"
                                   hidden
                                   onChange={e =>
                                     e.target.files &&
-                                    handlePhotoUpload(key, e.target.files[0])
+                                    handlePhotoUpload(
+                                      key,
+                                      e.target.files[0]
+                                    )
                                   }
                                 />
                               </label>
+
                               {state.photo && (
                                 <img
                                   src={state.photo}
@@ -661,19 +954,25 @@ export default function ChecklistForm() {
                 </div>
               );
             })}
+
             <button
               type="submit"
               disabled={submitting}
               className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all"
             >
-              {submitting ? t("common.submitting") : t("common.submit")}
+              {submitting
+                ? t("common.submitting")
+                : t("common.submit")}
             </button>
           </form>
         ) : (
           <div className="text-center py-16 bg-gray-800/30 rounded-2xl border border-gray-700">
             <ClipboardCheck className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+
             <p className="text-gray-400 text-lg">
-              {t("checklist.form.selectEquipmentHint")}
+              {t(
+                "checklist.form.selectEquipmentHint"
+              )}
             </p>
           </div>
         )}
